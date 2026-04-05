@@ -34,6 +34,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-save', 'assets/icons/save.png');
         this.load.image('icon-load', 'assets/icons/load.png');
         this.load.image('icon-clear', 'assets/icons/clear.png');
+        this.load.image('icon-girl', 'assets/icons/blonde_girl.png');
         this.load.image('icon-bunny', 'assets/icons/bunny.png');
 
         console.log('[GameScene] Loading icon assets...');
@@ -268,6 +269,17 @@ export class GameScene extends Phaser.Scene {
             bunnySprite.setDepth(10);
             
             this.tileGraphics[key] = bunnySprite;
+        } else if (blockType === BLOCK_TYPES.GIRL) {
+            // Render girl using image asset
+            const girlSprite = this.add.image(x, y, 'icon-girl');
+            
+            // Scale girl larger for better readability (90% of tile size)
+            const targetSize = GRID_SIZE * 0.9;
+            const scale = targetSize / Math.max(girlSprite.width, girlSprite.height);
+            girlSprite.setScale(scale);
+            girlSprite.setDepth(10);
+            
+            this.tileGraphics[key] = girlSprite;
         } else {
             // Render colored block - fill entire tile with no border for clean merging
             const block = this.add.rectangle(x, y, GRID_SIZE, GRID_SIZE, color);

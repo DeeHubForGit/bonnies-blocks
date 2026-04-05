@@ -15,6 +15,7 @@ export const BLOCK_TYPES = {
     BLUE: 'blue',
     YELLOW: 'yellow',
     PURPLE: 'purple',
+    GIRL: 'girl',
     BUNNY: 'bunny'
 };
 
@@ -26,6 +27,7 @@ export const BLOCK_COLORS = {
     [BLOCK_TYPES.BLUE]: 0x3498DB,
     [BLOCK_TYPES.YELLOW]: 0xFFEB3B,
     [BLOCK_TYPES.PURPLE]: 0x9B59B6,
+    [BLOCK_TYPES.GIRL]: 0xFFFFFF,
     [BLOCK_TYPES.BUNNY]: 0xFFFFFF
 };
 

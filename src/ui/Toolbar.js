@@ -15,15 +15,16 @@ export class Toolbar {
         const toolbarY = PLAYABLE_HEIGHT + 40; // Centered in toolbar area
         const startX = 50;
         const buttonSize = 60; // Larger square buttons for better readability
-        const gap = 10;
+        const gap = 8; // Reduced spacing to fit extra Girl button
 
-        // Tool buttons
+        // Tool buttons (Girl added before Bunny)
         const tools = [
             { type: BLOCK_TYPES.GRASS, label: 'Grass' },
             { type: BLOCK_TYPES.PINK, label: 'Pink' },
             { type: BLOCK_TYPES.BLUE, label: 'Blue' },
             { type: BLOCK_TYPES.YELLOW, label: 'Yellow' },
             { type: BLOCK_TYPES.PURPLE, label: 'Purple' },
+            { type: BLOCK_TYPES.GIRL, label: 'Girl' },
             { type: BLOCK_TYPES.BUNNY, label: 'Bunny' }
         ];
 
@@ -32,12 +33,12 @@ export class Toolbar {
             this.createToolButton(x, toolbarY, buttonSize, tool.type, tool.label);
         });
 
-        // Erase button
-        const eraseX = startX + (buttonSize + gap) * tools.length + gap * 2;
+        // Erase button (reduced spacer gap)
+        const eraseX = startX + (buttonSize + gap) * tools.length + gap;
         this.createEraseButton(eraseX, toolbarY, buttonSize);
 
-        // Action buttons
-        const actionX = eraseX + buttonSize + gap * 2;
+        // Action buttons (reduced spacer gap)
+        const actionX = eraseX + buttonSize + gap;
         this.createActionButton(actionX, toolbarY, buttonSize, 'save', () => this.scene.saveWorld());
         this.createActionButton(actionX + buttonSize + gap, toolbarY, buttonSize, 'load', () => this.scene.loadWorld());
         this.createActionButton(actionX + (buttonSize + gap) * 2, toolbarY, buttonSize, 'clear', () => this.scene.clearWorld());
@@ -46,9 +47,9 @@ export class Toolbar {
     createToolButton(x, y, size, toolType, label) {
         const button = this.scene.add.container(x, y);
         
-        // Background with border - use colored background for block types, white for bunny
+        // Background with border - use colored background for block types, white for image-based tools
         let bgColor = 0xffffff; // Default white
-        if (toolType !== BLOCK_TYPES.BUNNY) {
+        if (toolType !== BLOCK_TYPES.BUNNY && toolType !== BLOCK_TYPES.GIRL) {
             bgColor = BLOCK_COLORS[toolType]; // Use block color for background
         }
         
@@ -68,6 +69,16 @@ export class Toolbar {
             bunnyIcon.setScale(scale);
             
             button.add([bunnyIcon]);
+        } else if (toolType === BLOCK_TYPES.GIRL) {
+            // Use girl image icon
+            const girlIcon = this.scene.add.image(0, 0, 'icon-girl');
+            
+            // Scale to fit button with padding (larger for better readability)
+            const iconSize = size * 0.75; // 75% of button size
+            const scale = iconSize / Math.max(girlIcon.width, girlIcon.height);
+            girlIcon.setScale(scale);
+            
+            button.add([girlIcon]);
         }
 
         button.setDepth(1000);
