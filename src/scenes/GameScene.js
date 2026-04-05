@@ -12,7 +12,8 @@ import {
     GAME_WIDTH
 } from '../data/constants.js';
 import { Toolbar } from '../ui/Toolbar.js';
-import { saveWorld, loadWorld, clearWorld } from '../utils/storage.js';
+import { Modal } from '../ui/Modal.js';
+import { saveWorld, loadWorld, getAllWorlds, generateDefaultWorldName, clearWorld } from '../utils/storage.js';
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -24,6 +25,7 @@ export class GameScene extends Phaser.Scene {
         this.wasd = null;
         this.toolbar = null;
         this.tileGraphics = {};
+        this.modal = null;
     }
 
     preload() {
@@ -52,17 +54,11 @@ export class GameScene extends Phaser.Scene {
         // Setup input
         this.setupInput();
 
+        // Create modal system
+        this.modal = new Modal(this);
+
         // Create toolbar
         this.toolbar = new Toolbar(this);
-
-        // Try to load saved world
-        const savedWorld = loadWorld();
-        if (savedWorld) {
-            this.loadWorldData(savedWorld);
-            console.log('[GameScene] Loaded saved world');
-        } else {
-            console.log('[GameScene] Starting new world');
-        }
 
         // Render initial grid
         this.renderGrid();
@@ -124,6 +120,7 @@ export class GameScene extends Phaser.Scene {
 
         this.player = this.add.circle(startX, startY, 15, PLAYER_COLOR);
         this.player.setDepth(20);
+        this.player.setVisible(false);
 
         // Add physics
         this.physics.add.existing(this.player);
@@ -161,6 +158,11 @@ export class GameScene extends Phaser.Scene {
     }
 
     handleGridClick(pointer) {
+        // Ignore clicks when modal is open
+        if (this.modal.container) {
+            return;
+        }
+
         // Ignore clicks outside the playable grid area
         if (pointer.y >= PLAYABLE_HEIGHT) {
             return;
@@ -352,22 +354,40 @@ export class GameScene extends Phaser.Scene {
             }
         };
 
-        const success = saveWorld(worldData);
-        if (success) {
-            this.showMessage('World saved!');
-        } else {
-            this.showMessage('Save failed!');
-        }
+        const defaultName = generateDefaultWorldName();
+        
+        this.modal.showInputDialog(
+            'Save World',
+            'Enter world name',
+            defaultName,
+            (name) => {
+                const success = saveWorld(name, worldData);
+                if (success) {
+                    this.modal.showToast(`Saved as "${name}"!`);
+                } else {
+                    this.modal.showToast('Save failed!');
+                }
+            }
+        );
     }
 
     loadWorld() {
-        const savedWorld = loadWorld();
-        if (savedWorld) {
-            this.loadWorldData(savedWorld);
-            this.showMessage('World loaded!');
-        } else {
-            this.showMessage('No saved world found!');
-        }
+        const worlds = getAllWorlds();
+        
+        this.modal.showListDialog(
+            'Load World',
+            worlds,
+            (world) => {
+                const worldData = loadWorld(world.name);
+                if (worldData) {
+                    this.loadWorldData(worldData);
+                    this.modal.showToast(`Loaded "${world.name}"!`);
+                } else {
+                    this.modal.showToast('Load failed!');
+                }
+            },
+            'No saved worlds yet!\n\nStart building and save your creation!'
+        );
     }
 
     loadWorldData(worldData) {
@@ -382,28 +402,16 @@ export class GameScene extends Phaser.Scene {
     }
 
     clearWorld() {
-        if (confirm('Are you sure you want to clear the world? This cannot be undone!')) {
-            this.initializeGrid();
-            this.renderGrid();
-            clearWorld();
-            this.showMessage('World cleared!');
-        }
-    }
-
-    showMessage(text) {
-        // Display temporary message
-        const message = this.add.text(400, 300, text, {
-            fontSize: '32px',
-            fontFamily: 'Arial',
-            color: '#ffffff',
-            backgroundColor: '#000000',
-            padding: { x: 20, y: 10 }
-        });
-        message.setOrigin(0.5);
-        message.setDepth(2000);
-
-        this.time.delayedCall(1500, () => {
-            message.destroy();
-        });
+        this.modal.showConfirmDialog(
+            'Clear World',
+            'This will erase everything\nin the current world.\n\nAre you sure?',
+            () => {
+                this.initializeGrid();
+                this.renderGrid();
+                this.modal.showToast('World cleared!');
+            },
+            'Clear',
+            'Cancel'
+        );
     }
 }

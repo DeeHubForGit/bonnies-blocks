@@ -9,7 +9,8 @@ A simple 2D top-down builder game made with Phaser 3.
 - **5 colored blocks**: Grass, Pink, Blue, Yellow, Purple
 - **Bunny placement**: Add cute bunnies to your world
 - **Erase mode**: Remove blocks you don't want
-- **Save/Load**: Your world is saved to localStorage
+- **Multiple Saved Worlds**: Save and manage multiple named worlds
+- **Friendly Dialogs**: Child-friendly modal system for save/load/clear
 - **Clear**: Start fresh with a new world
 
 ## How to Run
@@ -28,9 +29,9 @@ A simple 2D top-down builder game made with Phaser 3.
 - **Erase Button** - Switch to erase mode to remove blocks
 
 ### Actions
-- **Save** - Save your world to browser storage
-- **Load** - Load your previously saved world
-- **Clear** - Clear the entire world (confirms before clearing)
+- **Save** - Opens a dialog to name and save your world
+- **Load** - Shows a list of saved worlds to choose from
+- **Clear** - Clear the entire world (shows friendly confirmation dialog)
 
 ## Project Structure
 
@@ -42,11 +43,14 @@ Bonnies Blocks/
 │   ├── scenes/
 │   │   └── GameScene.js   # Main game scene (grid, player, rendering)
 │   ├── ui/
-│   │   └── Toolbar.js     # Toolbar UI component
+│   │   ├── Toolbar.js     # Toolbar UI component
+│   │   └── Modal.js       # Reusable modal/dialog system
 │   ├── utils/
-│   │   └── storage.js     # Save/load utilities
-│   └── data/
-│       └── constants.js   # Game configuration constants
+│   │   └── storage.js     # Multi-world save/load utilities
+│   ├── data/
+│   │   └── constants.js   # Game configuration constants
+│   └── assets/
+│       └── icons/         # Icon image assets (bunny, save, load, etc.)
 └── README.md              # This file
 ```
 
@@ -72,9 +76,13 @@ This is V1 - a proof of concept. Potential improvements:
 
 ## Notes
 
-- The world state is saved automatically when you click "Save"
-- The game will auto-load your saved world when you refresh the page
+- **Multiple Saves**: You can save multiple worlds with different names (e.g., "Bonnie 1", "My Castle", etc.)
+- **Auto-naming**: Default names are suggested when saving (Bonnie 1, Bonnie 2, etc.)
+- **Load List**: The Load dialog shows all your saved worlds with timestamps
+- **Child-Friendly UI**: All dialogs use soft colors and rounded corners instead of harsh browser popups
+- **Migration**: Old single-save format is automatically migrated to the new multi-save system
 - You cannot place blocks on your character's current position
-- All assets are generated with code (no image files needed)
+- Blocks merge together seamlessly when placed side-by-side
+- Icon-based toolbar is designed for non-readers
 
 Enjoy building! 🎮🐰✨
