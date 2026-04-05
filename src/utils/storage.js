@@ -1,6 +1,24 @@
-import { STORAGE_KEY } from '../data/constants.js';
+import { STORAGE_KEY, CHILD_NAME_KEY } from '../data/constants.js';
 
 const WORLDS_KEY = STORAGE_KEY + '_worlds';
+
+/**
+ * Get the stored child name or default to 'Bonnie'
+ */
+export function getChildName() {
+    const storedName = localStorage.getItem(CHILD_NAME_KEY);
+    return storedName && storedName.trim() ? storedName.trim() : 'Bonnie';
+}
+
+/**
+ * Save the child name to localStorage
+ */
+export function saveChildName(name) {
+    const trimmed = name ? name.trim() : '';
+    const finalName = trimmed || 'Bonnie';
+    localStorage.setItem(CHILD_NAME_KEY, finalName);
+    return finalName;
+}
 
 /**
  * Migrate old single-save format to new multi-save format
@@ -11,7 +29,7 @@ function migrateOldSave() {
         if (oldSave && !localStorage.getItem(WORLDS_KEY)) {
             const parsed = JSON.parse(oldSave);
             const migratedWorld = {
-                name: 'Bonnie 1',
+                name: `${getChildName()} 1`,
                 grid: parsed.grid,
                 playerPosition: parsed.playerPosition,
                 savedAt: parsed.timestamp || Date.now()
@@ -120,12 +138,13 @@ export function deleteWorld(name) {
  */
 export function generateDefaultWorldName() {
     const worlds = getAllWorlds();
+    const childName = getChildName();
     let counter = 1;
-    let name = `Bonnie ${counter}`;
+    let name = `${childName} ${counter}`;
     
     while (worlds.some(w => w.name === name)) {
         counter++;
-        name = `Bonnie ${counter}`;
+        name = `${childName} ${counter}`;
     }
     
     return name;

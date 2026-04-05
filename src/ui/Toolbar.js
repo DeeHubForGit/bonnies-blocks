@@ -1,4 +1,4 @@
-import { BLOCK_TYPES, TOOL_MODES, BLOCK_COLORS, PLAYABLE_HEIGHT, TOOLBAR_HEIGHT, GAME_WIDTH } from '../data/constants.js';
+import { BLOCK_TYPES, TOOL_MODES, BLOCK_COLORS, PLAYABLE_HEIGHT, TOOLBAR_HEIGHT, GAME_WIDTH, HEADER_HEIGHT } from '../data/constants.js';
 
 export class Toolbar {
     constructor(scene) {
@@ -12,7 +12,7 @@ export class Toolbar {
 
     createToolbar() {
         // Position toolbar in the dedicated toolbar area at bottom
-        const toolbarY = PLAYABLE_HEIGHT + 40; // Centered in toolbar area
+        const toolbarY = HEADER_HEIGHT + PLAYABLE_HEIGHT + 40; // Centered in toolbar area
         const startX = 50;
         const buttonSize = 60; // Larger square buttons for better readability
         const gap = 8; // Reduced spacing to fit extra Girl button

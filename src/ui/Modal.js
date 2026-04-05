@@ -140,6 +140,18 @@ export class Modal {
         inputElement.focus();
         inputElement.select();
 
+        // Set flag to prevent game keyboard handling
+        this.scene.isTextInputOpen = true;
+
+        // Stop keyboard event propagation to prevent game interference
+        inputElement.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+        });
+        
+        inputElement.addEventListener('keyup', (e) => {
+            e.stopPropagation();
+        });
+
         // Update input value as user types
         inputElement.addEventListener('input', (e) => {
             inputValue = e.target.value;
@@ -148,11 +160,13 @@ export class Modal {
         // Buttons
         const buttonY = centerY + 70;
         const cancelBtn = this.createButton(centerX - 80, buttonY, 'Cancel', 0xe0e0e0, () => {
+            this.scene.isTextInputOpen = false;
             document.body.removeChild(inputElement);
             this.close();
         });
 
         const saveBtn = this.createButton(centerX + 80, buttonY, 'Save', 0xFFB6C1, () => {
+            this.scene.isTextInputOpen = false;
             document.body.removeChild(inputElement);
             this.close();
             if (onConfirm && inputValue.trim()) {
@@ -162,7 +176,9 @@ export class Modal {
 
         // Allow Enter key to save
         inputElement.addEventListener('keypress', (e) => {
+            e.stopPropagation();
             if (e.key === 'Enter' && inputValue.trim()) {
+                this.scene.isTextInputOpen = false;
                 document.body.removeChild(inputElement);
                 this.close();
                 if (onConfirm) onConfirm(inputValue.trim());

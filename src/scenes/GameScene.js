@@ -9,11 +9,12 @@ import {
     TOOL_MODES,
     PLAYABLE_HEIGHT,
     TOOLBAR_HEIGHT,
-    GAME_WIDTH
+    GAME_WIDTH,
+    HEADER_HEIGHT
 } from '../data/constants.js';
 import { Toolbar } from '../ui/Toolbar.js';
 import { Modal } from '../ui/Modal.js';
-import { saveWorld, loadWorld, getAllWorlds, generateDefaultWorldName, clearWorld } from '../utils/storage.js';
+import { saveWorld, loadWorld, getAllWorlds, generateDefaultWorldName, clearWorld, getChildName, saveChildName } from '../utils/storage.js';
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -26,6 +27,9 @@ export class GameScene extends Phaser.Scene {
         this.toolbar = null;
         this.tileGraphics = {};
         this.modal = null;
+        this.titleText = null;
+        this.settingsButton = null;
+        this.isTextInputOpen = false;
     }
 
     preload() {
@@ -36,6 +40,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-clear', 'assets/icons/clear.png');
         this.load.image('icon-girl', 'assets/icons/blonde_girl.png');
         this.load.image('icon-bunny', 'assets/icons/bunny.png');
+        this.load.image('icon-settings', 'assets/icons/config.png');
 
         console.log('[GameScene] Loading icon assets...');
     }
@@ -58,6 +63,12 @@ export class GameScene extends Phaser.Scene {
         // Create modal system
         this.modal = new Modal(this);
 
+        // Create title
+        this.createTitle();
+
+        // Create settings button
+        this.createSettingsButton();
+
         // Create toolbar
         this.toolbar = new Toolbar(this);
 
@@ -78,31 +89,124 @@ export class GameScene extends Phaser.Scene {
         }
     }
 
+    buildTitleText(name) {
+        // Handle possessive apostrophe correctly
+        if (name.endsWith('s') || name.endsWith('S')) {
+            return `${name}' Blocks`;
+        } else {
+            return `${name}'s Blocks`;
+        }
+    }
+
+    createTitle() {
+        const childName = getChildName();
+        const title = this.buildTitleText(childName);
+        
+        // Create title text centered at top
+        this.titleText = this.add.text(GAME_WIDTH / 2, 24, title, {
+            fontSize: '28px',
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            color: '#333333'
+        });
+        this.titleText.setOrigin(0.5);
+        this.titleText.setDepth(1000);
+    }
+
+    createSettingsButton() {
+        // Create cog button using config icon image
+        this.settingsButton = this.add.image(0, this.titleText.y, 'icon-settings');
+        
+        // Calculate and store aspect ratio once
+        const iconAspectRatio = this.settingsButton.width / this.settingsButton.height;
+        this.settingsButtonAspectRatio = iconAspectRatio;
+        
+        // Size it to 26px height preserving aspect ratio
+        const targetHeight = 26;
+        this.settingsButton.setDisplaySize(targetHeight * this.settingsButtonAspectRatio, targetHeight);
+        this.settingsButton.setOrigin(0.5);
+        this.settingsButton.setInteractive({ useHandCursor: true });
+        this.settingsButton.setDepth(1000);
+        
+        // Position button to the right of title
+        this.positionSettingsButton();
+        
+        // Add click handler
+        this.settingsButton.on('pointerdown', () => {
+            this.openChildNameDialog();
+        });
+        
+        // Add subtle hover effects
+        this.settingsButton.on('pointerover', () => {
+            const hoverHeight = 29;
+            this.settingsButton.setDisplaySize(hoverHeight * this.settingsButtonAspectRatio, hoverHeight);
+        });
+        
+        this.settingsButton.on('pointerout', () => {
+            const normalHeight = 26;
+            this.settingsButton.setDisplaySize(normalHeight * this.settingsButtonAspectRatio, normalHeight);
+        });
+    }
+
+    positionSettingsButton() {
+        if (this.titleText && this.settingsButton) {
+            // Position cog to the right of the title with a small gap
+            this.settingsButton.x = 
+                this.titleText.x + 
+                (this.titleText.width / 2) + 
+                (this.settingsButton.displayWidth / 2) + 
+                12;
+            this.settingsButton.y = this.titleText.y;
+        }
+    }
+
+    openChildNameDialog() {
+        const currentName = getChildName();
+        
+        this.modal.showInputDialog(
+            'Child Name',
+            'Enter child name',
+            currentName,
+            (name) => {
+                const savedName = saveChildName(name);
+                
+                // Update title immediately
+                this.titleText.setText(this.buildTitleText(savedName));
+                
+                // Reposition cog button after title text changes
+                this.positionSettingsButton();
+                
+                // Show confirmation toast
+                this.modal.showToast(`Name updated to ${savedName}!`);
+            }
+        );
+    }
+
     drawGridLines() {
         // Create graphics object for grid
         const graphics = this.add.graphics();
 
-        // Draw toolbar background FIRST
+        // Draw toolbar background
         graphics.fillStyle(0x333333, 0.2);
-        graphics.fillRect(0, PLAYABLE_HEIGHT, GAME_WIDTH, TOOLBAR_HEIGHT);
+        graphics.fillRect(0, HEADER_HEIGHT + PLAYABLE_HEIGHT, GAME_WIDTH, TOOLBAR_HEIGHT);
 
         // Draw separator line between playable area and toolbar
         graphics.lineStyle(3, 0x000000, 0.8);
-        graphics.lineBetween(0, PLAYABLE_HEIGHT, GAME_WIDTH, PLAYABLE_HEIGHT);
+        graphics.lineBetween(0, HEADER_HEIGHT + PLAYABLE_HEIGHT, GAME_WIDTH, HEADER_HEIGHT + PLAYABLE_HEIGHT);
 
         // Draw grid lines with 0.5 pixel offset for crisp rendering
         graphics.lineStyle(1, 0x000000, 0.1);
 
-        // Horizontal lines
+        // Horizontal lines (offset by HEADER_HEIGHT)
         for (let row = 0; row <= GRID_ROWS; row++) {
-            const y = row * GRID_SIZE + 0.5;
+            const y = HEADER_HEIGHT + row * GRID_SIZE + 0.5;
             graphics.lineBetween(0, y, GRID_COLS * GRID_SIZE, y);
         }
 
-        // Vertical lines
+        // Vertical lines (offset by HEADER_HEIGHT)
         for (let col = 0; col <= GRID_COLS; col++) {
             const x = col * GRID_SIZE + 0.5;
-            graphics.lineBetween(x, 0, x, GRID_ROWS * GRID_SIZE);
+            graphics.lineBetween(x, HEADER_HEIGHT, x, HEADER_HEIGHT + GRID_ROWS * GRID_SIZE);
         }
 
         // Set depth so grid lines appear above blocks and player but below UI
@@ -112,12 +216,12 @@ export class GameScene extends Phaser.Scene {
     }
 
     createPlayer() {
-        // Set physics world bounds to playable area only
-        this.physics.world.setBounds(0, 0, GAME_WIDTH, PLAYABLE_HEIGHT);
+        // Set physics world bounds to playable area only (accounting for header area)
+        this.physics.world.setBounds(0, HEADER_HEIGHT, GAME_WIDTH, PLAYABLE_HEIGHT);
 
-        // Player starts in the middle of the grid
+        // Player starts in the middle of the grid (offset by HEADER_HEIGHT)
         const startX = Math.floor(GRID_COLS / 2) * GRID_SIZE + GRID_SIZE / 2;
-        const startY = Math.floor(GRID_ROWS / 2) * GRID_SIZE + GRID_SIZE / 2;
+        const startY = HEADER_HEIGHT + Math.floor(GRID_ROWS / 2) * GRID_SIZE + GRID_SIZE / 2;
 
         this.player = this.add.circle(startX, startY, 15, PLAYER_COLOR);
         this.player.setDepth(20);
@@ -165,12 +269,12 @@ export class GameScene extends Phaser.Scene {
         }
 
         // Ignore clicks outside the playable grid area
-        if (pointer.y >= PLAYABLE_HEIGHT) {
+        if (pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT || pointer.y < HEADER_HEIGHT) {
             return;
         }
 
         const gridX = Math.floor(pointer.x / GRID_SIZE);
-        const gridY = Math.floor(pointer.y / GRID_SIZE);
+        const gridY = Math.floor((pointer.y - HEADER_HEIGHT) / GRID_SIZE);
 
         // Check if click is within grid bounds
         if (gridX < 0 || gridX >= GRID_COLS || gridY < 0 || gridY >= GRID_ROWS) {
@@ -179,7 +283,7 @@ export class GameScene extends Phaser.Scene {
 
         // Don't place on player's current position (account for player being centered)
         const playerGridX = Math.floor((this.player.x - GRID_SIZE / 2) / GRID_SIZE);
-        const playerGridY = Math.floor((this.player.y - GRID_SIZE / 2) / GRID_SIZE);
+        const playerGridY = Math.floor((this.player.y - HEADER_HEIGHT - GRID_SIZE / 2) / GRID_SIZE);
 
         if (this.toolbar.getMode() === TOOL_MODES.ERASE) {
             // Erase mode
@@ -202,18 +306,18 @@ export class GameScene extends Phaser.Scene {
 
     handleGridHover(pointer) {
         // Ignore hover outside the playable grid area
-        if (pointer.y >= PLAYABLE_HEIGHT) {
+        if (pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT || pointer.y < HEADER_HEIGHT) {
             this.hoverRect.setVisible(false);
             return;
         }
 
         const gridX = Math.floor(pointer.x / GRID_SIZE);
-        const gridY = Math.floor(pointer.y / GRID_SIZE);
+        const gridY = Math.floor((pointer.y - HEADER_HEIGHT) / GRID_SIZE);
 
         // Check if hover is within grid bounds
         if (gridX >= 0 && gridX < GRID_COLS && gridY >= 0 && gridY < GRID_ROWS) {
             const x = gridX * GRID_SIZE + GRID_SIZE / 2;
-            const y = gridY * GRID_SIZE + GRID_SIZE / 2;
+            const y = HEADER_HEIGHT + gridY * GRID_SIZE + GRID_SIZE / 2;
             
             // Move and show hover rectangle
             this.hoverRect.setPosition(x, y);
@@ -255,7 +359,7 @@ export class GameScene extends Phaser.Scene {
         }
 
         const x = col * GRID_SIZE + GRID_SIZE / 2;
-        const y = row * GRID_SIZE + GRID_SIZE / 2;
+        const y = HEADER_HEIGHT + row * GRID_SIZE + GRID_SIZE / 2;
         const color = BLOCK_COLORS[blockType];
 
         if (blockType === BLOCK_TYPES.BUNNY) {
@@ -290,6 +394,14 @@ export class GameScene extends Phaser.Scene {
     }
 
     update() {
+        // Stop player movement if text input is open
+        if (this.isTextInputOpen) {
+            if (this.player && this.player.body) {
+                this.player.body.setVelocity(0);
+            }
+            return;
+        }
+
         // Handle player movement
         let velocityX = 0;
         let velocityY = 0;
@@ -340,7 +452,7 @@ export class GameScene extends Phaser.Scene {
     wouldCollideWithBlock(x, y) {
         // Check if position would be inside a solid block
         const gridX = Math.floor((x - GRID_SIZE / 2) / GRID_SIZE);
-        const gridY = Math.floor((y - GRID_SIZE / 2) / GRID_SIZE);
+        const gridY = Math.floor((y - HEADER_HEIGHT - GRID_SIZE / 2) / GRID_SIZE);
 
         // Check bounds
         if (gridX < 0 || gridX >= GRID_COLS || gridY < 0 || gridY >= GRID_ROWS) {

@@ -1,8 +1,9 @@
 // Game configuration constants
 export const GAME_WIDTH = 800;
-export const GAME_HEIGHT = 600;
+export const HEADER_HEIGHT = 50; // Height reserved for title at top
+export const GAME_HEIGHT = 650; // Total canvas height (header + playable + toolbar)
 export const TOOLBAR_HEIGHT = 80; // Height reserved for toolbar at bottom
-export const PLAYABLE_HEIGHT = GAME_HEIGHT - TOOLBAR_HEIGHT; // 520px for grid
+export const PLAYABLE_HEIGHT = GAME_HEIGHT - HEADER_HEIGHT - TOOLBAR_HEIGHT; // 520px for grid
 export const GRID_SIZE = 40; // Size of each grid cell in pixels
 export const GRID_COLS = 20; // 800 / 40 = 20 columns
 export const GRID_ROWS = 13; // 520 / 40 = 13 rows
@@ -41,5 +42,6 @@ export const TOOL_MODES = {
 export const PLAYER_COLOR = 0xFF6B6B;
 export const PLAYER_SPEED = 200; // pixels per second
 
-// Storage key
+// Storage keys
 export const STORAGE_KEY = 'bonnies_blocks_save';
+export const CHILD_NAME_KEY = 'bonnies_blocks_child_name';
