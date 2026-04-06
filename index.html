@@ -23,10 +23,27 @@
             border: 4px solid #fff;
             box-shadow: 0 4px 8px rgba(0,0,0,0.3);
         }
+        #copyright {
+            position: fixed;
+            bottom: 6px;
+            left: 0;
+            width: 100%;
+            text-align: center;
+            font-size: 11px;
+            color: #333;
+            opacity: 0.8;
+            pointer-events: none;
+        }
     </style>
 </head>
 <body>
     <div id="game-container"></div>
+
+    <div id="copyright">
+        Made by Dee for Bonnie 💜<br>
+        © 2026 Dee Bath
+    </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.js"></script>
     <script type="module" src="src/main.js"></script>
 </body>

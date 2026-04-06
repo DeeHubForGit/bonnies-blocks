@@ -1,0 +1,8 @@
+Copyright (c) 2026 Dee Bath
+
+All rights reserved.
+
+This software and its source code may not be copied, modified, distributed,
+or used in other projects without explicit written permission from the author.
+
+The game may be played online for personal use only.
