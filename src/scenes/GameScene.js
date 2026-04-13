@@ -10,7 +10,11 @@ import {
     PLAYABLE_HEIGHT,
     TOOLBAR_HEIGHT,
     GAME_WIDTH,
-    HEADER_HEIGHT
+    HEADER_HEIGHT,
+    isColorBlock,
+    isSolidBlock,
+    hasPattern,
+    getPattern
 } from '../data/constants.js';
 import { Toolbar } from '../ui/Toolbar.js';
 import { Modal } from '../ui/Modal.js';
@@ -30,6 +34,8 @@ export class GameScene extends Phaser.Scene {
         this.titleText = null;
         this.settingsButton = null;
         this.isTextInputOpen = false;
+        this.isDragging = false; // For drag-to-paint functionality
+        this.lastPaintedCell = null; // Track last painted cell to avoid duplicate painting
     }
 
     preload() {
@@ -41,12 +47,26 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-girl', 'assets/icons/blonde_girl.png');
         this.load.image('icon-bunny', 'assets/icons/bunny.png');
         this.load.image('icon-settings', 'assets/icons/config.png');
+        
+        // New icons - load with error handling
+        this.load.on('loaderror', (file) => {
+            console.log(`[GameScene] Icon not found: ${file.key}, will use placeholder`);
+        });
+        
+        this.load.image('icon-flower', 'assets/icons/flower.png');
+        this.load.image('icon-bush', 'assets/icons/bush.png');
+        this.load.image('icon-tree', 'assets/icons/tree.png');
+        this.load.image('icon-unicorn', 'assets/icons/unicorn.png');
+        this.load.image('icon-fairy', 'assets/icons/fairy.png');
 
         console.log('[GameScene] Loading icon assets...');
     }
 
     create() {
         console.log('[GameScene] Initializing game...');
+
+        // Create placeholder icons for missing assets
+        this.createPlaceholderIcons();
 
         // Initialize grid
         this.initializeGrid();
@@ -75,7 +95,56 @@ export class GameScene extends Phaser.Scene {
         // Render initial grid
         this.renderGrid();
 
+        // Start rainbow cycling animation
+        this.rainbowColors = [0xFF69B4, 0xFF8C00, 0xFFEB3B, 0x4CAF50, 0x3498DB, 0x9B59B6];
+        this.rainbowIndex = 0;
+        this.time.addEvent({
+            delay: 1000, // Change color every second
+            callback: this.cycleRainbowColors,
+            callbackScope: this,
+            loop: true
+        });
+
         console.log('[GameScene] Game ready!');
+    }
+
+    createPlaceholderIcons() {
+        // Create emoji/text-based placeholders for missing icons
+        const placeholders = [
+            { key: 'icon-flower', emoji: '🌸', color: '#FF69B4' },
+            { key: 'icon-bush', emoji: '🌿', color: '#4CAF50' },
+            { key: 'icon-tree', emoji: '🌳', color: '#228B22' },
+            { key: 'icon-unicorn', emoji: '🦄', color: '#E0B0FF' },
+            { key: 'icon-fairy', emoji: '🧚', color: '#FFB6C1' }
+        ];
+
+        placeholders.forEach(({ key, emoji, color }) => {
+            // Check if texture already exists (was loaded successfully)
+            if (this.textures.exists(key)) {
+                return;
+            }
+
+            // Create a placeholder texture using canvas with emoji
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            // Background circle
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.arc(64, 64, 60, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Emoji text
+            ctx.font = 'bold 80px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, 64, 64);
+
+            // Add the canvas as a texture
+            this.textures.addCanvas(key, canvas);
+        });
     }
 
     initializeGrid() {
@@ -247,11 +316,32 @@ export class GameScene extends Phaser.Scene {
         // Mouse click for placing/erasing
         this.input.on('pointerdown', (pointer) => {
             this.handleGridClick(pointer);
+            // Start drag if it's a color tool
+            if (this.toolbar.getMode() === TOOL_MODES.PLACE && isColorBlock(this.toolbar.getSelectedTool())) {
+                this.isDragging = true;
+                const gridX = Math.floor(pointer.x / GRID_SIZE);
+                const gridY = Math.floor((pointer.y - HEADER_HEIGHT) / GRID_SIZE);
+                this.lastPaintedCell = `${gridX}_${gridY}`;
+            }
         });
 
-        // Mouse move for hover effect
+        // Mouse up to stop drag painting
+        this.input.on('pointerup', (pointer) => {
+            this.isDragging = false;
+            this.lastPaintedCell = null;
+        });
+
+        // Mouse move for hover effect and drag painting
         this.input.on('pointermove', (pointer) => {
             this.handleGridHover(pointer);
+            
+            // Handle drag painting for colors only
+            if (this.isDragging && this.toolbar.getMode() === TOOL_MODES.PLACE) {
+                const selectedTool = this.toolbar.getSelectedTool();
+                if (isColorBlock(selectedTool)) {
+                    this.handleDragPaint(pointer);
+                }
+            }
         });
 
         // Create hover rectangle once
@@ -260,6 +350,42 @@ export class GameScene extends Phaser.Scene {
         this.hoverRect.setFillStyle(0xffffff, 0.1);
         this.hoverRect.setDepth(50);
         this.hoverRect.setVisible(false);
+    }
+
+    handleDragPaint(pointer) {
+        // Ignore if outside playable grid area
+        if (pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT || pointer.y < HEADER_HEIGHT) {
+            return;
+        }
+
+        const gridX = Math.floor(pointer.x / GRID_SIZE);
+        const gridY = Math.floor((pointer.y - HEADER_HEIGHT) / GRID_SIZE);
+
+        // Check if within grid bounds
+        if (gridX < 0 || gridX >= GRID_COLS || gridY < 0 || gridY >= GRID_ROWS) {
+            return;
+        }
+
+        // Check if we've already painted this cell in this drag
+        const cellKey = `${gridX}_${gridY}`;
+        if (cellKey === this.lastPaintedCell) {
+            return;
+        }
+
+        // Don't paint on player's position
+        const playerGridX = Math.floor((this.player.x - GRID_SIZE / 2) / GRID_SIZE);
+        const playerGridY = Math.floor((this.player.y - HEADER_HEIGHT - GRID_SIZE / 2) / GRID_SIZE);
+        
+        if (gridX === playerGridX && gridY === playerGridY) {
+            this.lastPaintedCell = cellKey;
+            return;
+        }
+
+        // Paint the color block
+        const selectedTool = this.toolbar.getSelectedTool();
+        this.grid[gridY][gridX] = selectedTool;
+        this.renderTile(gridX, gridY);
+        this.lastPaintedCell = cellKey;
     }
 
     handleGridClick(pointer) {
@@ -348,7 +474,9 @@ export class GameScene extends Phaser.Scene {
         
         // Destroy existing graphic for this tile
         if (this.tileGraphics[key]) {
-            this.tileGraphics[key].destroy();
+            if (this.tileGraphics[key].destroy) {
+                this.tileGraphics[key].destroy();
+            }
             delete this.tileGraphics[key];
         }
 
@@ -362,34 +490,96 @@ export class GameScene extends Phaser.Scene {
         const y = HEADER_HEIGHT + row * GRID_SIZE + GRID_SIZE / 2;
         const color = BLOCK_COLORS[blockType];
 
-        if (blockType === BLOCK_TYPES.BUNNY) {
-            // Render bunny using image asset
-            const bunnySprite = this.add.image(x, y, 'icon-bunny');
+        // Check if this is an image-based object
+        const imageObjects = [
+            BLOCK_TYPES.BUNNY, 
+            BLOCK_TYPES.GIRL, 
+            BLOCK_TYPES.FLOWER, 
+            BLOCK_TYPES.BUSH, 
+            BLOCK_TYPES.TREE, 
+            BLOCK_TYPES.UNICORN, 
+            BLOCK_TYPES.FAIRY
+        ];
+
+        if (imageObjects.includes(blockType)) {
+            // Get the appropriate icon key
+            let iconKey = '';
+            if (blockType === BLOCK_TYPES.BUNNY) iconKey = 'icon-bunny';
+            else if (blockType === BLOCK_TYPES.GIRL) iconKey = 'icon-girl';
+            else if (blockType === BLOCK_TYPES.FLOWER) iconKey = 'icon-flower';
+            else if (blockType === BLOCK_TYPES.BUSH) iconKey = 'icon-bush';
+            else if (blockType === BLOCK_TYPES.TREE) iconKey = 'icon-tree';
+            else if (blockType === BLOCK_TYPES.UNICORN) iconKey = 'icon-unicorn';
+            else if (blockType === BLOCK_TYPES.FAIRY) iconKey = 'icon-fairy';
+
+            // Render object using image asset
+            const sprite = this.add.image(x, y, iconKey);
             
-            // Scale bunny larger for better readability (90% of tile size)
+            // Scale object larger for better visibility (90% of tile size)
             const targetSize = GRID_SIZE * 0.9;
-            const scale = targetSize / Math.max(bunnySprite.width, bunnySprite.height);
-            bunnySprite.setScale(scale);
-            bunnySprite.setDepth(10);
+            const scale = targetSize / Math.max(sprite.width, sprite.height);
+            sprite.setScale(scale);
+            sprite.setDepth(10);
             
-            this.tileGraphics[key] = bunnySprite;
-        } else if (blockType === BLOCK_TYPES.GIRL) {
-            // Render girl using image asset
-            const girlSprite = this.add.image(x, y, 'icon-girl');
+            this.tileGraphics[key] = sprite;
+        } else if (hasPattern(blockType)) {
+            // Render pattern block (color background + emoji pattern)
+            const container = this.add.container(x, y);
             
-            // Scale girl larger for better readability (90% of tile size)
-            const targetSize = GRID_SIZE * 0.9;
-            const scale = targetSize / Math.max(girlSprite.width, girlSprite.height);
-            girlSprite.setScale(scale);
-            girlSprite.setDepth(10);
+            // Base colored block
+            const block = this.add.rectangle(0, 0, GRID_SIZE, GRID_SIZE, color);
+            block.setDepth(5);
+            container.add(block);
             
-            this.tileGraphics[key] = girlSprite;
+            // Add pattern overlay
+            const pattern = getPattern(blockType);
+            const patternText = this.add.text(0, 0, pattern, {
+                fontSize: '24px',
+                fontFamily: 'Arial'
+            });
+            patternText.setOrigin(0.5);
+            patternText.setDepth(6);
+            container.add(patternText);
+            
+            container.setDepth(5);
+            
+            // Special handling for rainbow - mark it for color cycling
+            if (blockType === BLOCK_TYPES.RAINBOW) {
+                block.setData('isRainbow', true);
+                block.setData('rainbowBlock', true);
+            }
+            
+            this.tileGraphics[key] = container;
         } else {
-            // Render colored block - fill entire tile with no border for clean merging
+            // Render regular colored block - fill entire tile
             const block = this.add.rectangle(x, y, GRID_SIZE, GRID_SIZE, color);
             block.setDepth(5);
             
             this.tileGraphics[key] = block;
+        }
+    }
+    
+    cycleRainbowColors() {
+        // Cycle through rainbow colors for all rainbow blocks
+        this.rainbowIndex = (this.rainbowIndex + 1) % this.rainbowColors.length;
+        const newColor = this.rainbowColors[this.rainbowIndex];
+        
+        // Update all rainbow block tiles
+        for (let row = 0; row < GRID_ROWS; row++) {
+            for (let col = 0; col < GRID_COLS; col++) {
+                if (this.grid[row][col] === BLOCK_TYPES.RAINBOW) {
+                    const key = `${col}_${row}`;
+                    const container = this.tileGraphics[key];
+                    
+                    if (container && container.list && container.list.length > 0) {
+                        // Get the rectangle (first child in container)
+                        const block = container.list[0];
+                        if (block && block.setFillStyle) {
+                            block.setFillStyle(newColor);
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -461,12 +651,8 @@ export class GameScene extends Phaser.Scene {
 
         const blockType = this.grid[gridY][gridX];
 
-        // Solid blocks are: PINK, BLUE, YELLOW, PURPLE
-        // Grass, Bunny, and Empty are not solid
-        return blockType === BLOCK_TYPES.PINK || 
-               blockType === BLOCK_TYPES.BLUE || 
-               blockType === BLOCK_TYPES.YELLOW || 
-               blockType === BLOCK_TYPES.PURPLE;
+        // Use the helper function to check if block is solid
+        return isSolidBlock(blockType);
     }
 
     saveWorld() {
