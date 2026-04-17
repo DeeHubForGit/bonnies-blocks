@@ -98,14 +98,21 @@ export class Toolbar {
 
         button.add([bg]);
         
-        // Add pattern emoji overlay
-        const patternText = this.scene.add.text(0, 0, pattern, {
-            fontSize: '20px',
-            fontFamily: 'Arial'
-        });
-        patternText.setOrigin(0.5);
+        // Special handling for GLITTER_PINK - add sparkle effect instead of emoji
+        if (toolType === BLOCK_TYPES.GLITTER_PINK) {
+            // Use scaled-down version of main sparkle effect (scale 0.95 for 38px button vs 40px tile)
+            this.scene.addSparkleEffect(button, size, 0.95);
+            // Skip emoji overlay - sparkles identify the block
+        } else {
+            // Add pattern emoji overlay for other pattern blocks
+            const patternText = this.scene.add.text(0, 0, pattern, {
+                fontSize: '20px',
+                fontFamily: 'Arial'
+            });
+            patternText.setOrigin(0.5);
+            button.add([patternText]);
+        }
         
-        button.add([patternText]);
         button.setDepth(1000);
 
         bg.on('pointerdown', () => {

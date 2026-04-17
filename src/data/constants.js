@@ -75,11 +75,17 @@ export const BLOCK_COLORS = {
 // Pattern overlays for pattern blocks
 export const BLOCK_PATTERNS = {
     [BLOCK_TYPES.HEART_PINK]: '💗',
-    [BLOCK_TYPES.GLITTER_PINK]: '✨',
+    [BLOCK_TYPES.GLITTER_PINK]: '✨', // Has animated sparkle effect
     [BLOCK_TYPES.SPARKLE_BLUE]: '❄️',
     [BLOCK_TYPES.STAR_YELLOW]: '⭐',
     [BLOCK_TYPES.LEAF_GREEN]: '🌿',
     [BLOCK_TYPES.RAINBOW]: '🌈'
+};
+
+// Animated block types - blocks with special visual effects
+export const ANIMATED_BLOCKS = {
+    [BLOCK_TYPES.GLITTER_PINK]: 'sparkle', // Twinkling sparkle particles
+    [BLOCK_TYPES.RAINBOW]: 'colorCycle' // Color cycling animation
 };
 
 // Item categories for toolbar organization
