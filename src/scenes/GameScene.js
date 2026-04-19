@@ -1,4 +1,4 @@
-import { 
+﻿import { 
     GRID_SIZE, 
     GRID_COLS, 
     GRID_ROWS, 
@@ -7,10 +7,12 @@ import {
     PLAYER_COLOR,
     PLAYER_SPEED,
     TOOL_MODES,
+    GAME_MODES,
     PLAYABLE_HEIGHT,
     TOOLBAR_HEIGHT,
     GAME_WIDTH,
     HEADER_HEIGHT,
+    WORLD_SPRITES,
     isColorBlock,
     isSolidBlock,
     hasPattern,
@@ -33,10 +35,21 @@ export class GameScene extends Phaser.Scene {
         this.modal = null;
         this.titleText = null;
         this.settingsButton = null;
+        this.modeIndicator = null;
         this.isTextInputOpen = false;
         this.isDragging = false; // For drag-to-paint functionality
         this.lastPaintedCell = null; // Track last painted cell to avoid duplicate painting
         this.prefersReducedMotion = this.checkReducedMotion(); // Check for reduced motion preference
+        this.gameMode = GAME_MODES.BUILD; // Start in Build mode
+    }
+
+    /**
+     * Initialize with optional world data (from returning from Play mode)
+     */
+    init(data) {
+        console.log('[GameScene] Init with data:', data ? 'world data present' : 'no data');
+        // Store grid data if passed from Play mode
+        this.restoredGrid = data.grid || null;
     }
 
     checkReducedMotion() {
@@ -48,7 +61,7 @@ export class GameScene extends Phaser.Scene {
     }
 
     preload() {
-        // Load icon assets
+        // Load icon assets (for toolbar)
         this.load.image('icon-erase', 'assets/icons/erase.png');
         this.load.image('icon-save', 'assets/icons/save.png');
         this.load.image('icon-load', 'assets/icons/load.png');
@@ -59,16 +72,27 @@ export class GameScene extends Phaser.Scene {
         
         // New icons - load with error handling
         this.load.on('loaderror', (file) => {
-            console.log(`[GameScene] Icon not found: ${file.key}, will use placeholder`);
+            console.log(`[GameScene] Asset not found: ${file.key}, will use placeholder`);
         });
         
         this.load.image('icon-flower', 'assets/icons/flower.png');
-        this.load.image('icon-bush', 'assets/icons/bush.png');
-        this.load.image('icon-tree', 'assets/icons/tree.png');
+        this.load.image('icon-palm-tree', 'assets/icons/palm_trees.png');
+        this.load.image('icon-tree', 'assets/icons/pink_tree.png');
         this.load.image('icon-unicorn', 'assets/icons/unicorn.png');
         this.load.image('icon-fairy', 'assets/icons/fairy.png');
+        
+        // World assets (for Play Mode) - top-down/isometric style
+        // These will use placeholders for now but can be replaced with real world sprites
+        this.load.image('world-grass-tile', 'assets/world/grass_tile.png');
+        this.load.image('world-girl', 'assets/world/girl_topdown.png');
+        this.load.image('world-bunny', 'assets/world/bunny_topdown.png');
+        this.load.image('world-flower', 'assets/icons/flower.png');
+        this.load.image('world-palm-tree', 'assets/icons/palm_trees.png');
+        this.load.image('world-tree', 'assets/icons/pink_tree.png');
+        this.load.image('world-unicorn', 'assets/world/unicorn_topdown.png');
+        this.load.image('world-fairy', 'assets/world/fairy_topdown.png');
 
-        console.log('[GameScene] Loading icon assets...');
+        console.log('[GameScene] Loading assets...');
     }
 
     create() {
@@ -77,8 +101,17 @@ export class GameScene extends Phaser.Scene {
         // Create placeholder icons for missing assets
         this.createPlaceholderIcons();
 
-        // Initialize grid
-        this.initializeGrid();
+        // Initialize or restore grid
+        if (this.restoredGrid) {
+            // Restore grid from Play mode (preserve placed elements)
+            console.log('[GameScene] Restoring grid from Play mode');
+            this.grid = this.restoredGrid;
+            this.restoredGrid = null; // Clear after restoring
+        } else {
+            // Create new empty grid
+            console.log('[GameScene] Creating new grid');
+            this.initializeGrid();
+        }
 
         // Draw grid lines
         this.drawGridLines();
@@ -97,6 +130,9 @@ export class GameScene extends Phaser.Scene {
 
         // Create settings button
         this.createSettingsButton();
+
+        // Create mode indicator
+        this.createModeIndicator();
 
         // Create toolbar
         this.toolbar = new Toolbar(this);
@@ -118,22 +154,33 @@ export class GameScene extends Phaser.Scene {
     }
 
     createPlaceholderIcons() {
-        // Create emoji/text-based placeholders for missing icons
+        // Create emoji/text-based placeholders for missing toolbar icons
         const placeholders = [
             { key: 'icon-flower', emoji: '🌸', color: '#FF69B4' },
-            { key: 'icon-bush', emoji: '🌿', color: '#4CAF50' },
+            { key: 'icon-palm-tree', emoji: '🌴', color: '#4CAF50' },
             { key: 'icon-tree', emoji: '🌳', color: '#228B22' },
             { key: 'icon-unicorn', emoji: '🦄', color: '#E0B0FF' },
             { key: 'icon-fairy', emoji: '🧚', color: '#FFB6C1' }
         ];
+        
+        // Create world sprite placeholders for Play Mode (top-down style)
+        const worldPlaceholders = [
+            { key: 'world-grass-tile', pattern: 'grass', color: '#7CB342' },
+            { key: 'world-girl', emoji: '👧', color: '#FFE0BD', topDown: true },
+            { key: 'world-bunny', emoji: '🐰', color: '#E0E0E0', topDown: true },
+            { key: 'world-flower', emoji: '🌺', color: '#FF69B4', topDown: true },
+            { key: 'world-palm-tree', emoji: '🌴', color: '#4CAF50', topDown: true },
+            { key: 'world-tree', emoji: '🌲', color: '#2E7D32', topDown: true },
+            { key: 'world-unicorn', emoji: '🦄', color: '#E1BEE7', topDown: true },
+            { key: 'world-fairy', emoji: '✨', color: '#FFB6C1', topDown: true }
+        ];
 
+        // Create toolbar icon placeholders
         placeholders.forEach(({ key, emoji, color }) => {
-            // Check if texture already exists (was loaded successfully)
             if (this.textures.exists(key)) {
                 return;
             }
 
-            // Create a placeholder texture using canvas with emoji
             const canvas = document.createElement('canvas');
             canvas.width = 128;
             canvas.height = 128;
@@ -145,13 +192,54 @@ export class GameScene extends Phaser.Scene {
             ctx.arc(64, 64, 60, 0, Math.PI * 2);
             ctx.fill();
 
-            // Emoji text
-            ctx.font = 'bold 80px Arial';
+            // Emoji
+            ctx.font = '64px Arial';
             ctx.textAlign = 'center';
             ctx.textBaseline = 'middle';
             ctx.fillText(emoji, 64, 64);
 
-            // Add the canvas as a texture
+            this.textures.addCanvas(key, canvas);
+        });
+        
+        // Create world sprite placeholders for Play Mode
+        worldPlaceholders.forEach(({ key, emoji, pattern, color, topDown }) => {
+            if (this.textures.exists(key)) {
+                return;
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 128;
+            canvas.height = 128;
+            const ctx = canvas.getContext('2d');
+
+            if (pattern === 'grass') {
+                // Create grass tile pattern
+                ctx.fillStyle = color;
+                ctx.fillRect(0, 0, 128, 128);
+                
+                // Add some texture variation
+                ctx.fillStyle = '#558B2F';
+                for (let i = 0; i < 30; i++) {
+                    const x = Math.random() * 128;
+                    const y = Math.random() * 128;
+                    const size = Math.random() * 8 + 2;
+                    ctx.fillRect(x, y, size, size * 0.5);
+                }
+            } else {
+                // Create world object sprite with top-down feel
+                // Ellipse for top-down perspective (slightly flattened)
+                ctx.fillStyle = color;
+                ctx.beginPath();
+                ctx.ellipse(64, 64, 50, 40, 0, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Emoji text
+                ctx.font = 'bold 72px Arial';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(emoji, 64, 64);
+            }
+
             this.textures.addCanvas(key, canvas);
         });
     }
@@ -260,6 +348,96 @@ export class GameScene extends Phaser.Scene {
         );
     }
 
+    createModeIndicator() {
+        // Create mode indicator text below title
+        this.modeIndicator = this.add.text(GAME_WIDTH / 2, 42, 'Edit Mode', {
+            fontSize: '14px',
+            fontFamily: 'Arial',
+            color: '#666666'
+        });
+        this.modeIndicator.setOrigin(0.5);
+        this.modeIndicator.setDepth(1000);
+    }
+
+    /**
+     * Hide or show all Build Mode visuals
+     * Used when transitioning to/from Play Mode to prevent both scenes rendering at once
+     */
+    setBuildViewVisible(visible) {
+        console.log(`[GameScene] Setting Build view visibility: ${visible}`);
+        
+        // Hide/show header elements
+        if (this.titleText) this.titleText.setVisible(visible);
+        if (this.settingsButton) this.settingsButton.setVisible(visible);
+        if (this.modeIndicator) this.modeIndicator.setVisible(visible);
+        
+        // Hide/show grid and hover indicator
+        if (this.gridGraphics) this.gridGraphics.setVisible(visible);
+        if (this.hoverRect) this.hoverRect.setVisible(visible);
+        
+        // Hide/show player
+        if (this.player) this.player.setVisible(visible);
+        
+        // Hide/show toolbar
+        if (this.toolbar) this.toolbar.setVisible(visible);
+        
+        // Hide/show all placed tiles/objects in the grid
+        Object.values(this.tileGraphics).forEach(graphic => {
+            if (graphic) graphic.setVisible(visible);
+        });
+    }
+
+    toggleMode() {
+        // Hide Build scene visuals before launching Play Mode
+        console.log('[GameScene] Launching Isometric Play Mode');
+        this.setBuildViewVisible(false);
+        
+        // Pass current grid to Play mode
+        this.scene.launch('IsometricPlayScene', {
+            grid: this.grid,
+            childName: getChildName()
+        });
+        
+        // Pause this scene (keeps it alive in background with state preserved)
+        this.scene.pause();
+    }
+
+    findSafeSpawnPosition() {
+        // First check if current player position is valid
+        const currentGridX = Math.floor((this.player.x - GRID_SIZE / 2) / GRID_SIZE);
+        const currentGridY = Math.floor((this.player.y - HEADER_HEIGHT - GRID_SIZE / 2) / GRID_SIZE);
+        
+        if (currentGridX >= 0 && currentGridX < GRID_COLS && 
+            currentGridY >= 0 && currentGridY < GRID_ROWS) {
+            const currentBlock = this.grid[currentGridY][currentGridX];
+            if (!isSolidBlock(currentBlock)) {
+                // Current position is safe, keep player there
+                return;
+            }
+        }
+        
+        // Find first empty/walkable tile
+        for (let row = 0; row < GRID_ROWS; row++) {
+            for (let col = 0; col < GRID_COLS; col++) {
+                const blockType = this.grid[row][col];
+                if (!isSolidBlock(blockType)) {
+                    // Found a safe spot - place player here
+                    this.player.x = col * GRID_SIZE + GRID_SIZE / 2;
+                    this.player.y = HEADER_HEIGHT + row * GRID_SIZE + GRID_SIZE / 2;
+                    return;
+                }
+            }
+        }
+        
+        // If no empty tiles found, place at center (emergency fallback)
+        this.player.x = Math.floor(GRID_COLS / 2) * GRID_SIZE + GRID_SIZE / 2;
+        this.player.y = HEADER_HEIGHT + Math.floor(GRID_ROWS / 2) * GRID_SIZE + GRID_SIZE / 2;
+    }
+
+    getGameMode() {
+        return this.gameMode;
+    }
+
     drawGridLines() {
         // Create graphics object for grid
         const graphics = this.add.graphics();
@@ -301,13 +479,24 @@ export class GameScene extends Phaser.Scene {
         const startX = Math.floor(GRID_COLS / 2) * GRID_SIZE + GRID_SIZE / 2;
         const startY = HEADER_HEIGHT + Math.floor(GRID_ROWS / 2) * GRID_SIZE + GRID_SIZE / 2;
 
-        this.player = this.add.circle(startX, startY, 15, PLAYER_COLOR);
+        // Create player as girl sprite instead of circle
+        this.player = this.add.image(startX, startY, 'icon-girl');
+        
+        // Scale player to fit nicely in the tile (about 80% of tile size)
+        const playerSize = GRID_SIZE * 0.8;
+        const scale = playerSize / Math.max(this.player.width, this.player.height);
+        this.player.setScale(scale);
+        
         this.player.setDepth(20);
         this.player.setVisible(false);
 
         // Add physics
         this.physics.add.existing(this.player);
         this.player.body.setCollideWorldBounds(true);
+        
+        // Set smaller collision body for better movement feel
+        const bodySize = GRID_SIZE * 0.6;
+        this.player.body.setSize(bodySize, bodySize);
     }
 
     setupInput() {
@@ -324,13 +513,16 @@ export class GameScene extends Phaser.Scene {
 
         // Mouse click for placing/erasing
         this.input.on('pointerdown', (pointer) => {
-            this.handleGridClick(pointer);
-            // Start drag if it's a color tool
-            if (this.toolbar.getMode() === TOOL_MODES.PLACE && isColorBlock(this.toolbar.getSelectedTool())) {
-                this.isDragging = true;
-                const gridX = Math.floor(pointer.x / GRID_SIZE);
-                const gridY = Math.floor((pointer.y - HEADER_HEIGHT) / GRID_SIZE);
-                this.lastPaintedCell = `${gridX}_${gridY}`;
+            // Only handle clicks in Build mode
+            if (this.gameMode === GAME_MODES.BUILD) {
+                this.handleGridClick(pointer);
+                // Start drag if it's a color tool
+                if (this.toolbar.getMode() === TOOL_MODES.PLACE && isColorBlock(this.toolbar.getSelectedTool())) {
+                    this.isDragging = true;
+                    const gridX = Math.floor(pointer.x / GRID_SIZE);
+                    const gridY = Math.floor((pointer.y - HEADER_HEIGHT) / GRID_SIZE);
+                    this.lastPaintedCell = `${gridX}_${gridY}`;
+                }
             }
         });
 
@@ -342,14 +534,20 @@ export class GameScene extends Phaser.Scene {
 
         // Mouse move for hover effect and drag painting
         this.input.on('pointermove', (pointer) => {
-            this.handleGridHover(pointer);
-            
-            // Handle drag painting for colors only
-            if (this.isDragging && this.toolbar.getMode() === TOOL_MODES.PLACE) {
-                const selectedTool = this.toolbar.getSelectedTool();
-                if (isColorBlock(selectedTool)) {
-                    this.handleDragPaint(pointer);
+            // Only show hover and handle drag painting in Build mode
+            if (this.gameMode === GAME_MODES.BUILD) {
+                this.handleGridHover(pointer);
+                
+                // Handle drag painting for colors only
+                if (this.isDragging && this.toolbar.getMode() === TOOL_MODES.PLACE) {
+                    const selectedTool = this.toolbar.getSelectedTool();
+                    if (isColorBlock(selectedTool)) {
+                        this.handleDragPaint(pointer);
+                    }
                 }
+            } else {
+                // Hide hover rectangle in Explore mode
+                this.hoverRect.setVisible(false);
             }
         });
 
@@ -470,7 +668,7 @@ export class GameScene extends Phaser.Scene {
         });
         this.tileGraphics = {};
 
-        // Render all tiles
+        // Render all tiles in Build Mode (flat editor style)
         for (let row = 0; row < GRID_ROWS; row++) {
             for (let col = 0; col < GRID_COLS; col++) {
                 this.renderTile(col, row);
@@ -482,10 +680,9 @@ export class GameScene extends Phaser.Scene {
      * Add animated sparkle particles to a container for special block effects
      * Creates a twinkling star-field effect with layered sparkles
      * @param {Phaser.GameObjects.Container} container - The container to add sparkles to
-     * @param {number} blockSize - The size of the block (usually GRID_SIZE)
      * @param {number} scale - Scale factor for toolbar vs world grid (default 1.0)
      */
-    addSparkleEffect(container, blockSize = GRID_SIZE, scale = 1.0) {
+    addSparkleEffect(container, scale = 1.0) {
         // Skip animation if user prefers reduced motion
         const animate = !this.prefersReducedMotion;
 
@@ -611,7 +808,7 @@ export class GameScene extends Phaser.Scene {
                         duration: 650 + index * 50,
                         yoyo: true,
                         repeat: -1,
-                        ease: 'Back.easeOut', // Pop effect
+                        ease: 'Cubic.easeInOut', // Smooth pop effect
                         delay: index * 200
                     });
                 } else if (config.type === 'glow') {
@@ -655,7 +852,7 @@ export class GameScene extends Phaser.Scene {
         const blockType = this.grid[row][col];
         
         if (blockType === BLOCK_TYPES.EMPTY) {
-            return; // Nothing to render
+            return; // Nothing to render in Build Mode
         }
 
         const x = col * GRID_SIZE + GRID_SIZE / 2;
@@ -667,35 +864,39 @@ export class GameScene extends Phaser.Scene {
             BLOCK_TYPES.BUNNY, 
             BLOCK_TYPES.GIRL, 
             BLOCK_TYPES.FLOWER, 
-            BLOCK_TYPES.BUSH, 
+            BLOCK_TYPES.PALM_TREE, 
             BLOCK_TYPES.TREE, 
             BLOCK_TYPES.UNICORN, 
             BLOCK_TYPES.FAIRY
         ];
 
         if (imageObjects.includes(blockType)) {
-            // Get the appropriate icon key
+            // Use toolbar icons for Build Mode
             let iconKey = '';
             if (blockType === BLOCK_TYPES.BUNNY) iconKey = 'icon-bunny';
             else if (blockType === BLOCK_TYPES.GIRL) iconKey = 'icon-girl';
             else if (blockType === BLOCK_TYPES.FLOWER) iconKey = 'icon-flower';
-            else if (blockType === BLOCK_TYPES.BUSH) iconKey = 'icon-bush';
+            else if (blockType === BLOCK_TYPES.PALM_TREE) iconKey = 'icon-palm-tree';
             else if (blockType === BLOCK_TYPES.TREE) iconKey = 'icon-tree';
             else if (blockType === BLOCK_TYPES.UNICORN) iconKey = 'icon-unicorn';
             else if (blockType === BLOCK_TYPES.FAIRY) iconKey = 'icon-fairy';
 
-            // Render object using image asset
+            // Render object using toolbar icon
             const sprite = this.add.image(x, y, iconKey);
             
-            // Scale object larger for better visibility (90% of tile size)
-            const targetSize = GRID_SIZE * 0.9;
+            // Standard sizing for Build Mode
+            let targetSize = GRID_SIZE * 0.9;
+            if (blockType === BLOCK_TYPES.PALM_TREE) {
+                // Palm trees slightly larger
+                targetSize = GRID_SIZE * 1.05;
+            }
             const scale = targetSize / Math.max(sprite.width, sprite.height);
             sprite.setScale(scale);
             sprite.setDepth(10);
             
             this.tileGraphics[key] = sprite;
         } else if (hasPattern(blockType)) {
-            // Render pattern block (color background + emoji pattern)
+            // Render pattern block (color background + pattern/effect)
             const container = this.add.container(x, y);
             
             // Base colored block
@@ -705,8 +906,7 @@ export class GameScene extends Phaser.Scene {
             
             // Special handling for GLITTER_PINK - add shimmer effect instead of emoji
             if (blockType === BLOCK_TYPES.GLITTER_PINK) {
-                this.addSparkleEffect(container, GRID_SIZE, 1.0);
-                // Skip pattern overlay for glitter - particles create the effect
+                this.addSparkleEffect(container, 1.0);
             } else {
                 // Add pattern overlay for non-glitter pattern blocks
                 const pattern = getPattern(blockType);
@@ -729,10 +929,9 @@ export class GameScene extends Phaser.Scene {
             
             this.tileGraphics[key] = container;
         } else {
-            // Render regular colored block - fill entire tile
+            // Render regular colored block - flat rendering for Build Mode
             const block = this.add.rectangle(x, y, GRID_SIZE, GRID_SIZE, color);
             block.setDepth(5);
-            
             this.tileGraphics[key] = block;
         }
     }
@@ -762,15 +961,15 @@ export class GameScene extends Phaser.Scene {
     }
 
     update() {
-        // Stop player movement if text input is open
-        if (this.isTextInputOpen) {
+        // Stop player movement if text input is open or in Build mode
+        if (this.isTextInputOpen || this.gameMode === GAME_MODES.BUILD) {
             if (this.player && this.player.body) {
                 this.player.body.setVelocity(0);
             }
             return;
         }
 
-        // Handle player movement
+        // Handle player movement (only in Explore mode)
         let velocityX = 0;
         let velocityY = 0;
 

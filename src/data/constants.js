@@ -34,7 +34,7 @@ export const BLOCK_TYPES = {
     GIRL: 'girl',
     BUNNY: 'bunny',
     FLOWER: 'flower',
-    BUSH: 'bush',
+    PALM_TREE: 'palmTree',
     TREE: 'tree',
     UNICORN: 'unicorn',
     FAIRY: 'fairy'
@@ -66,7 +66,7 @@ export const BLOCK_COLORS = {
     [BLOCK_TYPES.GIRL]: 0xFFFFFF,
     [BLOCK_TYPES.BUNNY]: 0xFFFFFF,
     [BLOCK_TYPES.FLOWER]: 0xFFFFFF,
-    [BLOCK_TYPES.BUSH]: 0xFFFFFF,
+    [BLOCK_TYPES.PALM_TREE]: 0xFFFFFF,
     [BLOCK_TYPES.TREE]: 0xFFFFFF,
     [BLOCK_TYPES.UNICORN]: 0xFFFFFF,
     [BLOCK_TYPES.FAIRY]: 0xFFFFFF
@@ -128,10 +128,7 @@ export const PALETTE_PATTERN_COLORS = [
     // Blue family
     { type: BLOCK_TYPES.SPARKLE_BLUE, label: 'Sparkle', color: BLOCK_COLORS[BLOCK_TYPES.SPARKLE_BLUE], pattern: BLOCK_PATTERNS[BLOCK_TYPES.SPARKLE_BLUE], category: ITEM_CATEGORIES.PATTERN_COLOR },
     // Pink family
-    { type: BLOCK_TYPES.HEART_PINK, label: 'Hearts', color: BLOCK_COLORS[BLOCK_TYPES.HEART_PINK], pattern: BLOCK_PATTERNS[BLOCK_TYPES.HEART_PINK], category: ITEM_CATEGORIES.PATTERN_COLOR },
     { type: BLOCK_TYPES.GLITTER_PINK, label: 'Glitter', color: BLOCK_COLORS[BLOCK_TYPES.GLITTER_PINK], pattern: BLOCK_PATTERNS[BLOCK_TYPES.GLITTER_PINK], category: ITEM_CATEGORIES.PATTERN_COLOR },
-    // Yellow family
-    { type: BLOCK_TYPES.STAR_YELLOW, label: 'Stars', color: BLOCK_COLORS[BLOCK_TYPES.STAR_YELLOW], pattern: BLOCK_PATTERNS[BLOCK_TYPES.STAR_YELLOW], category: ITEM_CATEGORIES.PATTERN_COLOR },
     // Special - always last
     { type: BLOCK_TYPES.RAINBOW, label: 'Rainbow', color: BLOCK_COLORS[BLOCK_TYPES.RAINBOW], pattern: BLOCK_PATTERNS[BLOCK_TYPES.RAINBOW], category: ITEM_CATEGORIES.PATTERN_COLOR, special: 'cycling' }
 ];
@@ -146,7 +143,7 @@ export const PALETTE_OBJECTS = [
     { type: BLOCK_TYPES.GIRL, label: 'Girl', icon: 'icon-girl', width: 1, height: 1 },
     { type: BLOCK_TYPES.BUNNY, label: 'Bunny', icon: 'icon-bunny', width: 1, height: 1 },
     { type: BLOCK_TYPES.FLOWER, label: 'Flower', icon: 'icon-flower', width: 1, height: 1 },
-    { type: BLOCK_TYPES.BUSH, label: 'Bush', icon: 'icon-bush', width: 1, height: 1 },
+    { type: BLOCK_TYPES.PALM_TREE, label: 'Palm Trees', icon: 'icon-palm-tree', width: 1, height: 1 },
     { type: BLOCK_TYPES.TREE, label: 'Tree', icon: 'icon-tree', width: 1, height: 1 },
     { type: BLOCK_TYPES.UNICORN, label: 'Unicorn', icon: 'icon-unicorn', width: 1, height: 1 },
     { type: BLOCK_TYPES.FAIRY, label: 'Fairy', icon: 'icon-fairy', width: 1, height: 1 }
@@ -156,6 +153,28 @@ export const PALETTE_OBJECTS = [
 export const TOOL_MODES = {
     PLACE: 'place',
     ERASE: 'erase'
+};
+
+// Game modes
+export const GAME_MODES = {
+    BUILD: 'build',
+    PLAY: 'play'
+};
+
+// World sprite mappings for Play Mode
+// Maps block types to world-appropriate sprite keys
+// Toolbar uses 'icon-*' assets, Play Mode uses 'world-*' assets
+export const WORLD_SPRITES = {
+    // Objects - use world-facing sprites in Play Mode
+    [BLOCK_TYPES.GIRL]: 'world-girl',
+    [BLOCK_TYPES.BUNNY]: 'world-bunny',
+    [BLOCK_TYPES.FLOWER]: 'world-flower',
+    [BLOCK_TYPES.PALM_TREE]: 'world-palm-tree',
+    [BLOCK_TYPES.TREE]: 'world-tree',
+    [BLOCK_TYPES.UNICORN]: 'world-unicorn',
+    [BLOCK_TYPES.FAIRY]: 'world-fairy',
+    // Ground tiles
+    GRASS_TILE: 'world-grass-tile'
 };
 
 // Player settings
@@ -183,27 +202,23 @@ export function getPattern(blockType) {
     return BLOCK_PATTERNS[blockType];
 }
 
+// Helper function to check if a block type is a world object (not flat terrain)
+export function isWorldObject(blockType) {
+    const objects = [
+        BLOCK_TYPES.GIRL,
+        BLOCK_TYPES.BUNNY,
+        BLOCK_TYPES.FLOWER,
+        BLOCK_TYPES.PALM_TREE,
+        BLOCK_TYPES.TREE,
+        BLOCK_TYPES.UNICORN,
+        BLOCK_TYPES.FAIRY
+    ];
+    return objects.includes(blockType);
+}
+
 // Helper function to check if a block type is solid (blocks player movement)
 export function isSolidBlock(blockType) {
-    // All colors (basic and pattern) are solid blocks except grass which is walkable
-    // Objects are not solid
-    const solidColors = [
-        BLOCK_TYPES.PINK,
-        BLOCK_TYPES.BLUE,
-        BLOCK_TYPES.YELLOW,
-        BLOCK_TYPES.PURPLE,
-        BLOCK_TYPES.ORANGE,
-        BLOCK_TYPES.RED,
-        BLOCK_TYPES.TEAL,
-        BLOCK_TYPES.WHITE,
-        BLOCK_TYPES.BLACK,
-        // Pattern blocks
-        BLOCK_TYPES.HEART_PINK,
-        BLOCK_TYPES.GLITTER_PINK,
-        BLOCK_TYPES.SPARKLE_BLUE,
-        BLOCK_TYPES.STAR_YELLOW,
-        BLOCK_TYPES.LEAF_GREEN,
-        BLOCK_TYPES.RAINBOW
-    ];
-    return solidColors.includes(blockType);
+    // Only world objects are solid (block movement)
+    // Color/pattern tiles are walkable ground
+    return isWorldObject(blockType);
 }

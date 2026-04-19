@@ -1,4 +1,4 @@
-import { BLOCK_TYPES, TOOL_MODES, BLOCK_COLORS, PLAYABLE_HEIGHT, TOOLBAR_HEIGHT, GAME_WIDTH, HEADER_HEIGHT, PALETTE_COLORS, PALETTE_PATTERN_COLORS, PALETTE_OBJECTS, isColorBlock, hasPattern, getPattern } from '../data/constants.js';
+import { BLOCK_TYPES, TOOL_MODES, GAME_MODES, BLOCK_COLORS, PLAYABLE_HEIGHT, TOOLBAR_HEIGHT, GAME_WIDTH, HEADER_HEIGHT, PALETTE_COLORS, PALETTE_PATTERN_COLORS, PALETTE_OBJECTS, isColorBlock, hasPattern, getPattern } from '../data/constants.js';
 
 export class Toolbar {
     constructor(scene) {
@@ -6,6 +6,10 @@ export class Toolbar {
         this.selectedTool = BLOCK_TYPES.PINK;
         this.mode = TOOL_MODES.PLACE;
         this.buttons = [];
+        this.modeToggleButton = null; // Reference to mode toggle button
+        this.modeToggleLabel = null; // Reference to mode toggle label text
+        this.modeToggleTooltip = null; // Reference to mode toggle tooltip
+        this.buildToolsEnabled = true; // Track whether build tools are enabled
         
         this.createToolbar();
     }
@@ -14,9 +18,9 @@ export class Toolbar {
         // Toolbar layout constants
         const toolbarTop = HEADER_HEIGHT + PLAYABLE_HEIGHT;
         const colorButtonSize = 38; // Smaller for color swatches
-        const objectButtonSize = 58; // Larger for objects/tools
-        const gap = 6;
-        const startX = 25; // Reduced to fit more colors
+        const objectButtonSize = 52; // Reduced from 58 to fit more items
+        const gap = 5; // Reduced from 6 to save space
+        const startX = 20; // Reduced from 25 to save space
         
         // Row 1: Basic colors + Pattern colors (all draggable paint colors)
         const row1Y = toolbarTop + 28;
@@ -49,11 +53,7 @@ export class Toolbar {
         
         // Add eraser
         this.createEraseButton(objectX, row2Y, objectButtonSize);
-        objectX += objectButtonSize + gap;
-        
-        // Add plus button for future expansion
-        this.createPlusButton(objectX, row2Y, objectButtonSize);
-        objectX += objectButtonSize + gap + 10; // Extra gap before action buttons
+        objectX += objectButtonSize + gap + 5; // Reduced gap before action buttons
         
         // Action buttons (save, load, clear)
         this.createActionButton(objectX, row2Y, objectButtonSize, 'save', () => this.scene.saveWorld());
@@ -61,6 +61,10 @@ export class Toolbar {
         this.createActionButton(objectX, row2Y, objectButtonSize, 'load', () => this.scene.loadWorld());
         objectX += objectButtonSize + gap;
         this.createActionButton(objectX, row2Y, objectButtonSize, 'clear', () => this.scene.clearWorld());
+        objectX += objectButtonSize + gap + 5; // Reduced gap before mode toggle
+        
+        // Mode toggle button (Explore/Build)
+        this.createModeToggleButton(objectX, row2Y, objectButtonSize);
     }
 
     createColorButton(x, y, size, toolType, label, color) {
@@ -75,9 +79,12 @@ export class Toolbar {
         button.setDepth(1000);
 
         bg.on('pointerdown', () => {
-            this.selectedTool = toolType;
-            this.mode = TOOL_MODES.PLACE;
-            this.updateButtons();
+            // Only allow tool selection if build tools are enabled
+            if (this.buildToolsEnabled) {
+                this.selectedTool = toolType;
+                this.mode = TOOL_MODES.PLACE;
+                this.updateButtons();
+            }
         });
 
         this.buttons.push({ container: button, bg, toolType, isErase: false, isAction: false, isPlus: false });
@@ -101,7 +108,7 @@ export class Toolbar {
         // Special handling for GLITTER_PINK - add sparkle effect instead of emoji
         if (toolType === BLOCK_TYPES.GLITTER_PINK) {
             // Use scaled-down version of main sparkle effect (scale 0.95 for 38px button vs 40px tile)
-            this.scene.addSparkleEffect(button, size, 0.95);
+            this.scene.addSparkleEffect(button, 0.95);
             // Skip emoji overlay - sparkles identify the block
         } else {
             // Add pattern emoji overlay for other pattern blocks
@@ -116,12 +123,15 @@ export class Toolbar {
         button.setDepth(1000);
 
         bg.on('pointerdown', () => {
-            this.selectedTool = toolType;
-            this.mode = TOOL_MODES.PLACE;
-            this.updateButtons();
+            // Only allow tool selection if build tools are enabled
+            if (this.buildToolsEnabled) {
+                this.selectedTool = toolType;
+                this.mode = TOOL_MODES.PLACE;
+                this.updateButtons();
+            }
         });
 
-        this.buttons.push({ container: button, bg, toolType, isErase: false, isAction: false, isPlus: false });
+        this.buttons.push({ container: button, bg, toolType, isErase: false, isAction: false, isPlus: false, isBuildTool: true });
     }
 
     createObjectButton(x, y, size, toolType, label, iconKey) {
@@ -144,12 +154,15 @@ export class Toolbar {
         button.setDepth(1000);
 
         bg.on('pointerdown', () => {
-            this.selectedTool = toolType;
-            this.mode = TOOL_MODES.PLACE;
-            this.updateButtons();
+            // Only allow tool selection if build tools are enabled
+            if (this.buildToolsEnabled) {
+                this.selectedTool = toolType;
+                this.mode = TOOL_MODES.PLACE;
+                this.updateButtons();
+            }
         });
 
-        this.buttons.push({ container: button, bg, toolType, isErase: false, isAction: false, isPlus: false });
+        this.buttons.push({ container: button, bg, toolType, isErase: false, isAction: false, isPlus: false, isBuildTool: true });
     }
 
     createEraseButton(x, y, size) {
@@ -168,11 +181,14 @@ export class Toolbar {
         button.setDepth(1000);
 
         bg.on('pointerdown', () => {
-            this.mode = TOOL_MODES.ERASE;
-            this.updateButtons();
+            // Only allow tool selection if build tools are enabled
+            if (this.buildToolsEnabled) {
+                this.mode = TOOL_MODES.ERASE;
+                this.updateButtons();
+            }
         });
 
-        this.buttons.push({ container: button, bg, toolType: null, isErase: true, isAction: false, isPlus: false });
+        this.buttons.push({ container: button, bg, toolType: null, isErase: true, isAction: false, isPlus: false, isBuildTool: true });
     }
 
     createPlusButton(x, y, size) {
@@ -198,10 +214,13 @@ export class Toolbar {
         button.setDepth(1000);
 
         bg.on('pointerdown', () => {
-            this.scene.modal.showToast('More items coming soon! 🌟');
+            // Only allow interaction if build tools are enabled
+            if (this.buildToolsEnabled) {
+                this.scene.modal.showToast('More items coming soon! 🌟');
+            }
         });
 
-        this.buttons.push({ container: button, bg, toolType: null, isErase: false, isAction: false, isPlus: true });
+        this.buttons.push({ container: button, bg, toolType: null, isErase: false, isAction: false, isPlus: true, isBuildTool: true });
     }
 
     createActionButton(x, y, size, iconType, callback) {
@@ -244,10 +263,136 @@ export class Toolbar {
         this.buttons.push({ container: button, bg, toolType: null, isErase: false, isAction: true, isPlus: false });
     }
 
+    createModeToggleButton(x, y, size) {
+        const button = this.scene.add.container(x, y);
+        
+        // Match styling of other toolbar buttons
+        const bg = this.scene.add.rectangle(0, 0, size, size, 0xf5f5f5)
+            .setStrokeStyle(2, 0x000000)
+            .setInteractive({ useHandCursor: true });
+
+        button.add([bg]);
+        
+        // Add icon label that changes based on mode
+        // Use large, clear icons for young children who cannot read
+        const label = this.scene.add.text(0, 0, '▶', {
+            fontSize: '28px',
+            fontFamily: 'Arial',
+            fontStyle: 'bold',
+            color: '#000000'
+        });
+        label.setOrigin(0.5);
+        button.add([label]);
+        
+        // Create tooltip text (hidden by default)
+        const tooltip = this.scene.add.text(0, -30, 'Play Mode', {
+            fontSize: '12px',
+            fontFamily: 'Arial',
+            color: '#FFFFFF',
+            backgroundColor: '#333333',
+            padding: { x: 6, y: 4 }
+        });
+        tooltip.setOrigin(0.5);
+        tooltip.setVisible(false);
+        tooltip.setDepth(2000);
+        button.add([tooltip]);
+        
+        button.setDepth(1000);
+
+        // Show tooltip on hover
+        bg.on('pointerover', () => {
+            tooltip.setVisible(true);
+        });
+        
+        bg.on('pointerout', () => {
+            tooltip.setVisible(false);
+        });
+
+        bg.on('pointerdown', () => {
+            // Hide tooltip when clicking
+            tooltip.setVisible(false);
+            
+            // Toggle mode in scene
+            this.scene.toggleMode();
+            
+            // Update icon and tooltip based on mode
+            if (this.scene.getGameMode() === GAME_MODES.BUILD) {
+                label.setText('▶'); // Show Play icon in Edit mode
+                tooltip.setText('Play Mode');
+            } else {
+                label.setText('✏'); // Show Edit icon in Play mode
+                tooltip.setText('Edit Mode');
+            }
+            
+            // Visual feedback
+            bg.setFillStyle(0xe0e0e0);
+            this.scene.time.delayedCall(100, () => {
+                bg.setFillStyle(0xf5f5f5);
+            });
+        });
+
+        this.modeToggleButton = button;
+        this.modeToggleLabel = label;
+        this.modeToggleTooltip = tooltip;
+        this.buttons.push({ container: button, bg, toolType: null, isErase: false, isAction: true, isPlus: false });
+    }
+
+    setVisible(visible) {
+        // Show or hide all toolbar buttons
+        this.buttons.forEach(btn => {
+            btn.container.setVisible(visible);
+        });
+        
+        // When making toolbar visible again, ensure mode button shows correct state
+        if (visible && this.modeToggleLabel) {
+            this.updateModeButtonState();
+        }
+    }
+    
+    /**
+     * Update mode toggle button to show correct icon for current game mode
+     */
+    updateModeButtonState() {
+        if (!this.modeToggleLabel) return;
+        
+        // In Build mode, show Play icon (▶)
+        // In Play mode, show Edit icon (✏)
+        if (this.scene.getGameMode() === GAME_MODES.BUILD) {
+            this.modeToggleLabel.setText('▶');
+            if (this.modeToggleTooltip) {
+                this.modeToggleTooltip.setText('Play Mode');
+            }
+        } else {
+            this.modeToggleLabel.setText('✏');
+            if (this.modeToggleTooltip) {
+                this.modeToggleTooltip.setText('Edit Mode');
+            }
+        }
+    }
+
+    setToolsEnabled(enabled) {
+        this.buildToolsEnabled = enabled;
+        
+        // Update visual state of all build tools
+        this.buttons.forEach(btn => {
+            if (btn.isBuildTool) {
+                if (enabled) {
+                    // Restore normal appearance
+                    btn.container.setAlpha(1.0);
+                    btn.bg.setInteractive({ useHandCursor: true });
+                } else {
+                    // Dim and disable appearance
+                    btn.container.setAlpha(0.4);
+                    btn.bg.disableInteractive();
+                }
+            }
+        });
+    }
+
     updateButtons() {
         this.buttons.forEach(btn => {
             if (btn.isAction || btn.isPlus) {
-                // Action and plus buttons don't change state
+                // Action and plus buttons don't change selection state
                 return;
             }
             

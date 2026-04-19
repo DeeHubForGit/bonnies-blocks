@@ -1,4 +1,5 @@
 import { GameScene } from './scenes/GameScene.js';
+import { IsometricPlayScene } from './scenes/IsometricPlayScene.js';
 import { GAME_WIDTH, GAME_HEIGHT } from './data/constants.js';
 
 // Phaser game configuration
@@ -7,7 +8,7 @@ const config = {
     width: GAME_WIDTH,
     height: GAME_HEIGHT,
     parent: 'game-container',
-    backgroundColor: '#D4F1F4',
+    backgroundColor: '#C8E6C9',
     physics: {
         default: 'arcade',
         arcade: {
@@ -15,7 +16,7 @@ const config = {
             debug: false
         }
     },
-    scene: [GameScene]
+    scene: [GameScene, IsometricPlayScene]
 };
 
 // Create game instance
