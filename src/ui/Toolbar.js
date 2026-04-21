@@ -149,6 +149,7 @@ export class Toolbar {
 
         // Add icon
         const icon = this.scene.add.image(0, 0, iconKey);
+        icon.setOrigin(0.5, 0.5); // Ensure perfect centering
         const iconSize = size * 0.92;
         const scale = iconSize / Math.max(icon.width, icon.height);
         icon.setScale(scale);
@@ -177,6 +178,7 @@ export class Toolbar {
             .setInteractive({ useHandCursor: true });
 
         const eraserIcon = this.scene.add.image(0, 0, 'icon-erase');
+        eraserIcon.setOrigin(0.5, 0.5); // Ensure perfect centering
         const iconSize = size * 0.72;
         const scale = iconSize / Math.max(eraserIcon.width, eraserIcon.height);
         eraserIcon.setScale(scale);
@@ -248,6 +250,7 @@ export class Toolbar {
 
         if (iconKey) {
             const icon = this.scene.add.image(0, 0, iconKey);
+            icon.setOrigin(0.5, 0.5); // Ensure perfect centering
             const iconSize = size * 0.72;
             const scale = iconSize / Math.max(icon.width, icon.height);
             icon.setScale(scale);
