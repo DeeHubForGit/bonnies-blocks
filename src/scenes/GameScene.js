@@ -68,6 +68,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-clear', 'assets/icons/clear.png');
         this.load.image('icon-girl', 'assets/icons/blonde_girl.png');
         this.load.image('icon-bunny', 'assets/icons/bunny.png');
+        this.load.image('icon-unicorn', 'assets/icons/unicorn.png');
         this.load.image('icon-settings', 'assets/icons/config.png');
         
         // New icons - load with error handling
@@ -78,19 +79,18 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-flower', 'assets/icons/flower.png');
         this.load.image('icon-palm-tree', 'assets/icons/palm_trees.png');
         this.load.image('icon-tree', 'assets/icons/pink_tree.png');
-        this.load.image('icon-unicorn', 'assets/icons/unicorn.png');
-        this.load.image('icon-fairy', 'assets/icons/fairy.png');
+        this.load.image('icon-bush-reindeer', 'assets/icons/bush_reindeer.png');
         
         // World assets (for Play Mode) - top-down/isometric style
         // These will use placeholders for now but can be replaced with real world sprites
         this.load.image('world-grass-tile', 'assets/world/grass_tile.png');
         this.load.image('world-girl', 'assets/world/girl_topdown.png');
-        this.load.image('world-bunny', 'assets/world/bunny_topdown.png');
+        this.load.image('world-bunny', 'assets/icons/bunny.png');
+        this.load.image('world-unicorn', 'assets/icons/unicorn.png');
         this.load.image('world-flower', 'assets/icons/flower.png');
         this.load.image('world-palm-tree', 'assets/icons/palm_trees.png');
         this.load.image('world-tree', 'assets/icons/pink_tree.png');
-        this.load.image('world-unicorn', 'assets/world/unicorn_topdown.png');
-        this.load.image('world-fairy', 'assets/world/fairy_topdown.png');
+        this.load.image('world-bush-reindeer', 'assets/icons/bush_reindeer.png');
 
         console.log('[GameScene] Loading assets...');
     }
@@ -160,7 +160,7 @@ export class GameScene extends Phaser.Scene {
             { key: 'icon-palm-tree', emoji: '🌴', color: '#4CAF50' },
             { key: 'icon-tree', emoji: '🌳', color: '#228B22' },
             { key: 'icon-unicorn', emoji: '🦄', color: '#E0B0FF' },
-            { key: 'icon-fairy', emoji: '🧚', color: '#FFB6C1' }
+            { key: 'icon-bush-reindeer', emoji: '🦌', color: '#8B4513' }
         ];
         
         // Create world sprite placeholders for Play Mode (top-down style)
@@ -168,11 +168,11 @@ export class GameScene extends Phaser.Scene {
             { key: 'world-grass-tile', pattern: 'grass', color: '#7CB342' },
             { key: 'world-girl', emoji: '👧', color: '#FFE0BD', topDown: true },
             { key: 'world-bunny', emoji: '🐰', color: '#E0E0E0', topDown: true },
+            { key: 'world-unicorn', emoji: '🦄', color: '#E1BEE7', topDown: true },
             { key: 'world-flower', emoji: '🌺', color: '#FF69B4', topDown: true },
             { key: 'world-palm-tree', emoji: '🌴', color: '#4CAF50', topDown: true },
             { key: 'world-tree', emoji: '🌲', color: '#2E7D32', topDown: true },
-            { key: 'world-unicorn', emoji: '🦄', color: '#E1BEE7', topDown: true },
-            { key: 'world-fairy', emoji: '✨', color: '#FFB6C1', topDown: true }
+            { key: 'world-bush-reindeer', emoji: '🦌', color: '#8B4513', topDown: true }
         ];
 
         // Create toolbar icon placeholders
@@ -863,11 +863,11 @@ export class GameScene extends Phaser.Scene {
         const imageObjects = [
             BLOCK_TYPES.BUNNY, 
             BLOCK_TYPES.GIRL, 
+            BLOCK_TYPES.UNICORN, 
             BLOCK_TYPES.FLOWER, 
             BLOCK_TYPES.PALM_TREE, 
             BLOCK_TYPES.TREE, 
-            BLOCK_TYPES.UNICORN, 
-            BLOCK_TYPES.FAIRY
+            BLOCK_TYPES.BUSH_REINDEER
         ];
 
         if (imageObjects.includes(blockType)) {
@@ -875,11 +875,11 @@ export class GameScene extends Phaser.Scene {
             let iconKey = '';
             if (blockType === BLOCK_TYPES.BUNNY) iconKey = 'icon-bunny';
             else if (blockType === BLOCK_TYPES.GIRL) iconKey = 'icon-girl';
+            else if (blockType === BLOCK_TYPES.UNICORN) iconKey = 'icon-unicorn';
             else if (blockType === BLOCK_TYPES.FLOWER) iconKey = 'icon-flower';
             else if (blockType === BLOCK_TYPES.PALM_TREE) iconKey = 'icon-palm-tree';
             else if (blockType === BLOCK_TYPES.TREE) iconKey = 'icon-tree';
-            else if (blockType === BLOCK_TYPES.UNICORN) iconKey = 'icon-unicorn';
-            else if (blockType === BLOCK_TYPES.FAIRY) iconKey = 'icon-fairy';
+            else if (blockType === BLOCK_TYPES.BUSH_REINDEER) iconKey = 'icon-bush-reindeer';
 
             // Render object using toolbar icon
             const sprite = this.add.image(x, y, iconKey);

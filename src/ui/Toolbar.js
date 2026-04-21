@@ -20,7 +20,7 @@ export class Toolbar {
         const colorButtonSize = 38; // Smaller for color swatches
         const objectButtonSize = 52; // Reduced from 58 to fit more items
         const gap = 5; // Reduced from 6 to save space
-        const startX = 20; // Reduced from 25 to save space
+        const startX = 35; // Nudged right to prevent left edge cutoff
         
         // Row 1: Basic colors + Pattern colors (all draggable paint colors)
         const row1Y = toolbarTop + 28;
@@ -41,8 +41,8 @@ export class Toolbar {
             colorX += colorButtonSize + gap;
         });
         
-        // Row 2: Objects and tools (centered vertically in bottom half of toolbar)
-        const row2Y = toolbarTop + 80;
+        // Row 2: Objects and tools (add more vertical spacing from row 1)
+        const row2Y = toolbarTop + 86;
         let objectX = startX;
         
         // Add objects
@@ -50,6 +50,9 @@ export class Toolbar {
             this.createObjectButton(objectX, row2Y, objectButtonSize, objectItem.type, objectItem.label, objectItem.icon);
             objectX += objectButtonSize + gap;
         });
+        
+        // Add visual gap before function buttons
+        objectX += 20;
         
         // Add eraser
         this.createEraseButton(objectX, row2Y, objectButtonSize);
@@ -146,11 +149,12 @@ export class Toolbar {
 
         // Add icon
         const icon = this.scene.add.image(0, 0, iconKey);
-        const iconSize = size * 0.75;
+        const iconSize = size * 0.92;
         const scale = iconSize / Math.max(icon.width, icon.height);
         icon.setScale(scale);
         
         button.add([icon]);
+        button.setScale(1.18);
         button.setDepth(1000);
 
         bg.on('pointerdown', () => {
@@ -173,11 +177,12 @@ export class Toolbar {
             .setInteractive({ useHandCursor: true });
 
         const eraserIcon = this.scene.add.image(0, 0, 'icon-erase');
-        const iconSize = size * 0.75;
+        const iconSize = size * 0.72;
         const scale = iconSize / Math.max(eraserIcon.width, eraserIcon.height);
         eraserIcon.setScale(scale);
 
         button.add([bg, eraserIcon]);
+        button.setScale(1.18);
         button.setDepth(1000);
 
         bg.on('pointerdown', () => {
@@ -243,13 +248,14 @@ export class Toolbar {
 
         if (iconKey) {
             const icon = this.scene.add.image(0, 0, iconKey);
-            const iconSize = size * 0.75;
+            const iconSize = size * 0.72;
             const scale = iconSize / Math.max(icon.width, icon.height);
             icon.setScale(scale);
             
             button.add([icon]);
         }
 
+        button.setScale(1.18);
         button.setDepth(1000);
 
         bg.on('pointerdown', () => {
@@ -297,6 +303,7 @@ export class Toolbar {
         tooltip.setDepth(2000);
         button.add([tooltip]);
         
+        button.setScale(1.18);
         button.setDepth(1000);
 
         // Show tooltip on hover
