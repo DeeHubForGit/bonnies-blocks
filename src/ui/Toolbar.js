@@ -24,7 +24,12 @@ export class Toolbar {
         
         // Row 1: Basic colors + Pattern colors (all draggable paint colors)
         const row1Y = toolbarTop + 28;
-        let colorX = startX;
+        // Align color row left edge with scaled image button row below
+        // Image buttons (52px) scaled 1.18x = 61.36px visual width
+        // Visual left edge of image button at x=35: 35 - 61.36/2 = 4.32px
+        // Color button (38px) to align: 4.32 + 38/2 = 23.32px
+        const colorRowStartX = 23;
+        let colorX = colorRowStartX;
         
         // Add basic colors
         PALETTE_COLORS.forEach((colorItem) => {

@@ -12,6 +12,7 @@
     TOOLBAR_HEIGHT,
     GAME_WIDTH,
     HEADER_HEIGHT,
+    GRID_TOP_MARGIN,
     WORLD_SPRITES,
     isColorBlock,
     isSolidBlock,
@@ -84,7 +85,7 @@ export class GameScene extends Phaser.Scene {
         // World assets (for Play Mode) - top-down/isometric style
         // These will use placeholders for now but can be replaced with real world sprites
         this.load.image('world-grass-tile', 'assets/world/grass_tile.png');
-        this.load.image('world-girl', 'assets/world/girl_topdown.png');
+        this.load.image('world-girl', 'assets/icons/blonde_girl.png');
         this.load.image('world-bunny', 'assets/icons/bunny.png');
         this.load.image('world-unicorn', 'assets/icons/unicorn.png');
         this.load.image('world-flower', 'assets/icons/flower.png');
@@ -166,7 +167,6 @@ export class GameScene extends Phaser.Scene {
         // Create world sprite placeholders for Play Mode (top-down style)
         const worldPlaceholders = [
             { key: 'world-grass-tile', pattern: 'grass', color: '#7CB342' },
-            { key: 'world-girl', emoji: '👧', color: '#FFE0BD', topDown: true },
             { key: 'world-bunny', emoji: '🐰', color: '#E0E0E0', topDown: true },
             { key: 'world-unicorn', emoji: '🦄', color: '#E1BEE7', topDown: true },
             { key: 'world-flower', emoji: '🌺', color: '#FF69B4', topDown: true },
@@ -375,8 +375,9 @@ export class GameScene extends Phaser.Scene {
         if (this.gridGraphics) this.gridGraphics.setVisible(visible);
         if (this.hoverRect) this.hoverRect.setVisible(visible);
         
-        // Hide/show player
-        if (this.player) this.player.setVisible(visible);
+        // Never show player sprite in Edit Mode - movement tracking only
+        // Player icon is not rendered; only placed objects from toolbar are shown
+        if (this.player) this.player.setVisible(false);
         
         // Hide/show toolbar
         if (this.toolbar) this.toolbar.setVisible(visible);
@@ -405,7 +406,7 @@ export class GameScene extends Phaser.Scene {
     findSafeSpawnPosition() {
         // First check if current player position is valid
         const currentGridX = Math.floor((this.player.x - GRID_SIZE / 2) / GRID_SIZE);
-        const currentGridY = Math.floor((this.player.y - HEADER_HEIGHT - GRID_SIZE / 2) / GRID_SIZE);
+        const currentGridY = Math.floor((this.player.y - HEADER_HEIGHT - GRID_TOP_MARGIN - GRID_SIZE / 2) / GRID_SIZE);
         
         if (currentGridX >= 0 && currentGridX < GRID_COLS && 
             currentGridY >= 0 && currentGridY < GRID_ROWS) {
@@ -423,7 +424,7 @@ export class GameScene extends Phaser.Scene {
                 if (!isSolidBlock(blockType)) {
                     // Found a safe spot - place player here
                     this.player.x = col * GRID_SIZE + GRID_SIZE / 2;
-                    this.player.y = HEADER_HEIGHT + row * GRID_SIZE + GRID_SIZE / 2;
+                    this.player.y = HEADER_HEIGHT + GRID_TOP_MARGIN + row * GRID_SIZE + GRID_SIZE / 2;
                     return;
                 }
             }
@@ -431,7 +432,7 @@ export class GameScene extends Phaser.Scene {
         
         // If no empty tiles found, place at center (emergency fallback)
         this.player.x = Math.floor(GRID_COLS / 2) * GRID_SIZE + GRID_SIZE / 2;
-        this.player.y = HEADER_HEIGHT + Math.floor(GRID_ROWS / 2) * GRID_SIZE + GRID_SIZE / 2;
+        this.player.y = HEADER_HEIGHT + GRID_TOP_MARGIN + Math.floor(GRID_ROWS / 2) * GRID_SIZE + GRID_SIZE / 2;
     }
 
     getGameMode() {
@@ -453,16 +454,16 @@ export class GameScene extends Phaser.Scene {
         // Draw grid lines with 0.5 pixel offset for crisp rendering
         graphics.lineStyle(1, 0x000000, 0.1);
 
-        // Horizontal lines (offset by HEADER_HEIGHT)
+        // Horizontal lines (offset by HEADER_HEIGHT + GRID_TOP_MARGIN)
         for (let row = 0; row <= GRID_ROWS; row++) {
-            const y = HEADER_HEIGHT + row * GRID_SIZE + 0.5;
+            const y = HEADER_HEIGHT + GRID_TOP_MARGIN + row * GRID_SIZE + 0.5;
             graphics.lineBetween(0, y, GRID_COLS * GRID_SIZE, y);
         }
 
-        // Vertical lines (offset by HEADER_HEIGHT)
+        // Vertical lines (offset by HEADER_HEIGHT + GRID_TOP_MARGIN)
         for (let col = 0; col <= GRID_COLS; col++) {
             const x = col * GRID_SIZE + 0.5;
-            graphics.lineBetween(x, HEADER_HEIGHT, x, HEADER_HEIGHT + GRID_ROWS * GRID_SIZE);
+            graphics.lineBetween(x, HEADER_HEIGHT + GRID_TOP_MARGIN, x, HEADER_HEIGHT + GRID_TOP_MARGIN + GRID_ROWS * GRID_SIZE);
         }
 
         // Set depth so grid lines appear above blocks and player but below UI
@@ -473,11 +474,11 @@ export class GameScene extends Phaser.Scene {
 
     createPlayer() {
         // Set physics world bounds to playable area only (accounting for header area)
-        this.physics.world.setBounds(0, HEADER_HEIGHT, GAME_WIDTH, PLAYABLE_HEIGHT);
+        this.physics.world.setBounds(0, HEADER_HEIGHT + GRID_TOP_MARGIN, GAME_WIDTH, PLAYABLE_HEIGHT - GRID_TOP_MARGIN);
 
-        // Player starts in the middle of the grid (offset by HEADER_HEIGHT)
+        // Player starts in the middle of the grid (offset by HEADER_HEIGHT + GRID_TOP_MARGIN)
         const startX = Math.floor(GRID_COLS / 2) * GRID_SIZE + GRID_SIZE / 2;
-        const startY = HEADER_HEIGHT + Math.floor(GRID_ROWS / 2) * GRID_SIZE + GRID_SIZE / 2;
+        const startY = HEADER_HEIGHT + GRID_TOP_MARGIN + Math.floor(GRID_ROWS / 2) * GRID_SIZE + GRID_SIZE / 2;
 
         // Create player as girl sprite instead of circle
         this.player = this.add.image(startX, startY, 'icon-girl');
@@ -520,7 +521,7 @@ export class GameScene extends Phaser.Scene {
                 if (this.toolbar.getMode() === TOOL_MODES.PLACE && isColorBlock(this.toolbar.getSelectedTool())) {
                     this.isDragging = true;
                     const gridX = Math.floor(pointer.x / GRID_SIZE);
-                    const gridY = Math.floor((pointer.y - HEADER_HEIGHT) / GRID_SIZE);
+                    const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
                     this.lastPaintedCell = `${gridX}_${gridY}`;
                 }
             }
@@ -561,12 +562,12 @@ export class GameScene extends Phaser.Scene {
 
     handleDragPaint(pointer) {
         // Ignore if outside playable grid area
-        if (pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT || pointer.y < HEADER_HEIGHT) {
+        if (pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT || pointer.y < HEADER_HEIGHT + GRID_TOP_MARGIN) {
             return;
         }
 
         const gridX = Math.floor(pointer.x / GRID_SIZE);
-        const gridY = Math.floor((pointer.y - HEADER_HEIGHT) / GRID_SIZE);
+        const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
 
         // Check if within grid bounds
         if (gridX < 0 || gridX >= GRID_COLS || gridY < 0 || gridY >= GRID_ROWS) {
@@ -581,7 +582,7 @@ export class GameScene extends Phaser.Scene {
 
         // Don't paint on player's position
         const playerGridX = Math.floor((this.player.x - GRID_SIZE / 2) / GRID_SIZE);
-        const playerGridY = Math.floor((this.player.y - HEADER_HEIGHT - GRID_SIZE / 2) / GRID_SIZE);
+        const playerGridY = Math.floor((this.player.y - HEADER_HEIGHT - GRID_TOP_MARGIN - GRID_SIZE / 2) / GRID_SIZE);
         
         if (gridX === playerGridX && gridY === playerGridY) {
             this.lastPaintedCell = cellKey;
@@ -602,12 +603,12 @@ export class GameScene extends Phaser.Scene {
         }
 
         // Ignore clicks outside the playable grid area
-        if (pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT || pointer.y < HEADER_HEIGHT) {
+        if (pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT || pointer.y < HEADER_HEIGHT + GRID_TOP_MARGIN) {
             return;
         }
 
         const gridX = Math.floor(pointer.x / GRID_SIZE);
-        const gridY = Math.floor((pointer.y - HEADER_HEIGHT) / GRID_SIZE);
+        const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
 
         // Check if click is within grid bounds
         if (gridX < 0 || gridX >= GRID_COLS || gridY < 0 || gridY >= GRID_ROWS) {
@@ -616,7 +617,7 @@ export class GameScene extends Phaser.Scene {
 
         // Don't place on player's current position (account for player being centered)
         const playerGridX = Math.floor((this.player.x - GRID_SIZE / 2) / GRID_SIZE);
-        const playerGridY = Math.floor((this.player.y - HEADER_HEIGHT - GRID_SIZE / 2) / GRID_SIZE);
+        const playerGridY = Math.floor((this.player.y - HEADER_HEIGHT - GRID_TOP_MARGIN - GRID_SIZE / 2) / GRID_SIZE);
 
         if (this.toolbar.getMode() === TOOL_MODES.ERASE) {
             // Erase mode
@@ -639,18 +640,18 @@ export class GameScene extends Phaser.Scene {
 
     handleGridHover(pointer) {
         // Ignore hover outside the playable grid area
-        if (pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT || pointer.y < HEADER_HEIGHT) {
+        if (pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT || pointer.y < HEADER_HEIGHT + GRID_TOP_MARGIN) {
             this.hoverRect.setVisible(false);
             return;
         }
 
         const gridX = Math.floor(pointer.x / GRID_SIZE);
-        const gridY = Math.floor((pointer.y - HEADER_HEIGHT) / GRID_SIZE);
+        const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
 
         // Check if hover is within grid bounds
         if (gridX >= 0 && gridX < GRID_COLS && gridY >= 0 && gridY < GRID_ROWS) {
             const x = gridX * GRID_SIZE + GRID_SIZE / 2;
-            const y = HEADER_HEIGHT + gridY * GRID_SIZE + GRID_SIZE / 2;
+            const y = HEADER_HEIGHT + GRID_TOP_MARGIN + gridY * GRID_SIZE + GRID_SIZE / 2;
             
             // Move and show hover rectangle
             this.hoverRect.setPosition(x, y);
@@ -856,7 +857,7 @@ export class GameScene extends Phaser.Scene {
         }
 
         const x = col * GRID_SIZE + GRID_SIZE / 2;
-        const y = HEADER_HEIGHT + row * GRID_SIZE + GRID_SIZE / 2;
+        const y = HEADER_HEIGHT + GRID_TOP_MARGIN + row * GRID_SIZE + GRID_SIZE / 2;
         const color = BLOCK_COLORS[blockType];
 
         // Check if this is an image-based object
@@ -1078,11 +1079,28 @@ export class GameScene extends Phaser.Scene {
     }
 
     loadWorldData(worldData) {
-        this.grid = worldData.grid;
+        // Trim or pad the loaded grid to match current dimensions
+        const loadedGrid = worldData.grid;
+        this.grid = [];
+        
+        for (let row = 0; row < GRID_ROWS; row++) {
+            this.grid[row] = [];
+            for (let col = 0; col < GRID_COLS; col++) {
+                // Use loaded data if it exists within bounds, otherwise use EMPTY
+                if (loadedGrid[row] && loadedGrid[row][col] !== undefined) {
+                    this.grid[row][col] = loadedGrid[row][col];
+                } else {
+                    this.grid[row][col] = BLOCK_TYPES.EMPTY;
+                }
+            }
+        }
         
         if (worldData.playerPosition) {
-            this.player.x = worldData.playerPosition.x;
-            this.player.y = worldData.playerPosition.y;
+            // Ensure player position is within new grid bounds
+            const clampedX = Math.min(worldData.playerPosition.x, GRID_COLS * GRID_SIZE - GRID_SIZE / 2);
+            const clampedY = Math.min(worldData.playerPosition.y, GRID_ROWS * GRID_SIZE - GRID_SIZE / 2);
+            this.player.x = clampedX;
+            this.player.y = clampedY;
         }
 
         this.renderGrid();

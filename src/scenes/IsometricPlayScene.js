@@ -448,7 +448,10 @@ export class IsometricPlayScene extends Phaser.Scene {
         
         // Size objects for isometric view (scaled with tile size)
         let targetHeight = this.isoTileHeight * 2;
-        if (blockType === BLOCK_TYPES.TREE) {
+        if (blockType === BLOCK_TYPES.GIRL) {
+            targetHeight = this.isoTileHeight * 2.2;
+            sprite.setOrigin(0.5, 0.85);
+        } else if (blockType === BLOCK_TYPES.TREE) {
             targetHeight = this.isoTileHeight * 3.5;
             sprite.setOrigin(0.5, 0.9); // Trees slightly lower anchor
         } else if (blockType === BLOCK_TYPES.PALM_TREE) {
@@ -482,7 +485,7 @@ export class IsometricPlayScene extends Phaser.Scene {
     }
 
     /**
-     * Create player character
+     * Create player character (tracking only - no visible sprite)
      */
     createPlayer() {
         // Find safe spawn position
@@ -490,23 +493,13 @@ export class IsometricPlayScene extends Phaser.Scene {
         this.playerGridX = spawnPos.col;
         this.playerGridY = spawnPos.row;
 
-        const screenPos = this.gridToIso(this.playerGridX, this.playerGridY);
-        
-        // Create player sprite using world girl sprite
-        this.player = this.add.image(screenPos.x, screenPos.y, WORLD_SPRITES[BLOCK_TYPES.GIRL]);
-        
-        // Set origin to bottom-center for grounding
-        this.player.setOrigin(0.5, 0.85);
-        
-        const scale = (this.isoTileHeight * 2.2) / this.player.height;
-        this.player.setScale(scale);
-        this.updatePlayerDepth();
+        // No player sprite needed - movement tracking uses grid coordinates only
+        // All placed objects (including GIRL) are rendered via renderWorldObject()
+        this.player = null;
     }
 
     updatePlayerDepth() {
-        // Player depth based on grid position
-        const depth = this.calculateDepth(this.playerGridY, this.playerGridX) + 6;
-        this.player.setDepth(depth);
+        // No player sprite to update
     }
 
     findSafeSpawnPosition() {
@@ -544,9 +537,7 @@ export class IsometricPlayScene extends Phaser.Scene {
     }
 
     update() {
-        if (!this.player) return;
-
-        // Handle player movement in grid coordinates
+        // Handle player movement in grid coordinates (no sprite needed)
         let moveRow = 0;
         let moveCol = 0;
 
@@ -594,18 +585,6 @@ export class IsometricPlayScene extends Phaser.Scene {
         this.playerGridX = newCol;
         this.playerGridY = newRow;
         
-        // Update depth immediately for proper overlap during movement
-        this.updatePlayerDepth();
-
-        const newPos = this.gridToIso(this.playerGridX, this.playerGridY);
-        
-        // Smooth movement tween
-        this.tweens.add({
-            targets: this.player,
-            x: newPos.x,
-            y: newPos.y,
-            duration: 120,
-            ease: 'Linear'
-        });
+        // No player sprite to animate - movement tracked via grid coordinates only
     }
 }
