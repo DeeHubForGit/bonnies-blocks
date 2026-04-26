@@ -134,7 +134,8 @@ export class IsometricPlayScene extends Phaser.Scene {
 
     preload() {
         // World assets already loaded by GameScene
-        // Add any isometric-specific assets here if needed
+        // Load edit icon for return-to-edit button
+        this.load.image('icon-edit', 'assets/icons/edit.png');
     }
 
     create() {
@@ -231,18 +232,17 @@ export class IsometricPlayScene extends Phaser.Scene {
 
         const button = this.add.container(buttonX, buttonY);
         
-        // Match toolbar button styling
-        const bg = this.add.rectangle(0, 0, buttonSize, buttonSize, 0xf5f5f5)
+        // Yellow background
+        const bg = this.add.rectangle(0, 0, buttonSize, buttonSize, 0xFDF7D5)
             .setStrokeStyle(2, 0x000000)
             .setInteractive({ useHandCursor: true });
 
-        // Use Edit icon (📝) - yellow pencil with red tip on an angle
-        const icon = this.add.text(0, 0, '📝', {
-            fontSize: '28px',
-            fontFamily: 'Arial',
-            fontStyle: 'bold'
-        });
+        // Use Edit icon image
+        const icon = this.add.image(0, 0, 'icon-edit');
         icon.setOrigin(0.5);
+        const iconSize = buttonSize * 0.72;
+        const scale = iconSize / Math.max(icon.width, icon.height);
+        icon.setScale(scale);
 
         // Create tooltip (hidden by default)
         const tooltip = this.add.text(0, -35, 'Edit', {
@@ -272,10 +272,10 @@ export class IsometricPlayScene extends Phaser.Scene {
             // Hide tooltip when clicking
             tooltip.setVisible(false);
             
-            // Visual feedback (darker gray)
-            bg.setFillStyle(0xe0e0e0);
+            // Visual feedback (darker yellow)
+            bg.setFillStyle(0xFBC02D);
             this.time.delayedCall(100, () => {
-                bg.setFillStyle(0xf5f5f5);
+                bg.setFillStyle(0xFDD835);
             });
             
             // Fade out before returning to Edit Mode
