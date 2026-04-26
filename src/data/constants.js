@@ -26,7 +26,7 @@ export const BLOCK_TYPES = {
     // Pattern blocks (magical building blocks)
     HEART_PINK: 'heartPink',
     GLITTER_PINK: 'glitterPink',
-    SPARKLE_BLUE: 'sparkleBlue',
+    WATER: 'water',
     STAR_YELLOW: 'starYellow',
     LEAF_GREEN: 'leafGreen',
     // Special blocks
@@ -59,7 +59,7 @@ export const BLOCK_COLORS = {
     // Pattern blocks (base colors)
     [BLOCK_TYPES.HEART_PINK]: 0xFFB6D9,
     [BLOCK_TYPES.GLITTER_PINK]: 0xFFD4E5,
-    [BLOCK_TYPES.SPARKLE_BLUE]: 0xB8E6FF,
+    [BLOCK_TYPES.WATER]: 0x6EC6E8,
     [BLOCK_TYPES.STAR_YELLOW]: 0xFFF9C4,
     [BLOCK_TYPES.LEAF_GREEN]: 0xC8E6C9,
     // Special blocks
@@ -79,7 +79,7 @@ export const BLOCK_COLORS = {
 export const BLOCK_PATTERNS = {
     [BLOCK_TYPES.HEART_PINK]: '💗',
     [BLOCK_TYPES.GLITTER_PINK]: '✨', // Has animated sparkle effect
-    [BLOCK_TYPES.SPARKLE_BLUE]: '❄️',
+    [BLOCK_TYPES.WATER]: '🌊',
     [BLOCK_TYPES.STAR_YELLOW]: '⭐',
     [BLOCK_TYPES.LEAF_GREEN]: '🌿',
     [BLOCK_TYPES.RAINBOW]: '🌈'
@@ -128,8 +128,8 @@ export const PALETTE_COLORS = [
 export const PALETTE_PATTERN_COLORS = [
     // Green family
     { type: BLOCK_TYPES.LEAF_GREEN, label: 'Leaves', color: BLOCK_COLORS[BLOCK_TYPES.LEAF_GREEN], pattern: BLOCK_PATTERNS[BLOCK_TYPES.LEAF_GREEN], category: ITEM_CATEGORIES.PATTERN_COLOR },
-    // Blue family
-    { type: BLOCK_TYPES.SPARKLE_BLUE, label: 'Sparkle', color: BLOCK_COLORS[BLOCK_TYPES.SPARKLE_BLUE], pattern: BLOCK_PATTERNS[BLOCK_TYPES.SPARKLE_BLUE], category: ITEM_CATEGORIES.PATTERN_COLOR },
+    // Blue family - water terrain
+    { type: BLOCK_TYPES.WATER, label: 'Water', color: BLOCK_COLORS[BLOCK_TYPES.WATER], pattern: BLOCK_PATTERNS[BLOCK_TYPES.WATER], category: ITEM_CATEGORIES.PATTERN_COLOR },
     // Pink family
     { type: BLOCK_TYPES.GLITTER_PINK, label: 'Glitter', color: BLOCK_COLORS[BLOCK_TYPES.GLITTER_PINK], pattern: BLOCK_PATTERNS[BLOCK_TYPES.GLITTER_PINK], category: ITEM_CATEGORIES.PATTERN_COLOR },
     // Special - always last

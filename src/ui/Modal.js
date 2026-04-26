@@ -57,7 +57,7 @@ export class Modal {
     /**
      * Show a confirmation dialog with Cancel and Confirm buttons
      */
-    showConfirmDialog(title, message, onConfirm, confirmText = 'Confirm', cancelText = 'Cancel') {
+    showConfirmDialog(title, message, onConfirm, confirmText = 'Confirm', cancelText = 'Cancel', onCancel = null) {
         this.createModalBase();
 
         const centerX = GAME_WIDTH / 2;
@@ -85,6 +85,7 @@ export class Modal {
         const buttonY = centerY + 70;
         const cancelBtn = this.createButton(centerX - 80, buttonY, cancelText, 0xe0e0e0, () => {
             this.close();
+            if (onCancel) onCancel();
         });
 
         const confirmBtn = this.createButton(centerX + 80, buttonY, confirmText, 0xFFB6C1, () => {

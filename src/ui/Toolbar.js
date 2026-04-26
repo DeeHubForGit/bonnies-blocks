@@ -59,20 +59,24 @@ export class Toolbar {
         // Add visual gap before function buttons
         objectX += 20;
         
-        // Add eraser
-        this.createEraseButton(objectX, row2Y, objectButtonSize);
-        objectX += objectButtonSize + gap + 5; // Reduced gap before action buttons
+        // Add new action button
+        this.createActionButton(objectX, row2Y, objectButtonSize, 'new', () => this.scene.createNewWorld());
+        objectX += objectButtonSize + gap;
         
-        // Action buttons (save, load, clear)
+        // Action buttons (save, load)
         this.createActionButton(objectX, row2Y, objectButtonSize, 'save', () => this.scene.saveWorld());
         objectX += objectButtonSize + gap;
         this.createActionButton(objectX, row2Y, objectButtonSize, 'load', () => this.scene.loadWorld());
+        objectX += objectButtonSize + gap + 5; // Reduced gap before eraser
+        
+        // Add eraser and clear
+        this.createEraseButton(objectX, row2Y, objectButtonSize);
         objectX += objectButtonSize + gap;
         this.createActionButton(objectX, row2Y, objectButtonSize, 'clear', () => this.scene.clearWorld());
-        objectX += objectButtonSize + gap + 5; // Reduced gap before mode toggle
+        objectX += objectButtonSize + gap + 15; // Gap before Play button for visual separation
         
-        // Mode toggle button (Explore/Build)
-        this.createModeToggleButton(objectX, row2Y, objectButtonSize);
+        // Mode toggle button (Play/Edit) - visually separated as main action, larger size for header
+        this.createModeToggleButton(objectX, row2Y, 60);
     }
 
     createColorButton(x, y, size, toolType, label, color) {
@@ -118,6 +122,54 @@ export class Toolbar {
             // Use scaled-down version of main sparkle effect (scale 0.95 for 38px button vs 40px tile)
             this.scene.addSparkleEffect(button, 0.95);
             // Skip emoji overlay - sparkles identify the block
+        } else if (toolType === BLOCK_TYPES.WATER) {
+            // Water button - add animated wave lines matching tile appearance
+            const btnScale = size / 50; // 38px button vs 50px tile
+            
+            // Create 2 wave lines
+            for (let i = 0; i < 2; i++) {
+                const wave = this.scene.add.graphics();
+                wave.lineStyle(1.5, 0xFFFFFF, 0.4);
+                
+                const yOffset = (i - 0.5) * 10 * btnScale;
+                // Draw smooth wave using line segments
+                wave.beginPath();
+                wave.moveTo(-size/2, yOffset);
+                for (let x = -size/2; x <= size/2; x += 2) {
+                    const phase = (x / size) * Math.PI * 2;
+                    const y = yOffset + Math.sin(phase) * 3;
+                    wave.lineTo(x, y);
+                }
+                wave.strokePath();
+                
+                button.add([wave]);
+                
+                // Animate wave
+                this.scene.tweens.add({
+                    targets: wave,
+                    alpha: { from: 0.4, to: 0.2 },
+                    y: { from: 0, to: -2 },
+                    duration: 1200 + i * 200,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
+            }
+            
+            // Add shimmer circle
+            const shimmer = this.scene.add.graphics();
+            shimmer.lineStyle(1, 0xFFFFFF, 0.3);
+            shimmer.strokeCircle(0, 0, 3 * btnScale);
+            button.add([shimmer]);
+            
+            this.scene.tweens.add({
+                targets: shimmer,
+                alpha: { from: 0.3, to: 0.1 },
+                duration: 1400,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
         } else {
             // Add pattern emoji overlay for other pattern blocks
             const patternText = this.scene.add.text(0, 0, pattern, {
@@ -178,7 +230,7 @@ export class Toolbar {
     createEraseButton(x, y, size) {
         const button = this.scene.add.container(x, y);
         
-        const bg = this.scene.add.rectangle(0, 0, size, size, 0xffffff)
+        const bg = this.scene.add.rectangle(0, 0, size, size, 0xFDF7D5)
             .setStrokeStyle(2, 0x000000)
             .setInteractive({ useHandCursor: true });
 
@@ -238,7 +290,7 @@ export class Toolbar {
     createActionButton(x, y, size, iconType, callback) {
         const button = this.scene.add.container(x, y);
         
-        const bg = this.scene.add.rectangle(0, 0, size, size, 0xf5f5f5)
+        const bg = this.scene.add.rectangle(0, 0, size, size, 0xFDF7D5)
             .setStrokeStyle(2, 0x000000)
             .setInteractive({ useHandCursor: true });
 
@@ -251,6 +303,8 @@ export class Toolbar {
             iconKey = 'icon-load';
         } else if (iconType === 'clear') {
             iconKey = 'icon-clear';
+        } else if (iconType === 'new') {
+            iconKey = 'icon-new';
         }
 
         if (iconKey) {
@@ -267,10 +321,10 @@ export class Toolbar {
         button.setDepth(1000);
 
         bg.on('pointerdown', () => {
-            bg.setFillStyle(0xe0e0e0);
+            bg.setFillStyle(0xFBC02D);
             callback();
             this.scene.time.delayedCall(100, () => {
-                bg.setFillStyle(0xf5f5f5);
+                bg.setFillStyle(0xFDF7D5);
             });
         });
 
@@ -280,26 +334,24 @@ export class Toolbar {
     createModeToggleButton(x, y, size) {
         const button = this.scene.add.container(x, y);
         
-        // Match styling of other toolbar buttons
-        const bg = this.scene.add.rectangle(0, 0, size, size, 0xf5f5f5)
-            .setStrokeStyle(2, 0x000000)
+        // Invisible background for interactivity - no visible box
+        const bg = this.scene.add.rectangle(0, 0, size, size)
+            .setAlpha(0.01)
             .setInteractive({ useHandCursor: true });
 
         button.add([bg]);
         
-        // Add icon label that changes based on mode
-        // Use large, clear icons for young children who cannot read
-        const label = this.scene.add.text(0, 0, '▶', {
-            fontSize: '28px',
-            fontFamily: 'Arial',
-            fontStyle: 'bold',
-            color: '#000000'
-        });
-        label.setOrigin(0.5);
-        button.add([label]);
+        // Add icon image that changes based on mode - larger than other toolbar icons
+        const icon = this.scene.add.image(0, 0, 'icon-play');
+        icon.setOrigin(0.5);
+        icon.setInteractive({ useHandCursor: true });
+        const iconSize = size * 1.3;
+        const scale = iconSize / Math.max(icon.width, icon.height);
+        icon.setScale(scale);
+        button.add([icon]);
         
         // Create tooltip text (hidden by default)
-        const tooltip = this.scene.add.text(0, -30, 'Play Mode', {
+        const tooltip = this.scene.add.text(0, 40, 'Play Mode', {
             fontSize: '12px',
             fontFamily: 'Arial',
             color: '#FFFFFF',
@@ -314,16 +366,8 @@ export class Toolbar {
         button.setScale(1.18);
         button.setDepth(1000);
 
-        // Show tooltip on hover
-        bg.on('pointerover', () => {
-            tooltip.setVisible(true);
-        });
-        
-        bg.on('pointerout', () => {
-            tooltip.setVisible(false);
-        });
-
-        bg.on('pointerdown', () => {
+        // Event handler function for toggling mode
+        const handleClick = () => {
             // Hide tooltip when clicking
             tooltip.setVisible(false);
             
@@ -332,22 +376,34 @@ export class Toolbar {
             
             // Update icon and tooltip based on mode
             if (this.scene.getGameMode() === GAME_MODES.BUILD) {
-                label.setText('▶'); // Show Play icon in Edit mode
+                icon.setTexture('icon-play'); // Show Play icon in Edit mode
+                const iconSize = size * 1.6;
+                const scale = iconSize / Math.max(icon.width, icon.height);
+                icon.setScale(scale);
                 tooltip.setText('Play Mode');
             } else {
-                label.setText('✏'); // Show Edit icon in Play mode
+                icon.setTexture('icon-edit'); // Show Edit icon in Play mode
+                const iconSize = size * 1.6;
+                const scale = iconSize / Math.max(icon.width, icon.height);
+                icon.setScale(scale);
                 tooltip.setText('Edit Mode');
             }
-            
-            // Visual feedback
-            bg.setFillStyle(0xe0e0e0);
-            this.scene.time.delayedCall(100, () => {
-                bg.setFillStyle(0xf5f5f5);
-            });
-        });
+        };
+
+        // Show tooltip on hover
+        const showTooltip = () => tooltip.setVisible(true);
+        const hideTooltip = () => tooltip.setVisible(false);
+
+        bg.on('pointerover', showTooltip);
+        bg.on('pointerout', hideTooltip);
+        bg.on('pointerdown', handleClick);
+
+        icon.on('pointerover', showTooltip);
+        icon.on('pointerout', hideTooltip);
+        icon.on('pointerdown', handleClick);
 
         this.modeToggleButton = button;
-        this.modeToggleLabel = label;
+        this.modeToggleLabel = icon;
         this.modeToggleTooltip = tooltip;
         this.buttons.push({ container: button, bg, toolType: null, isErase: false, isAction: true, isPlus: false });
     }
@@ -370,15 +426,24 @@ export class Toolbar {
     updateModeButtonState() {
         if (!this.modeToggleLabel) return;
         
-        // In Build mode, show Play icon (▶)
-        // In Play mode, show Edit icon (✏)
+        // Get button size from the button container
+        const size = 52; // Base button size
+        
+        // In Build mode, show Play icon
+        // In Play mode, show Edit icon
         if (this.scene.getGameMode() === GAME_MODES.BUILD) {
-            this.modeToggleLabel.setText('▶');
+            this.modeToggleLabel.setTexture('icon-play');
+            const iconSize = size * 1.3;
+            const scale = iconSize / Math.max(this.modeToggleLabel.width, this.modeToggleLabel.height);
+            this.modeToggleLabel.setScale(scale);
             if (this.modeToggleTooltip) {
                 this.modeToggleTooltip.setText('Play Mode');
             }
         } else {
-            this.modeToggleLabel.setText('✏');
+            this.modeToggleLabel.setTexture('icon-edit');
+            const iconSize = size * 1.5;
+            const scale = iconSize / Math.max(this.modeToggleLabel.width, this.modeToggleLabel.height);
+            this.modeToggleLabel.setScale(scale);
             if (this.modeToggleTooltip) {
                 this.modeToggleTooltip.setText('Edit Mode');
             }

@@ -67,10 +67,13 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-save', 'assets/icons/save.png');
         this.load.image('icon-load', 'assets/icons/load.png');
         this.load.image('icon-clear', 'assets/icons/clear.png');
+        this.load.image('icon-new', 'assets/icons/new.png');
         this.load.image('icon-girl', 'assets/icons/blonde_girl.png');
         this.load.image('icon-bunny', 'assets/icons/bunny.png');
         this.load.image('icon-unicorn', 'assets/icons/unicorn.png');
         this.load.image('icon-settings', 'assets/icons/config.png');
+        this.load.image('icon-play', 'assets/icons/play.png');
+        this.load.image('icon-edit', 'assets/icons/edit.png');
         
         // New icons - load with error handling
         this.load.on('loaderror', (file) => {
@@ -110,6 +113,10 @@ export class GameScene extends Phaser.Scene {
             console.log('[GameScene] Restoring grid from Play mode');
             this.grid = this.restoredGrid;
             this.restoredGrid = null; // Clear after restoring
+            // Create snapshot if it doesn't exist yet
+            if (!this.savedGridSnapshot) {
+                this.savedGridSnapshot = JSON.parse(JSON.stringify(this.grid));
+            }
         } else {
             // Create new empty grid
             console.log('[GameScene] Creating new grid');
@@ -139,6 +146,9 @@ export class GameScene extends Phaser.Scene {
 
         // Create toolbar
         this.toolbar = new Toolbar(this);
+        
+        // Position play button at top right
+        this.positionPlayButton();
 
         // Render initial grid
         this.renderGrid();
@@ -257,6 +267,8 @@ export class GameScene extends Phaser.Scene {
                 this.grid[row][col] = BLOCK_TYPES.EMPTY;
             }
         }
+        // Store snapshot for change detection
+        this.savedGridSnapshot = JSON.parse(JSON.stringify(this.grid));
     }
 
     buildTitleText(name) {
@@ -285,14 +297,14 @@ export class GameScene extends Phaser.Scene {
 
     createSettingsButton() {
         // Create cog button using config icon image
-        this.settingsButton = this.add.image(0, this.titleText.y, 'icon-settings');
+        this.settingsButton = this.add.image(0, 32, 'icon-settings');
         
         // Calculate and store aspect ratio once
         const iconAspectRatio = this.settingsButton.width / this.settingsButton.height;
         this.settingsButtonAspectRatio = iconAspectRatio;
         
-        // Size it to 26px height preserving aspect ratio
-        const targetHeight = 26;
+        // Size it to 48px height preserving aspect ratio
+        const targetHeight = 48;
         this.settingsButton.setDisplaySize(targetHeight * this.settingsButtonAspectRatio, targetHeight);
         this.settingsButton.setOrigin(0.5);
         this.settingsButton.setInteractive({ useHandCursor: true });
@@ -308,25 +320,44 @@ export class GameScene extends Phaser.Scene {
         
         // Add subtle hover effects
         this.settingsButton.on('pointerover', () => {
-            const hoverHeight = 29;
+            const hoverHeight = 50;
             this.settingsButton.setDisplaySize(hoverHeight * this.settingsButtonAspectRatio, hoverHeight);
         });
         
         this.settingsButton.on('pointerout', () => {
-            const normalHeight = 26;
+            const normalHeight = 48;
             this.settingsButton.setDisplaySize(normalHeight * this.settingsButtonAspectRatio, normalHeight);
         });
     }
 
     positionSettingsButton() {
         if (this.titleText && this.settingsButton) {
-            // Position cog to the right of the title with a small gap
+            // Position cog to the left of the title with a small gap
             this.settingsButton.x = 
-                this.titleText.x + 
-                (this.titleText.width / 2) + 
-                (this.settingsButton.displayWidth / 2) + 
+                this.titleText.x - 
+                (this.titleText.width / 2) - 
+                (this.settingsButton.displayWidth / 2) - 
                 12;
             this.settingsButton.y = this.titleText.y;
+        }
+    }
+
+    positionPlayButton() {
+        if (this.toolbar && this.toolbar.modeToggleButton && this.titleText) {
+            // Position play button to the right of the title with a gap
+            const button = this.toolbar.modeToggleButton;
+            const baseSize = 60; // Larger button size for header area
+            const scaledSize = baseSize * 1.18; // Account for button scale
+            
+            let x = this.titleText.x + 
+                (this.titleText.width / 2) + 
+                (scaledSize / 2) + 
+                15;
+            
+            // Clamp X position to keep button visible within game bounds
+            const maxX = GAME_WIDTH - (scaledSize / 2) - 10; // 10px margin from right edge
+            button.x = Math.min(x, maxX);
+            button.y = 32; // Positioned lower in header area
         }
     }
 
@@ -896,6 +927,56 @@ export class GameScene extends Phaser.Scene {
             // Special handling for GLITTER_PINK - add shimmer effect instead of emoji
             if (blockType === BLOCK_TYPES.GLITTER_PINK) {
                 this.addSparkleEffect(container, 1.0);
+            } else if (blockType === BLOCK_TYPES.WATER) {
+                // Water tile - add animated wave lines
+                const waveCount = 3;
+                for (let i = 0; i < waveCount; i++) {
+                    const wave = this.add.graphics();
+                    wave.lineStyle(1.5, 0xFFFFFF, 0.35);
+                    
+                    // Draw smooth curved wave line using line segments
+                    const yOffset = (i - 1) * 12;
+                    wave.beginPath();
+                    wave.moveTo(-GRID_SIZE/2, yOffset);
+                    for (let x = -GRID_SIZE/2; x <= GRID_SIZE/2; x += 2) {
+                        const phase = (x / GRID_SIZE) * Math.PI * 2;
+                        const y = yOffset + Math.sin(phase) * 4;
+                        wave.lineTo(x, y);
+                    }
+                    wave.strokePath();
+                    
+                    wave.setDepth(6);
+                    container.add(wave);
+                    
+                    // Animate wave with gentle fade and slight vertical movement
+                    this.tweens.add({
+                        targets: wave,
+                        alpha: { from: 0.35, to: 0.15 },
+                        y: { from: 0, to: -3 },
+                        duration: 1200 + i * 200,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: 'Sine.easeInOut'
+                    });
+                }
+                
+                // Add subtle shimmer circles
+                const shimmer = this.add.graphics();
+                shimmer.lineStyle(1, 0xFFFFFF, 0.2);
+                shimmer.strokeCircle(-8, -10, 3);
+                shimmer.strokeCircle(10, 8, 2.5);
+                shimmer.setDepth(6);
+                container.add(shimmer);
+                
+                // Animate shimmer
+                this.tweens.add({
+                    targets: shimmer,
+                    alpha: { from: 0.3, to: 0.1 },
+                    duration: 1500,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
             } else {
                 // Add pattern overlay for non-glitter pattern blocks
                 const pattern = getPattern(blockType);
@@ -1040,6 +1121,8 @@ export class GameScene extends Phaser.Scene {
                 const success = saveWorld(name, worldData);
                 if (success) {
                     this.modal.showToast(`Saved as "${name}"!`);
+                    // Update snapshot after successful save
+                    this.savedGridSnapshot = JSON.parse(JSON.stringify(this.grid));
                 } else {
                     this.modal.showToast('Save failed!');
                 }
@@ -1092,6 +1175,82 @@ export class GameScene extends Phaser.Scene {
         }
 
         this.renderGrid();
+        // Update snapshot after loading
+        this.savedGridSnapshot = JSON.parse(JSON.stringify(this.grid));
+    }
+
+    createNewWorld() {
+        // Check if there are unsaved changes
+        if (this.hasUnsavedChanges()) {
+            this.modal.showConfirmDialog(
+                'Unsaved Changes',
+                'Do you want to save\nyour changes?',
+                () => {
+                    // User clicked Yes - save first, then create new world
+                    this.saveWorldThenCreateNew();
+                },
+                'Yes',
+                'No',
+                () => {
+                    // User clicked No - create new world without saving
+                    this.performCreateNewWorld();
+                }
+            );
+        } else {
+            // No changes, just create new world
+            this.performCreateNewWorld();
+        }
+    }
+
+    hasUnsavedChanges() {
+        // Compare current grid with saved snapshot
+        if (!this.savedGridSnapshot) {
+            return false; // No snapshot, assume no changes
+        }
+        
+        for (let row = 0; row < GRID_ROWS; row++) {
+            for (let col = 0; col < GRID_COLS; col++) {
+                if (this.grid[row][col] !== this.savedGridSnapshot[row][col]) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    saveWorldThenCreateNew() {
+        const worldData = {
+            grid: this.grid,
+            playerPosition: {
+                x: this.player.x,
+                y: this.player.y
+            }
+        };
+
+        const defaultName = generateDefaultWorldName();
+        
+        this.modal.showInputDialog(
+            'Save World',
+            'Enter world name',
+            defaultName,
+            (name) => {
+                const success = saveWorld(name, worldData);
+                if (success) {
+                    this.modal.showToast(`Saved as "${name}"!`);
+                    // Now create new world after save
+                    this.performCreateNewWorld();
+                } else {
+                    this.modal.showToast('Save failed!');
+                }
+            }
+        );
+    }
+
+    performCreateNewWorld() {
+        // Clear the grid and reset
+        this.initializeGrid();
+        this.renderGrid();
+        this.modal.showToast('New world created!');
     }
 
     clearWorld() {

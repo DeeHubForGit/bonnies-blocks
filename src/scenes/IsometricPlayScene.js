@@ -225,14 +225,19 @@ export class IsometricPlayScene extends Phaser.Scene {
     }
 
     createBuildButton() {
-        // Position button with safe margin from bottom
-        const buttonY = GAME_HEIGHT - 45;
-        const buttonX = GAME_WIDTH / 2;
-        const buttonSize = 52; // Match toolbar button size
+        // Position button to the right of title, matching Edit Mode's play button position
+        const buttonSize = 52; // Match action button size
+        const scaledSize = buttonSize * 1.18; // Account for button scale
+        let buttonX = this.titleText.x + (this.titleText.width / 2) + (scaledSize / 2) + 15;
+        const buttonY = 32; // Match play button y position
+        
+        // Clamp X position to keep button visible within game bounds
+        const maxX = GAME_WIDTH - (scaledSize / 2) - 10; // 10px margin from right edge
+        buttonX = Math.min(buttonX, maxX);
 
         const button = this.add.container(buttonX, buttonY);
         
-        // Yellow background
+        // Pale yellow background with black border (match action button style)
         const bg = this.add.rectangle(0, 0, buttonSize, buttonSize, 0xFDF7D5)
             .setStrokeStyle(2, 0x000000)
             .setInteractive({ useHandCursor: true });
@@ -240,12 +245,12 @@ export class IsometricPlayScene extends Phaser.Scene {
         // Use Edit icon image
         const icon = this.add.image(0, 0, 'icon-edit');
         icon.setOrigin(0.5);
-        const iconSize = buttonSize * 0.72;
+        const iconSize = buttonSize * 0.72; // Match action button icon sizing
         const scale = iconSize / Math.max(icon.width, icon.height);
         icon.setScale(scale);
 
         // Create tooltip (hidden by default)
-        const tooltip = this.add.text(0, -35, 'Edit', {
+        const tooltip = this.add.text(0, 40, 'Edit', {
             fontSize: '12px',
             fontFamily: 'Arial',
             color: '#FFFFFF',
@@ -257,6 +262,7 @@ export class IsometricPlayScene extends Phaser.Scene {
         tooltip.setDepth(20000);
 
         button.add([bg, icon, tooltip]);
+        button.setScale(1.18); // Match action button scale
         button.setDepth(10000);
 
         // Show tooltip on hover
@@ -272,10 +278,10 @@ export class IsometricPlayScene extends Phaser.Scene {
             // Hide tooltip when clicking
             tooltip.setVisible(false);
             
-            // Visual feedback (darker yellow)
+            // Visual feedback (darker yellow background)
             bg.setFillStyle(0xFBC02D);
             this.time.delayedCall(100, () => {
-                bg.setFillStyle(0xFDD835);
+                bg.setFillStyle(0xFDF7D5);
             });
             
             // Fade out before returning to Edit Mode
@@ -462,7 +468,7 @@ export class IsometricPlayScene extends Phaser.Scene {
         this.worldSprites.push(tileGraphics);
 
         // Add pattern decoration if applicable
-        if (hasPattern(blockType) && blockType !== BLOCK_TYPES.GLITTER_PINK) {
+        if (hasPattern(blockType) && blockType !== BLOCK_TYPES.GLITTER_PINK && blockType !== BLOCK_TYPES.WATER) {
             const pattern = getPattern(blockType);
             const fontSize = Math.round(18 * this.scaleFactor);
             const patternText = this.add.text(pos.x, pos.y, pattern, {
@@ -472,6 +478,79 @@ export class IsometricPlayScene extends Phaser.Scene {
             patternText.setOrigin(0.5);
             patternText.setDepth(depth + 2);
             this.worldSprites.push(patternText);
+        } else if (blockType === BLOCK_TYPES.WATER) {
+            // Water tile - add animated wave lines for isometric view
+            // Use container for proper positioning and animation
+            const waterContainer = this.add.container(pos.x, pos.y);
+            waterContainer.setDepth(depth + 2);
+            
+            const waveCount = 3;
+            const waveWidth = halfWidth * 0.75; // Use 75% of tile width for visible waves
+            const waveAmplitude = 3.5; // Increased amplitude for visibility
+            
+            for (let i = 0; i < waveCount; i++) {
+                const wave = this.add.graphics();
+                wave.lineStyle(1.5, 0xFFFFFF, 0.6); // Increased width and opacity for visibility
+                
+                // Position waves across the tile
+                const yOffset = (i - 1) * (halfHeight * 0.45);
+                
+                // Draw smooth curved wave line using local coordinates
+                wave.beginPath();
+                wave.moveTo(-waveWidth, yOffset);
+                for (let x = -waveWidth; x <= waveWidth; x += 2) {
+                    const phase = (x / waveWidth) * Math.PI;
+                    const y = yOffset + Math.sin(phase) * waveAmplitude;
+                    wave.lineTo(x, y);
+                }
+                wave.strokePath();
+                
+                waterContainer.add(wave);
+                
+                // Animate wave with horizontal movement and fade
+                this.tweens.add({
+                    targets: wave,
+                    alpha: { from: 0.6, to: 0.35 },
+                    x: { from: 0, to: 5 },
+                    duration: 1300 + i * 200,
+                    yoyo: true,
+                    repeat: -1,
+                    ease: 'Sine.easeInOut'
+                });
+            }
+            
+            // Add visible shimmer circles
+            const shimmer = this.add.graphics();
+            shimmer.lineStyle(1, 0xFFFFFF, 0.45);
+            shimmer.strokeCircle(-halfWidth * 0.3, -halfHeight * 0.3, 3);
+            shimmer.strokeCircle(halfWidth * 0.25, halfHeight * 0.2, 2.5);
+            waterContainer.add(shimmer);
+            
+            // Animate shimmer
+            this.tweens.add({
+                targets: shimmer,
+                alpha: { from: 0.5, to: 0.2 },
+                duration: 1500,
+                yoyo: true,
+                repeat: -1,
+                ease: 'Sine.easeInOut'
+            });
+            
+            // Create geometry mask to clip waves inside diamond tile
+            const maskGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+            maskGraphics.fillStyle(0xffffff);
+            maskGraphics.beginPath();
+            maskGraphics.moveTo(pos.x, pos.y - halfHeight); // Top
+            maskGraphics.lineTo(pos.x + halfWidth, pos.y); // Right
+            maskGraphics.lineTo(pos.x, pos.y + halfHeight); // Bottom
+            maskGraphics.lineTo(pos.x - halfWidth, pos.y); // Left
+            maskGraphics.closePath();
+            maskGraphics.fillPath();
+            
+            const mask = maskGraphics.createGeometryMask();
+            waterContainer.setMask(mask);
+            
+            this.worldSprites.push(waterContainer);
         }
     }
 
