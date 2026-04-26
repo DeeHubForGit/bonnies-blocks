@@ -160,6 +160,19 @@ export class IsometricPlayScene extends Phaser.Scene {
             mapWidth: this.isoOrigin.mapWidth.toFixed(2)
         });
 
+        // Add water background
+        const bg = this.add.rectangle(
+            GAME_WIDTH / 2,
+            GAME_HEIGHT / 2,
+            GAME_WIDTH,
+            GAME_HEIGHT,
+            0x6EC6E8
+        );
+        bg.setDepth(-100);
+
+        // Add sand island border behind grass grid
+        this.createSandIsland();
+
         // Create title
         this.createTitle();
 
@@ -292,6 +305,37 @@ export class IsometricPlayScene extends Phaser.Scene {
     }
 
     /**
+     * Create sand island border behind grass grid
+     */
+    createSandIsland() {
+        // Calculate the four corners of the grass grid
+        const topCorner = this.gridToIso(0, 0);
+        const rightCorner = this.gridToIso(GRID_COLS - 1, 0);
+        const bottomCorner = this.gridToIso(GRID_COLS - 1, GRID_ROWS - 1);
+        const leftCorner = this.gridToIso(0, GRID_ROWS - 1);
+
+        // Expand corners slightly to create sand border (add padding)
+        const padding = this.isoTileWidth * 0.6; // Sand extends beyond grass
+        
+        const sandGraphics = this.add.graphics();
+        sandGraphics.setDepth(-50); // Above water, below grass
+
+        // Draw expanded isometric diamond
+        sandGraphics.fillStyle(0xE8D28A, 1); // Sand color
+        sandGraphics.beginPath();
+        sandGraphics.moveTo(topCorner.x, topCorner.y - padding);
+        sandGraphics.lineTo(rightCorner.x + padding, rightCorner.y);
+        sandGraphics.lineTo(bottomCorner.x, bottomCorner.y + padding);
+        sandGraphics.lineTo(leftCorner.x - padding, leftCorner.y);
+        sandGraphics.closePath();
+        sandGraphics.fill();
+
+        // Add subtle outline for definition
+        sandGraphics.lineStyle(2, 0xD4B96A, 0.4);
+        sandGraphics.strokePath();
+    }
+
+    /**
      * Convert flat grid coordinates to isometric screen position
      * Uses calculated world origin and tile dimensions for proper centering
      */
@@ -366,7 +410,7 @@ export class IsometricPlayScene extends Phaser.Scene {
         const halfHeight = this.isoTileHeight / 2;
 
         // Single grass color for natural world feel (not checkerboard)
-        const grassColor = 0x7CB342; // Soft, friendly grass green
+        const grassColor = 0x8FBF5F; // Natural soft green grass
 
         grassGraphics.fillStyle(grassColor, 1);
         grassGraphics.beginPath();
@@ -378,7 +422,7 @@ export class IsometricPlayScene extends Phaser.Scene {
         grassGraphics.fill();
 
         // Add subtle outline for tile definition
-        grassGraphics.lineStyle(1, 0x558B2F, 0.3);
+        grassGraphics.lineStyle(1, 0x6FA54D, 0.3);
         grassGraphics.strokePath();
 
         this.worldSprites.push(grassGraphics);
@@ -452,25 +496,28 @@ export class IsometricPlayScene extends Phaser.Scene {
             targetHeight = this.isoTileHeight * 2.2;
             sprite.setOrigin(0.5, 0.85);
         } else if (blockType === BLOCK_TYPES.TREE) {
-            targetHeight = this.isoTileHeight * 3.5;
+            targetHeight = this.isoTileHeight * 3.1;
             sprite.setOrigin(0.5, 0.9); // Trees slightly lower anchor
         } else if (blockType === BLOCK_TYPES.PALM_TREE) {
             // Palm trees (large tropical plants)
-            targetHeight = this.isoTileHeight * 5.2;
+            targetHeight = this.isoTileHeight * 4.2;
             sprite.setOrigin(0.5, 0.85);
         } else if (blockType === BLOCK_TYPES.FLOWER) {
             targetHeight = this.isoTileHeight * 1.3;
             sprite.setOrigin(0.5, 0.7);
+        } else if (blockType === BLOCK_TYPES.BUSH_PINK_FLOWER) {
+            targetHeight = this.isoTileHeight * 1.2;
+            sprite.setOrigin(0.5, 0.75);
         } else if (blockType === BLOCK_TYPES.BUSH_REINDEER) {
-            targetHeight = this.isoTileHeight * 2.8;
+            targetHeight = this.isoTileHeight * 2.4;
             sprite.setOrigin(0.5, 0.9);
             // Move reindeer slightly forward on the tile so the feet sit better
             sprite.y += this.isoTileHeight * 0.22;
         } else if (blockType === BLOCK_TYPES.BUNNY) {
-            targetHeight = this.isoTileHeight * 2.4;
+            targetHeight = this.isoTileHeight * 1.4;
             sprite.setOrigin(0.5, 0.9);
         } else if (blockType === BLOCK_TYPES.UNICORN) {
-            targetHeight = this.isoTileHeight * 4.4;
+            targetHeight = this.isoTileHeight * 3.4;
             sprite.setOrigin(0.5, 0.9);
         }
         

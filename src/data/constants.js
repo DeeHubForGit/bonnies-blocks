@@ -36,6 +36,7 @@ export const BLOCK_TYPES = {
     BUNNY: 'bunny',
     UNICORN: 'unicorn',
     FLOWER: 'flower',
+    BUSH_PINK_FLOWER: 'bushPinkFlower',
     PALM_TREE: 'palmTree',
     TREE: 'tree',
     BUSH_REINDEER: 'bushReindeer'
@@ -68,6 +69,7 @@ export const BLOCK_COLORS = {
     [BLOCK_TYPES.BUNNY]: 0xFFFFFF,
     [BLOCK_TYPES.UNICORN]: 0xFFFFFF,
     [BLOCK_TYPES.FLOWER]: 0xFFFFFF,
+    [BLOCK_TYPES.BUSH_PINK_FLOWER]: 0xFFFFFF,
     [BLOCK_TYPES.PALM_TREE]: 0xFFFFFF,
     [BLOCK_TYPES.TREE]: 0xFFFFFF,
     [BLOCK_TYPES.BUSH_REINDEER]: 0xFFFFFF
@@ -145,6 +147,7 @@ export const PALETTE_OBJECTS = [
     { type: BLOCK_TYPES.BUNNY, label: 'Bunny', icon: 'icon-bunny', width: 1, height: 1 },
     { type: BLOCK_TYPES.UNICORN, label: 'Unicorn', icon: 'icon-unicorn', width: 1, height: 1 },
     { type: BLOCK_TYPES.FLOWER, label: 'Flower', icon: 'icon-flower', width: 1, height: 1 },
+    { type: BLOCK_TYPES.BUSH_PINK_FLOWER, label: 'Bush', icon: 'icon-bush-pink-flower', width: 1, height: 1 },
     { type: BLOCK_TYPES.PALM_TREE, label: 'Palm Trees', icon: 'icon-palm-tree', width: 1, height: 1 },
     { type: BLOCK_TYPES.TREE, label: 'Tree', icon: 'icon-tree', width: 1, height: 1 },
     { type: BLOCK_TYPES.BUSH_REINDEER, label: 'Bush Reindeer', icon: 'icon-bush-reindeer', width: 1, height: 1 }
@@ -171,6 +174,7 @@ export const WORLD_SPRITES = {
     [BLOCK_TYPES.BUNNY]: 'world-bunny',
     [BLOCK_TYPES.UNICORN]: 'world-unicorn',
     [BLOCK_TYPES.FLOWER]: 'world-flower',
+    [BLOCK_TYPES.BUSH_PINK_FLOWER]: 'world-bush-pink-flower',
     [BLOCK_TYPES.PALM_TREE]: 'world-palm-tree',
     [BLOCK_TYPES.TREE]: 'world-tree',
     [BLOCK_TYPES.BUSH_REINDEER]: 'world-bush-reindeer',
@@ -210,6 +214,7 @@ export function isWorldObject(blockType) {
         BLOCK_TYPES.BUNNY,
         BLOCK_TYPES.UNICORN,
         BLOCK_TYPES.FLOWER,
+        BLOCK_TYPES.BUSH_PINK_FLOWER,
         BLOCK_TYPES.PALM_TREE,
         BLOCK_TYPES.TREE,
         BLOCK_TYPES.BUSH_REINDEER

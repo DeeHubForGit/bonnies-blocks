@@ -78,6 +78,7 @@ export class GameScene extends Phaser.Scene {
         });
         
         this.load.image('icon-flower', 'assets/icons/flower.png');
+        this.load.image('icon-bush-pink-flower', 'assets/icons/bush_pink_flower.png');
         this.load.image('icon-palm-tree', 'assets/icons/palm_trees.png');
         this.load.image('icon-tree', 'assets/icons/pink_tree.png');
         this.load.image('icon-bush-reindeer', 'assets/icons/bush_reindeer.png');
@@ -89,6 +90,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('world-bunny', 'assets/icons/bunny.png');
         this.load.image('world-unicorn', 'assets/icons/unicorn.png');
         this.load.image('world-flower', 'assets/icons/flower.png');
+        this.load.image('world-bush-pink-flower', 'assets/icons/bush_pink_flower.png');
         this.load.image('world-palm-tree', 'assets/icons/palm_trees.png');
         this.load.image('world-tree', 'assets/icons/pink_tree.png');
         this.load.image('world-bush-reindeer', 'assets/icons/bush_reindeer.png');
@@ -158,6 +160,7 @@ export class GameScene extends Phaser.Scene {
         // Create emoji/text-based placeholders for missing toolbar icons
         const placeholders = [
             { key: 'icon-flower', emoji: '🌸', color: '#FF69B4' },
+            { key: 'icon-bush-pink-flower', emoji: '🌿', color: '#FFB6C1' },
             { key: 'icon-palm-tree', emoji: '🌴', color: '#4CAF50' },
             { key: 'icon-tree', emoji: '🌳', color: '#228B22' },
             { key: 'icon-unicorn', emoji: '🦄', color: '#E0B0FF' },
@@ -170,6 +173,7 @@ export class GameScene extends Phaser.Scene {
             { key: 'world-bunny', emoji: '🐰', color: '#E0E0E0', topDown: true },
             { key: 'world-unicorn', emoji: '🦄', color: '#E1BEE7', topDown: true },
             { key: 'world-flower', emoji: '🌺', color: '#FF69B4', topDown: true },
+            { key: 'world-bush-pink-flower', emoji: '🌿', color: '#FFB6C1', topDown: true },
             { key: 'world-palm-tree', emoji: '🌴', color: '#4CAF50', topDown: true },
             { key: 'world-tree', emoji: '🌲', color: '#2E7D32', topDown: true },
             { key: 'world-bush-reindeer', emoji: '🦌', color: '#8B4513', topDown: true }
@@ -452,7 +456,7 @@ export class GameScene extends Phaser.Scene {
         graphics.lineBetween(0, HEADER_HEIGHT + PLAYABLE_HEIGHT, GAME_WIDTH, HEADER_HEIGHT + PLAYABLE_HEIGHT);
 
         // Draw grid lines with 0.5 pixel offset for crisp rendering
-        graphics.lineStyle(1, 0x000000, 0.1);
+        graphics.lineStyle(1, 0x5F8F56, 0.35);
 
         // Horizontal lines (offset by HEADER_HEIGHT + GRID_TOP_MARGIN)
         for (let row = 0; row <= GRID_ROWS; row++) {
@@ -580,16 +584,7 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
-        // Don't paint on player's position
-        const playerGridX = Math.floor((this.player.x - GRID_SIZE / 2) / GRID_SIZE);
-        const playerGridY = Math.floor((this.player.y - HEADER_HEIGHT - GRID_TOP_MARGIN - GRID_SIZE / 2) / GRID_SIZE);
-        
-        if (gridX === playerGridX && gridY === playerGridY) {
-            this.lastPaintedCell = cellKey;
-            return;
-        }
-
-        // Paint the color block
+        // In Edit Mode, allow drag painting on any tile
         const selectedTool = this.toolbar.getSelectedTool();
         this.grid[gridY][gridX] = selectedTool;
         this.renderTile(gridX, gridY);
@@ -615,10 +610,8 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
-        // Don't place on player's current position (account for player being centered)
-        const playerGridX = Math.floor((this.player.x - GRID_SIZE / 2) / GRID_SIZE);
-        const playerGridY = Math.floor((this.player.y - HEADER_HEIGHT - GRID_TOP_MARGIN - GRID_SIZE / 2) / GRID_SIZE);
-
+        // In Edit Mode, player is invisible and position doesn't matter
+        // Allow placement on any empty tile
         if (this.toolbar.getMode() === TOOL_MODES.ERASE) {
             // Erase mode
             this.grid[gridY][gridX] = BLOCK_TYPES.EMPTY;
@@ -626,13 +619,6 @@ export class GameScene extends Phaser.Scene {
         } else {
             // Place mode
             const selectedTool = this.toolbar.getSelectedTool();
-            
-            // Don't place solid block on player
-            if (gridX === playerGridX && gridY === playerGridY) {
-                console.log('[GameScene] Cannot place block on player position');
-                return;
-            }
-
             this.grid[gridY][gridX] = selectedTool;
             this.renderTile(gridX, gridY);
         }
@@ -865,7 +851,8 @@ export class GameScene extends Phaser.Scene {
             BLOCK_TYPES.BUNNY, 
             BLOCK_TYPES.GIRL, 
             BLOCK_TYPES.UNICORN, 
-            BLOCK_TYPES.FLOWER, 
+            BLOCK_TYPES.FLOWER,
+            BLOCK_TYPES.BUSH_PINK_FLOWER,
             BLOCK_TYPES.PALM_TREE, 
             BLOCK_TYPES.TREE, 
             BLOCK_TYPES.BUSH_REINDEER
@@ -878,6 +865,7 @@ export class GameScene extends Phaser.Scene {
             else if (blockType === BLOCK_TYPES.GIRL) iconKey = 'icon-girl';
             else if (blockType === BLOCK_TYPES.UNICORN) iconKey = 'icon-unicorn';
             else if (blockType === BLOCK_TYPES.FLOWER) iconKey = 'icon-flower';
+            else if (blockType === BLOCK_TYPES.BUSH_PINK_FLOWER) iconKey = 'icon-bush-pink-flower';
             else if (blockType === BLOCK_TYPES.PALM_TREE) iconKey = 'icon-palm-tree';
             else if (blockType === BLOCK_TYPES.TREE) iconKey = 'icon-tree';
             else if (blockType === BLOCK_TYPES.BUSH_REINDEER) iconKey = 'icon-bush-reindeer';

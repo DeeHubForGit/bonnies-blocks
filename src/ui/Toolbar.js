@@ -145,8 +145,8 @@ export class Toolbar {
     createObjectButton(x, y, size, toolType, label, iconKey) {
         const button = this.scene.add.container(x, y);
         
-        // White background for objects
-        const bg = this.scene.add.rectangle(0, 0, size, size, 0xFFFFFF)
+        // Match Play Mode grass background
+        const bg = this.scene.add.rectangle(0, 0, size, size, 0x97B082)
             .setStrokeStyle(2, 0x000000)
             .setInteractive({ useHandCursor: true });
 
@@ -414,17 +414,22 @@ export class Toolbar {
             if (btn.isErase) {
                 // Highlight erase button when active
                 if (this.mode === TOOL_MODES.ERASE) {
-                    btn.bg.setStrokeStyle(4, 0xFFFF00);
+                    btn.bg.setStrokeStyle(3, 0xFFFF00);
+                    btn.container.setDepth(1001); // Bring to front
                 } else {
                     btn.bg.setStrokeStyle(2, 0x000000);
+                    btn.container.setDepth(1000); // Normal depth
                 }
             } else {
                 // Highlight selected tool
                 const isSelected = this.mode === TOOL_MODES.PLACE && this.selectedTool === btn.toolType;
                 if (isSelected) {
-                    btn.bg.setStrokeStyle(4, 0xFFFF00);
+                    // Reduced stroke width to minimize overlap with adjacent buttons
+                    btn.bg.setStrokeStyle(3, 0xFFFF00);
+                    btn.container.setDepth(1001); // Bring to front so border shows on top
                 } else {
                     btn.bg.setStrokeStyle(2, 0x000000);
+                    btn.container.setDepth(1000); // Normal depth
                 }
             }
         });
