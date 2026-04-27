@@ -42,6 +42,7 @@ export class GameScene extends Phaser.Scene {
         this.lastPaintedCell = null; // Track last painted cell to avoid duplicate painting
         this.prefersReducedMotion = this.checkReducedMotion(); // Check for reduced motion preference
         this.gameMode = GAME_MODES.BUILD; // Start in Build mode
+        this.currentWorldName = null; // Track which saved world is currently open
     }
 
     /**
@@ -1102,7 +1103,7 @@ export class GameScene extends Phaser.Scene {
         return isSolidBlock(blockType);
     }
 
-    saveWorld() {
+    saveCurrentWorld(onSuccess = null, showToast = true) {
         const worldData = {
             grid: this.grid,
             playerPosition: {
@@ -1111,23 +1112,57 @@ export class GameScene extends Phaser.Scene {
             }
         };
 
-        const defaultName = generateDefaultWorldName();
-        
-        this.modal.showInputDialog(
-            'Save World',
-            'Enter world name',
-            defaultName,
-            (name) => {
-                const success = saveWorld(name, worldData);
-                if (success) {
-                    this.modal.showToast(`Saved as "${name}"!`);
-                    // Update snapshot after successful save
-                    this.savedGridSnapshot = JSON.parse(JSON.stringify(this.grid));
-                } else {
-                    this.modal.showToast('Save failed!');
-                }
+        const name = this.currentWorldName || generateDefaultWorldName();
+        const success = saveWorld(name, worldData);
+
+        if (success) {
+            this.currentWorldName = name;
+            this.savedGridSnapshot = JSON.parse(JSON.stringify(this.grid));
+
+            if (showToast) {
+                this.modal.showToast(`Saved as "${name}"!`);
             }
-        );
+
+            if (onSuccess) {
+                onSuccess(name);
+            }
+        } else {
+            this.modal.showToast('Save failed!');
+        }
+    }
+
+    saveWorld() {
+        // If we already have a current world, save directly to it
+        if (this.currentWorldName) {
+            this.saveCurrentWorld();
+        } else {
+            // First time save - ask for a name
+            const worldData = {
+                grid: this.grid,
+                playerPosition: {
+                    x: this.player.x,
+                    y: this.player.y
+                }
+            };
+
+            const defaultName = generateDefaultWorldName();
+            
+            this.modal.showInputDialog(
+                'Save World',
+                'Enter world name',
+                defaultName,
+                (name) => {
+                    const success = saveWorld(name, worldData);
+                    if (success) {
+                        this.currentWorldName = name;
+                        this.savedGridSnapshot = JSON.parse(JSON.stringify(this.grid));
+                        this.modal.showToast(`Saved as "${name}"!`);
+                    } else {
+                        this.modal.showToast('Save failed!');
+                    }
+                }
+            );
+        }
     }
 
     loadWorld() {
@@ -1140,6 +1175,7 @@ export class GameScene extends Phaser.Scene {
                 const worldData = loadWorld(world.name);
                 if (worldData) {
                     this.loadWorldData(worldData);
+                    this.currentWorldName = world.name; // Track which world is loaded
                     this.modal.showToast(`Loaded "${world.name}"!`);
                 } else {
                     this.modal.showToast('Load failed!');
@@ -1219,38 +1255,18 @@ export class GameScene extends Phaser.Scene {
     }
 
     saveWorldThenCreateNew() {
-        const worldData = {
-            grid: this.grid,
-            playerPosition: {
-                x: this.player.x,
-                y: this.player.y
-            }
-        };
-
-        const defaultName = generateDefaultWorldName();
-        
-        this.modal.showInputDialog(
-            'Save World',
-            'Enter world name',
-            defaultName,
-            (name) => {
-                const success = saveWorld(name, worldData);
-                if (success) {
-                    this.modal.showToast(`Saved as "${name}"!`);
-                    // Now create new world after save
-                    this.performCreateNewWorld();
-                } else {
-                    this.modal.showToast('Save failed!');
-                }
-            }
-        );
+        // Save current world then create new blank world
+        this.saveCurrentWorld((savedName) => {
+            this.performCreateNewWorld(`World saved to ${savedName}\nNew world created`);
+        }, false);
     }
 
-    performCreateNewWorld() {
+    performCreateNewWorld(toastMessage = 'New world created!') {
         // Clear the grid and reset
         this.initializeGrid();
         this.renderGrid();
-        this.modal.showToast('New world created!');
+        this.currentWorldName = null; // Reset to no saved world identity
+        this.modal.showToast(toastMessage);
     }
 
     clearWorld() {
@@ -1258,7 +1274,14 @@ export class GameScene extends Phaser.Scene {
             'Clear World',
             'This will erase everything\nin the current world.\n\nAre you sure?',
             () => {
-                this.initializeGrid();
+                this.grid = [];
+                for (let row = 0; row < GRID_ROWS; row++) {
+                    this.grid[row] = [];
+                    for (let col = 0; col < GRID_COLS; col++) {
+                        this.grid[row][col] = BLOCK_TYPES.EMPTY;
+                    }
+                }
+
                 this.renderGrid();
                 this.modal.showToast('World cleared!');
             },
