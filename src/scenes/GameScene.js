@@ -21,7 +21,7 @@
 } from '../data/constants.js';
 import { Toolbar } from '../ui/Toolbar.js';
 import { Modal } from '../ui/Modal.js';
-import { saveWorld, loadWorld, getAllWorlds, generateDefaultWorldName, clearWorld, getChildName, saveChildName } from '../utils/storage.js';
+import { saveWorld, loadWorld, getAllWorlds, generateDefaultWorldName, getChildName, saveChildName } from '../utils/storage.js';
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -43,6 +43,7 @@ export class GameScene extends Phaser.Scene {
         this.prefersReducedMotion = this.checkReducedMotion(); // Check for reduced motion preference
         this.gameMode = GAME_MODES.BUILD; // Start in Build mode
         this.currentWorldName = null; // Track which saved world is currently open
+        this.worldNameInput = null; // HTML input element for world name
     }
 
     /**
@@ -144,6 +145,12 @@ export class GameScene extends Phaser.Scene {
 
         // Create mode indicator
         this.createModeIndicator();
+        
+        // Create header action buttons (New, Save, Load)
+        this.createHeaderActionButtons();
+        
+        // Create world name field
+        this.createWorldNameField();
 
         // Create toolbar
         this.toolbar = new Toolbar(this);
@@ -304,62 +311,269 @@ export class GameScene extends Phaser.Scene {
         const iconAspectRatio = this.settingsButton.width / this.settingsButton.height;
         this.settingsButtonAspectRatio = iconAspectRatio;
         
-        // Size it to 48px height preserving aspect ratio
+        // Size it to 48px height preserving aspect ratio (consistent with other header icons)
         const targetHeight = 48;
         this.settingsButton.setDisplaySize(targetHeight * this.settingsButtonAspectRatio, targetHeight);
         this.settingsButton.setOrigin(0.5);
         this.settingsButton.setInteractive({ useHandCursor: true });
         this.settingsButton.setDepth(1000);
         
-        // Position button to the right of title
-        this.positionSettingsButton();
+        // Position button after Load button (will be positioned in createHeaderActionButtons)
+        // No need to call positionSettingsButton here anymore
+        
+        // Create tooltip for config button
+        const tooltipStyle = {
+            fontSize: '12px',
+            fontFamily: 'Arial',
+            color: '#000000',
+            backgroundColor: '#FFB6C1',
+            padding: { x: 6, y: 4 }
+        };
+        this.settingsTooltip = this.add.text(0, 0, 'Change Name', tooltipStyle);
+        this.settingsTooltip.setOrigin(0.5, 0);
+        this.settingsTooltip.setVisible(false);
+        this.settingsTooltip.setDepth(2000);
         
         // Add click handler
         this.settingsButton.on('pointerdown', () => {
+            this.settingsTooltip.setVisible(false);
             this.openChildNameDialog();
         });
         
-        // Add subtle hover effects
+        // Add hover effects with tooltip
         this.settingsButton.on('pointerover', () => {
             const hoverHeight = 50;
             this.settingsButton.setDisplaySize(hoverHeight * this.settingsButtonAspectRatio, hoverHeight);
+            // Position tooltip below button
+            this.settingsTooltip.setPosition(this.settingsButton.x, this.settingsButton.y + 35);
+            this.settingsTooltip.setVisible(true);
         });
         
         this.settingsButton.on('pointerout', () => {
             const normalHeight = 48;
             this.settingsButton.setDisplaySize(normalHeight * this.settingsButtonAspectRatio, normalHeight);
+            this.settingsTooltip.setVisible(false);
         });
     }
 
     positionSettingsButton() {
-        if (this.titleText && this.settingsButton) {
-            // Position cog to the left of the title with a small gap
-            this.settingsButton.x = 
-                this.titleText.x - 
-                (this.titleText.width / 2) - 
-                (this.settingsButton.displayWidth / 2) - 
-                12;
-            this.settingsButton.y = this.titleText.y;
-        }
+        // Settings button is now positioned in createHeaderActionButtons
+        // This method is kept for compatibility but does nothing
     }
 
     positionPlayButton() {
         if (this.toolbar && this.toolbar.modeToggleButton && this.titleText) {
-            // Position play button to the right of the title with a gap
             const button = this.toolbar.modeToggleButton;
-            const baseSize = 60; // Larger button size for header area
-            const scaledSize = baseSize * 1.18; // Account for button scale
-            
-            let x = this.titleText.x + 
-                (this.titleText.width / 2) + 
-                (scaledSize / 2) + 
-                15;
-            
-            // Clamp X position to keep button visible within game bounds
-            const maxX = GAME_WIDTH - (scaledSize / 2) - 10; // 10px margin from right edge
-            button.x = Math.min(x, maxX);
-            button.y = 32; // Positioned lower in header area
+            const iconSize = 64;
+
+            const titleRight = this.titleText.x + (this.titleText.width / 2);
+            const inputWidth = 150;
+            const gapAfterTitle = 32;
+            const gapBeforePlay = 4;
+
+            const inputX = titleRight + gapAfterTitle;
+            const playX = inputX + inputWidth + gapBeforePlay + (iconSize / 2);
+
+            const maxX = GAME_WIDTH - (iconSize / 2) - 10;
+            button.x = Math.min(playX, maxX);
+            button.y = 32;
+
+            this.positionWorldNameField();
         }
+    }
+    
+    positionWorldNameField() {
+        if (this.worldNameInput && this.titleText && this.toolbar && this.toolbar.modeToggleButton) {
+            const canvas = this.game.canvas.getBoundingClientRect();
+            const button = this.toolbar.modeToggleButton;
+
+            const inputWidth = 150;
+            const gapBeforePlay = 10;
+            const inputY = 18;
+
+            const playLeft = button.x - 32;
+            const inputX = playLeft - inputWidth - gapBeforePlay;
+
+            // Add scroll offsets for absolute positioning relative to document body
+            const pageX = window.scrollX || window.pageXOffset || 0;
+            const pageY = window.scrollY || window.pageYOffset || 0;
+
+            this.worldNameInput.style.left = (canvas.left + pageX + inputX) + 'px';
+            this.worldNameInput.style.top = (canvas.top + pageY + inputY) + 'px';
+            this.worldNameInput.style.right = 'auto';
+            this.worldNameInput.style.width = inputWidth + 'px';
+        }
+    }
+
+    createHeaderActionButtons() {
+        // Create compact header buttons for New, Save, Load, Config
+        const buttonY = 32; // Centered in 64px header (32px from top)
+        const iconSize = 48; // Consistent size for all header icons
+        const spacing = 8; // Tighter spacing to keep buttons closer together
+        
+        let buttonX = 70; // Move right for balanced spacing around title
+        
+        // Tooltip style for consistent light pink tooltips
+        const tooltipStyle = {
+            fontSize: '12px',
+            fontFamily: 'Arial',
+            color: '#000000',
+            backgroundColor: '#FFB6C1',
+            padding: { x: 6, y: 4 }
+        };
+        
+        // New button
+        const newButton = this.add.container(buttonX, buttonY);
+        const newIcon = this.add.image(0, 0, 'icon-new');
+        newIcon.setOrigin(0.5);
+        const newScale = iconSize / Math.max(newIcon.width, newIcon.height);
+        newIcon.setScale(newScale);
+        newIcon.setInteractive({ useHandCursor: true });
+        newIcon.on('pointerdown', () => this.createNewWorld());
+        newButton.add([newIcon]);
+        newButton.setDepth(1000);
+        
+        // New button tooltip
+        const newTooltip = this.add.text(0, 35, 'New', tooltipStyle);
+        newTooltip.setOrigin(0.5, 0);
+        newTooltip.setVisible(false);
+        newTooltip.setDepth(2000);
+        newButton.add([newTooltip]);
+        newIcon.on('pointerover', () => newTooltip.setVisible(true));
+        newIcon.on('pointerout', () => newTooltip.setVisible(false));
+        
+        buttonX += iconSize + spacing;
+        
+        // Save button
+        const saveButton = this.add.container(buttonX, buttonY);
+        const saveIcon = this.add.image(0, 0, 'icon-save');
+        saveIcon.setOrigin(0.5);
+        const saveScale = iconSize / Math.max(saveIcon.width, saveIcon.height);
+        saveIcon.setScale(saveScale);
+        saveIcon.setInteractive({ useHandCursor: true });
+        saveIcon.on('pointerdown', () => this.saveWorld());
+        saveButton.add([saveIcon]);
+        saveButton.setDepth(1000);
+        
+        // Save button tooltip
+        const saveTooltip = this.add.text(0, 35, 'Save', tooltipStyle);
+        saveTooltip.setOrigin(0.5, 0);
+        saveTooltip.setVisible(false);
+        saveTooltip.setDepth(2000);
+        saveButton.add([saveTooltip]);
+        saveIcon.on('pointerover', () => saveTooltip.setVisible(true));
+        saveIcon.on('pointerout', () => saveTooltip.setVisible(false));
+        
+        buttonX += iconSize + spacing;
+        
+        // Load button
+        const loadButton = this.add.container(buttonX, buttonY);
+        const loadIcon = this.add.image(0, 0, 'icon-load');
+        loadIcon.setOrigin(0.5);
+        const loadScale = iconSize / Math.max(loadIcon.width, loadIcon.height);
+        loadIcon.setScale(loadScale);
+        loadIcon.setInteractive({ useHandCursor: true });
+        loadIcon.on('pointerdown', () => this.loadWorld());
+        loadButton.add([loadIcon]);
+        loadButton.setDepth(1000);
+        
+        // Load button tooltip
+        const loadTooltip = this.add.text(0, 35, 'Load', tooltipStyle);
+        loadTooltip.setOrigin(0.5, 0);
+        loadTooltip.setVisible(false);
+        loadTooltip.setDepth(2000);
+        loadButton.add([loadTooltip]);
+        loadIcon.on('pointerover', () => loadTooltip.setVisible(true));
+        loadIcon.on('pointerout', () => loadTooltip.setVisible(false));
+        
+        buttonX += iconSize + spacing + 8; // Small extra gap before config
+        
+        // Position config/settings button after Load
+        if (this.settingsButton) {
+            this.settingsButton.x = buttonX;
+            this.settingsButton.y = buttonY;
+        }
+    }
+
+    createWorldNameField() {
+        // Create HTML input element for world name
+        const inputElement = document.createElement('input');
+        inputElement.type = 'text';
+        inputElement.placeholder = '';
+        inputElement.style.position = 'absolute';
+        inputElement.style.right = '15px';
+        inputElement.style.top = '18px';
+        inputElement.style.width = '150px';
+        inputElement.style.height = '28px';
+        inputElement.style.padding = '4px 8px';
+        inputElement.style.fontSize = '14px';
+        inputElement.style.fontFamily = 'Arial';
+        inputElement.style.border = '2px solid #333333';
+        inputElement.style.borderRadius = '4px';
+        inputElement.style.backgroundColor = '#FFFFFF';
+        inputElement.style.outline = 'none';
+        inputElement.style.zIndex = '1000';
+        
+        document.body.appendChild(inputElement);
+        this.worldNameInput = inputElement;
+        
+        // Create Phaser tooltip for the world name field
+        const tooltipStyle = {
+            fontSize: '12px',
+            fontFamily: 'Arial',
+            color: '#000000',
+            backgroundColor: '#FFB6C1',
+            padding: { x: 6, y: 4 }
+        };
+        this.worldNameTooltip = this.add.text(0, 0, 'Game Name', tooltipStyle);
+        this.worldNameTooltip.setOrigin(0.5, 0);
+        this.worldNameTooltip.setVisible(false);
+        this.worldNameTooltip.setDepth(2000);
+        
+        // Add event listeners for tooltip
+        inputElement.addEventListener('mouseenter', () => {
+            this.updateWorldNameTooltipPosition();
+            this.worldNameTooltip.setVisible(true);
+        });
+        inputElement.addEventListener('mouseleave', () => {
+            this.worldNameTooltip.setVisible(false);
+        });
+    }
+    
+    updateWorldNameTooltipPosition() {
+        if (this.worldNameInput && this.worldNameTooltip) {
+            const rect = this.worldNameInput.getBoundingClientRect();
+            const canvas = this.game.canvas.getBoundingClientRect();
+            // Position tooltip relative to canvas coordinates
+            const x = rect.left + rect.width / 2 - canvas.left;
+            const y = rect.bottom - canvas.top + 5; // Position below input
+            this.worldNameTooltip.setPosition(x, y);
+        }
+    }
+
+    getWorldNameInputValue() {
+        if (!this.worldNameInput) {
+            return '';
+        }
+        return (this.worldNameInput.value || '').trim();
+    }
+
+    setWorldNameInputValue(name) {
+        if (this.worldNameInput) {
+            this.worldNameInput.value = name || '';
+        }
+    }
+
+    getSaveName() {
+        // Priority: 1) field value if non-blank, 2) currentWorldName, 3) generate default
+        const fieldValue = this.getWorldNameInputValue();
+        if (fieldValue) {
+            return fieldValue;
+        }
+        if (this.currentWorldName) {
+            return this.currentWorldName;
+        }
+        return generateDefaultWorldName();
     }
 
     openChildNameDialog() {
@@ -375,8 +589,8 @@ export class GameScene extends Phaser.Scene {
                 // Update title immediately
                 this.titleText.setText(this.buildTitleText(savedName));
                 
-                // Reposition cog button after title text changes
-                this.positionSettingsButton();
+                // Reposition Play button and world name field after title text changes
+                this.positionPlayButton();
                 
                 // Show confirmation toast
                 this.modal.showToast(`Name updated to ${savedName}!`);
@@ -406,6 +620,14 @@ export class GameScene extends Phaser.Scene {
         if (this.titleText) this.titleText.setVisible(visible);
         if (this.settingsButton) this.settingsButton.setVisible(visible);
         if (this.modeIndicator) this.modeIndicator.setVisible(visible);
+        
+        // Hide/show world name input field
+        if (this.worldNameInput) {
+            this.worldNameInput.style.display = visible ? 'block' : 'none';
+        }
+        if (this.worldNameTooltip) {
+            this.worldNameTooltip.setVisible(false); // Always hide tooltip when changing modes
+        }
         
         // Hide/show grid and hover indicator
         if (this.gridGraphics) this.gridGraphics.setVisible(visible);
@@ -1112,11 +1334,12 @@ export class GameScene extends Phaser.Scene {
             }
         };
 
-        const name = this.currentWorldName || generateDefaultWorldName();
+        const name = this.getSaveName();
         const success = saveWorld(name, worldData);
 
         if (success) {
             this.currentWorldName = name;
+            this.setWorldNameInputValue(name);
             this.savedGridSnapshot = JSON.parse(JSON.stringify(this.grid));
 
             if (showToast) {
@@ -1132,37 +1355,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     saveWorld() {
-        // If we already have a current world, save directly to it
-        if (this.currentWorldName) {
-            this.saveCurrentWorld();
-        } else {
-            // First time save - ask for a name
-            const worldData = {
-                grid: this.grid,
-                playerPosition: {
-                    x: this.player.x,
-                    y: this.player.y
-                }
-            };
-
-            const defaultName = generateDefaultWorldName();
-            
-            this.modal.showInputDialog(
-                'Save World',
-                'Enter world name',
-                defaultName,
-                (name) => {
-                    const success = saveWorld(name, worldData);
-                    if (success) {
-                        this.currentWorldName = name;
-                        this.savedGridSnapshot = JSON.parse(JSON.stringify(this.grid));
-                        this.modal.showToast(`Saved as "${name}"!`);
-                    } else {
-                        this.modal.showToast('Save failed!');
-                    }
-                }
-            );
-        }
+        // Use saveCurrentWorld which will use the field value, currentWorldName, or generate default
+        this.saveCurrentWorld();
     }
 
     loadWorld() {
@@ -1176,6 +1370,7 @@ export class GameScene extends Phaser.Scene {
                 if (worldData) {
                     this.loadWorldData(worldData);
                     this.currentWorldName = world.name; // Track which world is loaded
+                    this.setWorldNameInputValue(world.name);
                     this.modal.showToast(`Loaded "${world.name}"!`);
                 } else {
                     this.modal.showToast('Load failed!');
@@ -1266,6 +1461,7 @@ export class GameScene extends Phaser.Scene {
         this.initializeGrid();
         this.renderGrid();
         this.currentWorldName = null; // Reset to no saved world identity
+        this.setWorldNameInputValue(''); // Clear the world name field
         this.modal.showToast(toastMessage);
     }
 
@@ -1288,5 +1484,13 @@ export class GameScene extends Phaser.Scene {
             'Clear',
             'Cancel'
         );
+    }
+    
+    shutdown() {
+        // Clean up HTML input element when scene shuts down
+        if (this.worldNameInput && this.worldNameInput.parentNode) {
+            this.worldNameInput.parentNode.removeChild(this.worldNameInput);
+            this.worldNameInput = null;
+        }
     }
 }

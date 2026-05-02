@@ -59,24 +59,19 @@ export class Toolbar {
         // Add visual gap before function buttons
         objectX += 20;
         
-        // Add new action button
-        this.createActionButton(objectX, row2Y, objectButtonSize, 'new', () => this.scene.createNewWorld());
+        // Add eraser and clear as floating icons (no background boxes)
+        this.createFloatingToolIcon(objectX, row2Y, objectButtonSize, 'icon-erase', true, () => {
+            if (this.buildToolsEnabled) {
+                this.mode = TOOL_MODES.ERASE;
+                this.updateButtons();
+            }
+        });
         objectX += objectButtonSize + gap;
-        
-        // Action buttons (save, load)
-        this.createActionButton(objectX, row2Y, objectButtonSize, 'save', () => this.scene.saveWorld());
-        objectX += objectButtonSize + gap;
-        this.createActionButton(objectX, row2Y, objectButtonSize, 'load', () => this.scene.loadWorld());
-        objectX += objectButtonSize + gap + 5; // Reduced gap before eraser
-        
-        // Add eraser and clear
-        this.createEraseButton(objectX, row2Y, objectButtonSize);
-        objectX += objectButtonSize + gap;
-        this.createActionButton(objectX, row2Y, objectButtonSize, 'clear', () => this.scene.clearWorld());
+        this.createFloatingToolIcon(objectX, row2Y, objectButtonSize, 'icon-clear', false, () => this.scene.clearWorld());
         objectX += objectButtonSize + gap + 15; // Gap before Play button for visual separation
         
         // Mode toggle button (Play/Edit) - visually separated as main action, larger size for header
-        this.createModeToggleButton(objectX, row2Y, 60);
+        this.createModeToggleButton(objectX, row2Y, 64);
     }
 
     createColorButton(x, y, size, toolType, label, color) {
@@ -287,6 +282,81 @@ export class Toolbar {
         this.buttons.push({ container: button, bg, toolType: null, isErase: false, isAction: false, isPlus: true, isBuildTool: true });
     }
 
+    createFloatingToolIcon(x, y, size, iconKey, isEraseTool, callback) {
+        const button = this.scene.add.container(x, y);
+        
+        // Transparent hit area for interaction
+        const hitArea = this.scene.add.rectangle(0, 0, size, size)
+            .setAlpha(0.01)
+            .setInteractive({ useHandCursor: true });
+        
+        button.add([hitArea]);
+        
+        // Add icon directly on toolbar background
+        const icon = this.scene.add.image(0, 0, iconKey);
+        icon.setOrigin(0.5, 0.5);
+        const iconSize = size * 0.72;
+        const scale = iconSize / Math.max(icon.width, icon.height);
+        icon.setScale(scale);
+        
+        button.add([icon]);
+        button.setScale(1.18);
+        button.setDepth(1000);
+        
+        // Create tooltip with light pink background and black text
+        const tooltipStyle = {
+            fontSize: '12px',
+            fontFamily: 'Arial',
+            color: '#000000',
+            backgroundColor: '#FFB6C1',
+            padding: { x: 6, y: 4 }
+        };
+        
+        let tooltipText = '';
+        if (iconKey === 'icon-erase') {
+            tooltipText = 'Erase';
+        } else if (iconKey === 'icon-clear') {
+            tooltipText = 'Clear All';
+        }
+        
+        let tooltip = null;
+        if (tooltipText) {
+            tooltip = this.scene.add.text(0, -35, tooltipText, tooltipStyle);
+            tooltip.setOrigin(0.5, 1); // Position above the icon
+            tooltip.setVisible(false);
+            tooltip.setDepth(2000);
+            button.add([tooltip]);
+        }
+        
+        // Subtle hover effect
+        hitArea.on('pointerover', () => {
+            icon.setScale(scale * 1.1);
+            if (tooltip) tooltip.setVisible(true);
+        });
+        
+        hitArea.on('pointerout', () => {
+            icon.setScale(scale);
+            if (tooltip) tooltip.setVisible(false);
+        });
+        
+        hitArea.on('pointerdown', () => {
+            // Quick scale feedback
+            icon.setScale(scale * 0.95);
+            if (tooltip) tooltip.setVisible(false);
+            callback();
+            this.scene.time.delayedCall(100, () => {
+                icon.setScale(scale);
+            });
+        });
+        
+        // Track as erase tool or action tool
+        if (isEraseTool) {
+            this.buttons.push({ container: button, bg: hitArea, toolType: null, isErase: true, isAction: false, isPlus: false, isBuildTool: true });
+        } else {
+            this.buttons.push({ container: button, bg: hitArea, toolType: null, isErase: false, isAction: true, isPlus: false });
+        }
+    }
+
     createActionButton(x, y, size, iconType, callback) {
         const button = this.scene.add.container(x, y);
         
@@ -341,29 +411,28 @@ export class Toolbar {
 
         button.add([bg]);
         
-        // Add icon image that changes based on mode - larger than other toolbar icons
+        // Add icon image that changes based on mode - larger size for prominence
         const icon = this.scene.add.image(0, 0, 'icon-play');
         icon.setOrigin(0.5);
         icon.setInteractive({ useHandCursor: true });
-        const iconSize = size * 1.3;
+        const iconSize = 64; // Larger than other header icons for prominence
         const scale = iconSize / Math.max(icon.width, icon.height);
         icon.setScale(scale);
         button.add([icon]);
         
-        // Create tooltip text (hidden by default)
-        const tooltip = this.scene.add.text(0, 40, 'Play Mode', {
+        // Create tooltip text (hidden by default) - light pink background with black text
+        const tooltip = this.scene.add.text(0, 45, 'Play Mode', {
             fontSize: '12px',
             fontFamily: 'Arial',
-            color: '#FFFFFF',
-            backgroundColor: '#333333',
+            color: '#000000',
+            backgroundColor: '#FFB6C1',
             padding: { x: 6, y: 4 }
         });
-        tooltip.setOrigin(0.5);
+        tooltip.setOrigin(0.5, 0);
         tooltip.setVisible(false);
         tooltip.setDepth(2000);
         button.add([tooltip]);
         
-        button.setScale(1.18);
         button.setDepth(1000);
 
         // Event handler function for toggling mode
@@ -377,13 +446,13 @@ export class Toolbar {
             // Update icon and tooltip based on mode
             if (this.scene.getGameMode() === GAME_MODES.BUILD) {
                 icon.setTexture('icon-play'); // Show Play icon in Edit mode
-                const iconSize = size * 1.6;
+                const iconSize = 64; // Larger size for prominence
                 const scale = iconSize / Math.max(icon.width, icon.height);
                 icon.setScale(scale);
                 tooltip.setText('Play Mode');
             } else {
                 icon.setTexture('icon-edit'); // Show Edit icon in Play mode
-                const iconSize = size * 1.6;
+                const iconSize = 64; // Larger size for prominence
                 const scale = iconSize / Math.max(icon.width, icon.height);
                 icon.setScale(scale);
                 tooltip.setText('Edit Mode');

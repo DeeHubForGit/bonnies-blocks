@@ -249,12 +249,12 @@ export class IsometricPlayScene extends Phaser.Scene {
         const scale = iconSize / Math.max(icon.width, icon.height);
         icon.setScale(scale);
 
-        // Create tooltip (hidden by default)
+        // Create tooltip (hidden by default) - light pink background with black text
         const tooltip = this.add.text(0, 40, 'Edit', {
             fontSize: '12px',
             fontFamily: 'Arial',
-            color: '#FFFFFF',
-            backgroundColor: '#333333',
+            color: '#000000',
+            backgroundColor: '#FFB6C1',
             padding: { x: 6, y: 4 }
         });
         tooltip.setOrigin(0.5);
