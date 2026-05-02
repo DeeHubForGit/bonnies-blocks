@@ -22,13 +22,14 @@ export const BLOCK_TYPES = {
     RED: 'red',
     TEAL: 'teal',
     WHITE: 'white',
+    GREY: 'grey',
     BLACK: 'black',
     // Pattern blocks (magical building blocks)
     HEART_PINK: 'heartPink',
     GLITTER_PINK: 'glitterPink',
     WATER: 'water',
     STAR_YELLOW: 'starYellow',
-    LEAF_GREEN: 'leafGreen',
+    //LEAF_GREEN: 'leafGreen',
     // Special blocks
     RAINBOW: 'rainbow',
     // Objects
@@ -55,13 +56,14 @@ export const BLOCK_COLORS = {
     [BLOCK_TYPES.RED]: 0xE74C3C,
     [BLOCK_TYPES.TEAL]: 0x1ABC9C,
     [BLOCK_TYPES.WHITE]: 0xFFFFFF,
+    [BLOCK_TYPES.GREY]: 0x808080,
     [BLOCK_TYPES.BLACK]: 0x333333,
     // Pattern blocks (base colors)
     [BLOCK_TYPES.HEART_PINK]: 0xFFB6D9,
     [BLOCK_TYPES.GLITTER_PINK]: 0xFFD4E5,
     [BLOCK_TYPES.WATER]: 0x6EC6E8,
     [BLOCK_TYPES.STAR_YELLOW]: 0xFFF9C4,
-    [BLOCK_TYPES.LEAF_GREEN]: 0xC8E6C9,
+    //[BLOCK_TYPES.LEAF_GREEN]: 0xC8E6C9,
     // Special blocks
     [BLOCK_TYPES.RAINBOW]: 0xFF69B4, // Starting color, will cycle
     // Objects
@@ -81,7 +83,7 @@ export const BLOCK_PATTERNS = {
     [BLOCK_TYPES.GLITTER_PINK]: '✨', // Has animated sparkle effect
     [BLOCK_TYPES.WATER]: '🌊',
     [BLOCK_TYPES.STAR_YELLOW]: '⭐',
-    [BLOCK_TYPES.LEAF_GREEN]: '🌿',
+    //[BLOCK_TYPES.LEAF_GREEN]: '🌿',
     [BLOCK_TYPES.RAINBOW]: '🌈'
 };
 
@@ -120,6 +122,7 @@ export const PALETTE_COLORS = [
     { type: BLOCK_TYPES.YELLOW, label: 'Yellow', color: BLOCK_COLORS[BLOCK_TYPES.YELLOW], category: ITEM_CATEGORIES.COLOR },
     // Neutrals
     { type: BLOCK_TYPES.WHITE, label: 'White', color: BLOCK_COLORS[BLOCK_TYPES.WHITE], category: ITEM_CATEGORIES.COLOR },
+    { type: BLOCK_TYPES.GREY, label: 'Grey', color: BLOCK_COLORS[BLOCK_TYPES.GREY], category: ITEM_CATEGORIES.COLOR },
     { type: BLOCK_TYPES.BLACK, label: 'Black', color: BLOCK_COLORS[BLOCK_TYPES.BLACK], category: ITEM_CATEGORIES.COLOR }
 ];
 
@@ -127,7 +130,7 @@ export const PALETTE_COLORS = [
 // Ordered to group with related base colors
 export const PALETTE_PATTERN_COLORS = [
     // Green family
-    { type: BLOCK_TYPES.LEAF_GREEN, label: 'Leaves', color: BLOCK_COLORS[BLOCK_TYPES.LEAF_GREEN], pattern: BLOCK_PATTERNS[BLOCK_TYPES.LEAF_GREEN], category: ITEM_CATEGORIES.PATTERN_COLOR },
+    //{ type: BLOCK_TYPES.LEAF_GREEN, label: 'Leaves', color: BLOCK_COLORS[BLOCK_TYPES.LEAF_GREEN], pattern: BLOCK_PATTERNS[BLOCK_TYPES.LEAF_GREEN], category: ITEM_CATEGORIES.PATTERN_COLOR },
     // Blue family - water terrain
     { type: BLOCK_TYPES.WATER, label: 'Water', color: BLOCK_COLORS[BLOCK_TYPES.WATER], pattern: BLOCK_PATTERNS[BLOCK_TYPES.WATER], category: ITEM_CATEGORIES.PATTERN_COLOR },
     // Pink family
@@ -177,9 +180,9 @@ export const WORLD_SPRITES = {
     [BLOCK_TYPES.BUSH_PINK_FLOWER]: 'world-bush-pink-flower',
     [BLOCK_TYPES.PALM_TREE]: 'world-palm-tree',
     [BLOCK_TYPES.TREE]: 'world-tree',
-    [BLOCK_TYPES.BUSH_REINDEER]: 'world-bush-reindeer',
+    [BLOCK_TYPES.BUSH_REINDEER]: 'world-bush-reindeer'
     // Ground tiles
-    GRASS_TILE: 'world-grass-tile'
+    //GRASS_TILE: 'world-grass-tile'
 };
 
 // Player settings

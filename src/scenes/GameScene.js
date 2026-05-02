@@ -90,7 +90,7 @@ export class GameScene extends Phaser.Scene {
         
         // World assets (for Play Mode) - top-down/isometric style
         // These will use placeholders for now but can be replaced with real world sprites
-        this.load.image('world-grass-tile', 'assets/world/grass_tile.png');
+        //this.load.image('world-grass-tile', 'assets/world/grass_tile.png');
         this.load.image('world-girl', 'assets/icons/blonde_girl.png');
         this.load.image('world-bunny', 'assets/icons/bunny.png');
         this.load.image('world-unicorn', 'assets/icons/unicorn.png');

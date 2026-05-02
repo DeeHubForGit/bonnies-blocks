@@ -19,7 +19,7 @@ export class Toolbar {
         const toolbarTop = HEADER_HEIGHT + PLAYABLE_HEIGHT;
         const colorButtonSize = 38; // Smaller for color swatches
         const objectButtonSize = 52; // Reduced from 58 to fit more items
-        const gap = 5; // Reduced from 6 to save space
+        const gap = 5; // Reduced from 5 to save space
         const startX = 35; // Nudged right to prevent left edge cutoff
         
         // Row 1: Basic colors + Pattern colors (all draggable paint colors)
@@ -49,11 +49,11 @@ export class Toolbar {
         // Row 2: Objects and tools (add more vertical spacing from row 1)
         const row2Y = toolbarTop + 86;
         let objectX = startX;
-        
+
         // Add objects
         PALETTE_OBJECTS.forEach((objectItem) => {
             this.createObjectButton(objectX, row2Y, objectButtonSize, objectItem.type, objectItem.label, objectItem.icon);
-            objectX += objectButtonSize + gap;
+            objectX += objectButtonSize + gap + 1;
         });
         
         // Add visual gap before function buttons
