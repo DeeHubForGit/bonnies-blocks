@@ -616,6 +616,10 @@ export class GameScene extends Phaser.Scene {
     setBuildViewVisible(visible) {
         console.log(`[GameScene] Setting Build view visibility: ${visible}`);
         
+        // Reset drag state when changing modes
+        this.isDragging = false;
+        this.lastPaintedCell = null;
+        
         // Hide/show header elements
         if (this.titleText) this.titleText.setVisible(visible);
         if (this.settingsButton) this.settingsButton.setVisible(visible);
@@ -775,18 +779,32 @@ export class GameScene extends Phaser.Scene {
             // Only handle clicks in Build mode
             if (this.gameMode === GAME_MODES.BUILD) {
                 this.handleGridClick(pointer);
-                // Start drag if it's a color tool
+                // Start drag only if click is inside grid and it's a color tool
                 if (this.toolbar.getMode() === TOOL_MODES.PLACE && isColorBlock(this.toolbar.getSelectedTool())) {
-                    this.isDragging = true;
-                    const gridX = Math.floor(pointer.x / GRID_SIZE);
-                    const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
-                    this.lastPaintedCell = `${gridX}_${gridY}`;
+                    // Check if pointer is inside playable grid bounds
+                    if (this.isPointerInGrid(pointer)) {
+                        this.isDragging = true;
+                        const gridX = Math.floor(pointer.x / GRID_SIZE);
+                        const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
+                        this.lastPaintedCell = `${gridX}_${gridY}`;
+                    }
                 }
             }
         });
 
         // Mouse up to stop drag painting
         this.input.on('pointerup', (pointer) => {
+            this.isDragging = false;
+            this.lastPaintedCell = null;
+        });
+
+        // Pointer out/leave to stop drag painting when pointer leaves canvas
+        this.input.on('pointerout', (pointer) => {
+            this.isDragging = false;
+            this.lastPaintedCell = null;
+        });
+
+        this.input.on('pointerleave', (pointer) => {
             this.isDragging = false;
             this.lastPaintedCell = null;
         });
@@ -816,6 +834,18 @@ export class GameScene extends Phaser.Scene {
         this.hoverRect.setFillStyle(0xffffff, 0.1);
         this.hoverRect.setDepth(50);
         this.hoverRect.setVisible(false);
+    }
+
+    isPointerInGrid(pointer) {
+        // Check if pointer is within playable grid bounds
+        if (pointer.y < HEADER_HEIGHT + GRID_TOP_MARGIN || pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT) {
+            return false;
+        }
+
+        const gridX = Math.floor(pointer.x / GRID_SIZE);
+        const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
+
+        return gridX >= 0 && gridX < GRID_COLS && gridY >= 0 && gridY < GRID_ROWS;
     }
 
     handleDragPaint(pointer) {
