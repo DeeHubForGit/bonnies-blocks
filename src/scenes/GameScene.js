@@ -538,6 +538,28 @@ export class GameScene extends Phaser.Scene {
         inputElement.addEventListener('mouseleave', () => {
             this.worldNameTooltip.setVisible(false);
         });
+        
+        // Prevent Phaser keyboard handling from interfering with typing
+        inputElement.addEventListener('focus', () => {
+            this.isTextInputOpen = true;
+        });
+        
+        inputElement.addEventListener('blur', () => {
+            this.isTextInputOpen = false;
+        });
+        
+        // Stop keyboard event propagation to prevent game interference
+        inputElement.addEventListener('keydown', (e) => {
+            e.stopPropagation();
+        });
+        
+        inputElement.addEventListener('keyup', (e) => {
+            e.stopPropagation();
+        });
+        
+        inputElement.addEventListener('keypress', (e) => {
+            e.stopPropagation();
+        });
     }
     
     updateWorldNameTooltipPosition() {
