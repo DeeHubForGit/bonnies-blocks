@@ -15,19 +15,21 @@ export class Modal {
      * Show a toast notification (small temporary message)
      */
     showToast(message, duration = 2000) {
-        const toast = this.scene.add.container(GAME_WIDTH / 2, 60);
+        const toast = this.scene.add.container(GAME_WIDTH / 2, 95);
         
-        const bg = this.scene.add.rectangle(0, 0, 300, 50, 0xFFB6C1, 0.95);
+        const toastWidth = 430;
+        const toastHeight = 56;
+        const bg = this.scene.add.rectangle(0, 0, toastWidth, toastHeight, 0xFFB6C1, 0.95);
         bg.setStrokeStyle(3, 0xFFFFFF);
-        const cornerRadius = 25;
-        bg.setDisplaySize(300, 50);
+        bg.setDisplaySize(toastWidth, toastHeight);
         
         const text = this.scene.add.text(0, 0, message, {
             fontSize: '18px',
             fontFamily: 'Arial',
-            color: '#ffffff',
+            color: '#000000',
             fontStyle: 'bold',
-            align: 'center'
+            align: 'center',
+            wordWrap: { width: 390 }
         }).setOrigin(0.5);
 
         toast.add([bg, text]);
