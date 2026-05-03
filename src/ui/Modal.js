@@ -382,6 +382,8 @@ export class Modal {
      * Create the modal base (overlay + panel)
      */
     createModalBase() {
+        this.hideWorldNameInput();
+        
         if (this.container) {
             this.container.destroy();
         }
@@ -562,6 +564,167 @@ export class Modal {
     }
 
     /**
+     * Show Clear World confirmation dialog with visual design
+     */
+    showClearWorldDialog(onConfirm) {
+        this.hideWorldNameInput();
+        
+        if (this.container) {
+            this.container.destroy();
+        }
+
+        this.container = this.scene.add.container(0, 0);
+        this.container.setDepth(3000);
+
+        const centerX = GAME_WIDTH / 2;
+        const centerY = GAME_HEIGHT / 2;
+
+        // Semi-transparent overlay
+        const overlay = this.scene.add.rectangle(
+            centerX,
+            centerY,
+            GAME_WIDTH,
+            GAME_HEIGHT,
+            0x000000,
+            0.7
+        );
+        overlay.setInteractive();
+
+        // Larger custom modal panel
+        const panelWidth = 620;
+        const panelHeight = 560;
+        const panelX = centerX - panelWidth / 2;
+        const panelY = centerY - panelHeight / 2;
+        
+        const graphics = this.scene.add.graphics();
+        graphics.fillStyle(0xFFD6E8, 0.98);
+        graphics.fillRoundedRect(
+            panelX,
+            panelY,
+            panelWidth,
+            panelHeight,
+            20
+        );
+        graphics.lineStyle(4, 0xFFFFFF, 1);
+        graphics.strokeRoundedRect(
+            panelX,
+            panelY,
+            panelWidth,
+            panelHeight,
+            20
+        );
+
+        // Title
+        const titleText = this.scene.add.text(centerX, centerY - 220, 'Clear World', {
+            fontSize: '36px',
+            fontFamily: 'Arial',
+            color: '#333333',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        // Clear game illustration
+        const clearImage = this.scene.add.image(centerX, centerY - 105, 'clear-game-image');
+        const maxImageWidth = 420;
+        const maxImageHeight = 180;
+        const imageScale = Math.min(maxImageWidth / clearImage.width, maxImageHeight / clearImage.height);
+        clearImage.setScale(imageScale);
+
+        // Message text
+        const messageText = this.scene.add.text(centerX, centerY + 95, 'This will erase everything\nin the current world.\n\nAre you sure?', {
+            fontSize: '20px',
+            fontFamily: 'Arial',
+            color: '#333333',
+            align: 'center',
+            lineSpacing: 6
+        }).setOrigin(0.5);
+
+        // Button Y position
+        const buttonY = centerY + 205;
+        
+        // Cancel button with icon
+        const cancelBtn = this.createIconButton(centerX - 100, buttonY, 'Cancel', 0xe0e0e0, 'icon-cancel', () => {
+            this.close();
+        });
+
+        // Clear button with icon
+        const clearBtn = this.createIconButton(centerX + 100, buttonY, 'Clear', 0xFFB6C1, 'icon-bin', () => {
+            this.close();
+            if (onConfirm) onConfirm();
+        });
+
+        this.container.add([overlay, graphics, titleText, clearImage, messageText, cancelBtn, clearBtn]);
+    }
+
+    /**
+     * Create a button with an icon
+     */
+    createIconButton(x, y, label, color, iconKey, onClick) {
+        const button = this.scene.add.container(x, y);
+        
+        const buttonWidth = 170;
+        const buttonHeight = 54;
+        const bg = this.scene.add.rectangle(0, 0, buttonWidth, buttonHeight, color);
+        bg.setStrokeStyle(3, 0x000000);
+        bg.setInteractive({ useHandCursor: true });
+
+        // Icon on the left
+        const icon = this.scene.add.image(-45, 0, iconKey);
+        const maxIconWidth = 36;
+        const maxIconHeight = 36;
+        const iconScale = Math.min(maxIconWidth / icon.width, maxIconHeight / icon.height);
+        icon.setScale(iconScale);
+
+        // Text on the right
+        const text = this.scene.add.text(22, 0, label, {
+            fontSize: '18px',
+            fontFamily: 'Arial',
+            color: '#000000',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+
+        button.add([bg, icon, text]);
+
+        bg.on('pointerdown', () => {
+            bg.setFillStyle(color === 0xFFB6C1 ? 0xFF99AA : 0xcccccc);
+            if (onClick) onClick();
+            this.scene.time.delayedCall(100, () => {
+                bg.setFillStyle(color);
+            });
+        });
+
+        bg.on('pointerover', () => {
+            bg.setFillStyle(color === 0xFFB6C1 ? 0xFFCCDD : 0xf0f0f0);
+        });
+
+        bg.on('pointerout', () => {
+            bg.setFillStyle(color);
+        });
+
+        return button;
+    }
+
+    /**
+     * Hide the world name input while modal is open
+     */
+    hideWorldNameInput() {
+        if (this.scene.worldNameInput) {
+            this.scene.worldNameInput.style.display = 'none';
+        }
+    }
+
+    /**
+     * Restore the world name input when modal closes
+     */
+    restoreWorldNameInput() {
+        if (this.scene.worldNameInput && this.scene.gameMode === 'build') {
+            this.scene.worldNameInput.style.display = 'block';
+            if (this.scene.positionWorldNameField) {
+                this.scene.positionWorldNameField();
+            }
+        }
+    }
+
+    /**
      * Close the modal
      */
     close() {
@@ -575,6 +738,10 @@ export class Modal {
             this.container.destroy();
             this.container = null;
         }
+        
+        // Restore world name input after modal closes
+        this.restoreWorldNameInput();
+        
         if (this.onClose) {
             this.onClose();
             this.onClose = null;
