@@ -195,31 +195,90 @@ export class Modal {
      * Show a list selection dialog
      */
     showListDialog(title, items, onSelect, emptyMessage = 'No items available') {
-        this.createModalBase();
+        this.hideWorldNameInput();
+        
+        if (this.container) {
+            this.container.destroy();
+        }
+
+        this.container = this.scene.add.container(0, 0);
+        this.container.setDepth(3000);
 
         const centerX = GAME_WIDTH / 2;
         const centerY = GAME_HEIGHT / 2;
 
+        // Semi-transparent overlay
+        const overlay = this.scene.add.rectangle(
+            centerX,
+            centerY,
+            GAME_WIDTH,
+            GAME_HEIGHT,
+            0x000000,
+            0.7
+        );
+        overlay.setInteractive();
+
+        // Larger custom modal panel
+        const panelWidth = 620;
+        const panelHeight = 560;
+        const panelX = centerX - panelWidth / 2;
+        const panelY = centerY - panelHeight / 2;
+        
+        const graphics = this.scene.add.graphics();
+        graphics.fillStyle(0xFFD6E8, 0.98);
+        graphics.fillRoundedRect(
+            panelX,
+            panelY,
+            panelWidth,
+            panelHeight,
+            20
+        );
+        graphics.lineStyle(4, 0xFFFFFF, 1);
+        graphics.strokeRoundedRect(
+            panelX,
+            panelY,
+            panelWidth,
+            panelHeight,
+            20
+        );
+
         // Title
-        const titleText = this.scene.add.text(centerX, centerY - 145, title, {
-            fontSize: '28px',
+        const titleText = this.scene.add.text(centerX, centerY - 220, title, {
+            fontSize: '36px',
             fontFamily: 'Arial',
             color: '#333333',
             fontStyle: 'bold'
         }).setOrigin(0.5);
 
-        this.container.add([titleText]);
+        // Load world illustration
+        const loadImage = this.scene.add.image(centerX, centerY - 130, 'load-world-image');
+        const maxImageWidth = 420;
+        const maxImageHeight = 150;
+        const imageScale = Math.min(maxImageWidth / loadImage.width, maxImageHeight / loadImage.height);
+        loadImage.setScale(imageScale);
+
+        // Instruction text
+        const instructionText = this.scene.add.text(centerX, centerY - 35, 'Choose a saved world to load\ninto your current world.', {
+            fontSize: '18px',
+            fontFamily: 'Arial',
+            color: '#333333',
+            align: 'center',
+            lineSpacing: 4
+        }).setOrigin(0.5);
+
+        this.container.add([overlay, graphics, titleText, loadImage, instructionText]);
 
         if (items.length === 0) {
             // Empty state
-            const emptyText = this.scene.add.text(centerX, centerY - 20, emptyMessage, {
+            const emptyText = this.scene.add.text(centerX, centerY + 35, emptyMessage, {
                 fontSize: '18px',
                 fontFamily: 'Arial',
                 color: '#333333',
-                align: 'center'
+                align: 'center',
+                wordWrap: { width: 500 }
             }).setOrigin(0.5);
 
-            const closeBtn = this.createButton(centerX, centerY + 60, 'Close', 0xe0e0e0, () => {
+            const closeBtn = this.createIconButton(centerX, centerY + 220, 'Cancel', 0xe0e0e0, 'icon-cancel', () => {
                 this.close();
             });
 
@@ -227,18 +286,19 @@ export class Modal {
         } else {
             // Scrollable list items - define layout constants
             const listCenterX = centerX;
-            const listTopY = centerY - 65;
+            const listTopY = centerY + 10;
             const itemHeight = 55;
             const visibleItems = 3;
             const contentTopPadding = 10;
             const contentBottomPadding = 10;
             // Visible height: show exactly 3 items with padding, prevent 4th item from peeking
             const listHeight = contentTopPadding + (visibleItems * itemHeight) - 5;
-            const listWidth = 350;
+            const listWidth = 440;
             const scrollbarGap = 12;
             const scrollbarWidth = 10;
             const scrollbarX = listCenterX + (listWidth / 2) + scrollbarGap + (scrollbarWidth / 2);
             const itemRectHeight = 45;
+            const itemButtonWidth = 420;
 
             console.log(`[Modal] Rendering ${items.length} saved worlds`);
 
@@ -252,7 +312,7 @@ export class Modal {
                 const itemBtn = this.createListItem(listCenterX, itemY, item, () => {
                     this.close();
                     if (onSelect) onSelect(item);
-                });
+                }, itemButtonWidth);
                 scrollContainer.add(itemBtn);
             });
 
@@ -368,9 +428,8 @@ export class Modal {
                 scrollbarThumb.setVisible(false);
             }
 
-            // Cancel button with larger gap below list
-            const cancelBtnY = listTopY + listHeight + 55;
-            const cancelBtn = this.createButton(centerX, cancelBtnY, 'Cancel', 0xe0e0e0, () => {
+            // Cancel button with icon
+            const cancelBtn = this.createIconButton(centerX, centerY + 225, 'Cancel', 0xe0e0e0, 'icon-cancel', () => {
                 this.close();
             });
 
@@ -470,10 +529,9 @@ export class Modal {
     /**
      * Create a list item button
      */
-    createListItem(x, y, item, onClick) {
+    createListItem(x, y, item, onClick, buttonWidth = 330) {
         const button = this.scene.add.container(x, y);
         
-        const buttonWidth = 330;
         const buttonHeight = 45;
         const cornerRadius = 12;
         
