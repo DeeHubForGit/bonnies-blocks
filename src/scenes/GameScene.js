@@ -21,7 +21,7 @@
 } from '../data/constants.js';
 import { Toolbar } from '../ui/Toolbar.js';
 import { Modal } from '../ui/Modal.js';
-import { saveWorld, loadWorld, getAllWorlds, generateDefaultWorldName, getChildName, saveChildName } from '../utils/storage.js';
+import { saveWorld, loadWorld, getAllWorlds, generateDefaultWorldName, getChildName, saveChildName, deleteWorld, findWorldByName } from '../utils/storage.js';
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -68,7 +68,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-erase', 'assets/icons/erase.png');
         this.load.image('icon-save', 'assets/icons/save.png');
         this.load.image('icon-load', 'assets/icons/load.png');
-        this.load.image('icon-clear', 'assets/icons/clear.png');
+        this.load.image('icon-clear', 'assets/icons/bin.png');
         this.load.image('icon-new', 'assets/icons/new.png');
         this.load.image('icon-girl', 'assets/icons/blonde_girl.png');
         this.load.image('icon-bunny', 'assets/icons/bunny.png');
@@ -76,6 +76,12 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-settings', 'assets/icons/config.png');
         this.load.image('icon-play', 'assets/icons/play.png');
         this.load.image('icon-edit', 'assets/icons/edit.png');
+        
+        // Dialog assets
+        this.load.image('clear-game-image', 'assets/icons/clear_game.png');
+        this.load.image('load-world-image', 'assets/icons/load_world.png');
+        this.load.image('icon-cancel', 'assets/icons/cancel.png');
+        this.load.image('icon-bin', 'assets/icons/bin.png');
         
         // New icons - load with error handling
         this.load.on('loaderror', (file) => {
@@ -426,7 +432,7 @@ export class GameScene extends Phaser.Scene {
         const newButton = this.add.container(buttonX, buttonY);
         const newIcon = this.add.image(0, 0, 'icon-new');
         newIcon.setOrigin(0.5);
-        const newScale = iconSize / Math.max(newIcon.width, newIcon.height);
+        const newScale = (iconSize + 4) / Math.max(newIcon.width, newIcon.height);
         newIcon.setScale(newScale);
         newIcon.setInteractive({ useHandCursor: true });
         newIcon.on('pointerdown', () => this.createNewWorld());
@@ -1386,10 +1392,32 @@ export class GameScene extends Phaser.Scene {
             }
         };
 
+        // Store the previous name before saving
+        const previousWorldName = this.currentWorldName;
         const name = this.getSaveName();
+
+        // Check for name collision with another saved world
+        const existingWorld = findWorldByName(name);
+        if (existingWorld) {
+            // Allow save if this is the currently loaded world (case-insensitive match)
+            const isSameWorld = previousWorldName && 
+                (previousWorldName.trim().toLowerCase() === name.trim().toLowerCase());
+            
+            if (!isSameWorld) {
+                // Block: trying to use a name that belongs to a different saved world
+                this.modal.showToast(`A game named "${existingWorld.name}" already exists.`);
+                return;
+            }
+        }
+
         const success = saveWorld(name, worldData);
 
         if (success) {
+            // If the name changed (case-insensitive), delete the old one
+            if (previousWorldName && previousWorldName.trim().toLowerCase() !== name.trim().toLowerCase()) {
+                deleteWorld(previousWorldName);
+            }
+
             this.currentWorldName = name;
             this.setWorldNameInputValue(name);
             this.savedGridSnapshot = JSON.parse(JSON.stringify(this.grid));
@@ -1518,24 +1546,18 @@ export class GameScene extends Phaser.Scene {
     }
 
     clearWorld() {
-        this.modal.showConfirmDialog(
-            'Clear World',
-            'This will erase everything\nin the current world.\n\nAre you sure?',
-            () => {
-                this.grid = [];
-                for (let row = 0; row < GRID_ROWS; row++) {
-                    this.grid[row] = [];
-                    for (let col = 0; col < GRID_COLS; col++) {
-                        this.grid[row][col] = BLOCK_TYPES.EMPTY;
-                    }
+        this.modal.showClearWorldDialog(() => {
+            this.grid = [];
+            for (let row = 0; row < GRID_ROWS; row++) {
+                this.grid[row] = [];
+                for (let col = 0; col < GRID_COLS; col++) {
+                    this.grid[row][col] = BLOCK_TYPES.EMPTY;
                 }
+            }
 
-                this.renderGrid();
-                this.modal.showToast('World cleared!');
-            },
-            'Clear',
-            'Cancel'
-        );
+            this.renderGrid();
+            this.modal.showToast('World cleared!');
+        });
     }
     
     shutdown() {

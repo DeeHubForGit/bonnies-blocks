@@ -74,8 +74,9 @@ export function saveWorld(name, worldData) {
             savedAt: Date.now()
         };
 
-        // Check if world with this name exists
-        const existingIndex = worlds.findIndex(w => w.name === name);
+        // Check if world with this name exists (case-insensitive)
+        const normalisedName = (name || '').trim().toLowerCase();
+        const existingIndex = worlds.findIndex(w => (w.name || '').trim().toLowerCase() === normalisedName);
         if (existingIndex >= 0) {
             // Overwrite existing world
             worlds[existingIndex] = saveData;
@@ -118,12 +119,26 @@ export function loadWorld(name) {
 }
 
 /**
+ * Find a world by name (case-insensitive)
+ */
+export function findWorldByName(name) {
+    const searchName = (name || '').trim().toLowerCase();
+    if (!searchName) {
+        return null;
+    }
+
+    const worlds = getAllWorlds();
+    return worlds.find(w => (w.name || '').trim().toLowerCase() === searchName) || null;
+}
+
+/**
  * Delete a specific world
  */
 export function deleteWorld(name) {
     try {
         const worlds = getAllWorlds();
-        const filtered = worlds.filter(w => w.name !== name);
+        const normalisedName = (name || '').trim().toLowerCase();
+        const filtered = worlds.filter(w => (w.name || '').trim().toLowerCase() !== normalisedName);
         localStorage.setItem(WORLDS_KEY, JSON.stringify(filtered));
         console.log('[Storage] World deleted:', name);
         return true;
@@ -142,7 +157,7 @@ export function generateDefaultWorldName() {
     let counter = 1;
     let name = `${childName} ${counter}`;
     
-    while (worlds.some(w => w.name === name)) {
+    while (worlds.some(w => (w.name || '').trim().toLowerCase() === name.toLowerCase())) {
         counter++;
         name = `${childName} ${counter}`;
     }
