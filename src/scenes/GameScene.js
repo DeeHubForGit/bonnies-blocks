@@ -74,8 +74,8 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-bunny', 'assets/icons/bunny.png');
         this.load.image('icon-unicorn', 'assets/icons/unicorn.png');
         this.load.image('icon-settings', 'assets/icons/config.png');
-        this.load.image('icon-play', 'assets/icons/play.png');
-        this.load.image('icon-edit', 'assets/icons/edit.png');
+        this.load.image('icon-play', 'assets/icons/arrow_right.png');
+        this.load.image('icon-edit', 'assets/icons/arrow_left.png');
         
         // Dialog assets
         this.load.image('clear-game-image', 'assets/icons/clear_game.png');
@@ -370,12 +370,12 @@ export class GameScene extends Phaser.Scene {
     positionPlayButton() {
         if (this.toolbar && this.toolbar.modeToggleButton && this.titleText) {
             const button = this.toolbar.modeToggleButton;
-            const iconSize = 64;
+            const iconSize = 52;
 
             const titleRight = this.titleText.x + (this.titleText.width / 2);
             const inputWidth = 150;
             const gapAfterTitle = 32;
-            const gapBeforePlay = 4;
+            const gapBeforePlay = 20;
 
             const inputX = titleRight + gapAfterTitle;
             const playX = inputX + inputWidth + gapBeforePlay + (iconSize / 2);
@@ -394,10 +394,10 @@ export class GameScene extends Phaser.Scene {
             const button = this.toolbar.modeToggleButton;
 
             const inputWidth = 150;
-            const gapBeforePlay = 10;
+            const gapBeforePlay = 20;
             const inputY = 18;
 
-            const playLeft = button.x - 32;
+            const playLeft = button.x - 28;
             const inputX = playLeft - inputWidth - gapBeforePlay;
 
             // Add scroll offsets for absolute positioning relative to document body

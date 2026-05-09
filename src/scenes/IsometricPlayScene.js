@@ -135,7 +135,7 @@ export class IsometricPlayScene extends Phaser.Scene {
     preload() {
         // World assets already loaded by GameScene
         // Load edit icon for return-to-edit button
-        this.load.image('icon-edit', 'assets/icons/edit.png');
+        this.load.image('icon-edit', 'assets/icons/arrow_left.png');
     }
 
     create() {
@@ -225,63 +225,55 @@ export class IsometricPlayScene extends Phaser.Scene {
     }
 
     createBuildButton() {
-        // Position button to the right of title, matching Edit Mode's play button position
-        const buttonSize = 52; // Match action button size
-        const scaledSize = buttonSize * 1.18; // Account for button scale
-        let buttonX = this.titleText.x + (this.titleText.width / 2) + (scaledSize / 2) + 15;
-        const buttonY = 32; // Match play button y position
+        // Position button in top-left corner to match edit mode style
+        const buttonX = 40; // Left side with margin
+        const buttonY = 32; // Match header vertical position
         
-        // Clamp X position to keep button visible within game bounds
-        const maxX = GAME_WIDTH - (scaledSize / 2) - 10; // 10px margin from right edge
-        buttonX = Math.min(buttonX, maxX);
-
         const button = this.add.container(buttonX, buttonY);
         
-        // Pale yellow background with black border (match action button style)
-        const bg = this.add.rectangle(0, 0, buttonSize, buttonSize, 0xFDF7D5)
-            .setStrokeStyle(2, 0x000000)
-            .setInteractive({ useHandCursor: true });
-
-        // Use Edit icon image
+        // Use Edit icon image - no background, just floating arrow
         const icon = this.add.image(0, 0, 'icon-edit');
         icon.setOrigin(0.5);
-        const iconSize = buttonSize * 0.72; // Match action button icon sizing
+        icon.setInteractive({ useHandCursor: true });
+        const iconSize = 56; // Match edit mode arrow size
         const scale = iconSize / Math.max(icon.width, icon.height);
         icon.setScale(scale);
 
         // Create tooltip (hidden by default) - light pink background with black text
-        const tooltip = this.add.text(0, 40, 'Edit', {
+        const tooltip = this.add.text(0, 35, 'Edit', {
             fontSize: '12px',
             fontFamily: 'Arial',
             color: '#000000',
             backgroundColor: '#FFB6C1',
             padding: { x: 6, y: 4 }
         });
-        tooltip.setOrigin(0.5);
+        tooltip.setOrigin(0.5, 0);
         tooltip.setVisible(false);
         tooltip.setDepth(20000);
 
-        button.add([bg, icon, tooltip]);
-        button.setScale(1.18); // Match action button scale
+        button.add([icon, tooltip]);
         button.setDepth(10000);
 
         // Show tooltip on hover
-        bg.on('pointerover', () => {
+        icon.on('pointerover', () => {
             tooltip.setVisible(true);
+            // Subtle hover effect - slight brightness increase
+            icon.setTint(0xFFFFFF);
         });
 
-        bg.on('pointerout', () => {
+        icon.on('pointerout', () => {
             tooltip.setVisible(false);
+            icon.clearTint();
         });
 
-        bg.on('pointerdown', () => {
+        icon.on('pointerdown', () => {
             // Hide tooltip when clicking
             tooltip.setVisible(false);
             
-            // Visual feedback (darker yellow background)
-            bg.setFillStyle(0xFBC02D);
+            // Visual feedback - brief scale
+            icon.setScale(scale * 0.95);
             this.time.delayedCall(100, () => {
-                bg.setFillStyle(0xFDF7D5);
+                icon.setScale(scale);
             });
             
             // Fade out before returning to Edit Mode
