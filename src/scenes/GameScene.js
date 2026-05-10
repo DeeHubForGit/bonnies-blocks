@@ -298,14 +298,14 @@ export class GameScene extends Phaser.Scene {
         const childName = getChildName();
         const title = this.buildTitleText(childName);
         
-        // Create title text centered at top
-        this.titleText = this.add.text(GAME_WIDTH / 2, 24, title, {
+        // Create title text on the left side
+        this.titleText = this.add.text(58, 24, title, {
             fontSize: '28px',
             fontFamily: 'Arial',
             fontStyle: 'bold',
             color: '#333333'
         });
-        this.titleText.setOrigin(0.5);
+        this.titleText.setOrigin(0, 0.5); // Left-aligned
         this.titleText.setDepth(1000);
     }
 
@@ -368,16 +368,17 @@ export class GameScene extends Phaser.Scene {
     }
 
     positionPlayButton() {
-        if (this.toolbar && this.toolbar.modeToggleButton && this.titleText) {
+        if (this.toolbar && this.toolbar.modeToggleButton) {
             const button = this.toolbar.modeToggleButton;
             const iconSize = 52;
 
-            const titleRight = this.titleText.x + (this.titleText.width / 2);
+            // Position Play button after game name input
+            // Input comes after Save button with reduced gap
             const inputWidth = 150;
-            const gapAfterTitle = 32;
-            const gapBeforePlay = 20;
+            const gapAfterSave = 12; // Reduced from 16px for tighter spacing
+            const gapBeforePlay = 2;
 
-            const inputX = titleRight + gapAfterTitle;
+            const inputX = this.saveButtonX + 48 + gapAfterSave;
             const playX = inputX + inputWidth + gapBeforePlay + (iconSize / 2);
 
             const maxX = GAME_WIDTH - (iconSize / 2) - 10;
@@ -389,16 +390,15 @@ export class GameScene extends Phaser.Scene {
     }
     
     positionWorldNameField() {
-        if (this.worldNameInput && this.titleText && this.toolbar && this.toolbar.modeToggleButton) {
+        if (this.worldNameInput) {
             const canvas = this.game.canvas.getBoundingClientRect();
-            const button = this.toolbar.modeToggleButton;
 
             const inputWidth = 150;
-            const gapBeforePlay = 20;
+            const gapAfterSave = 12; // Reduced from 16px for tighter spacing
             const inputY = 18;
 
-            const playLeft = button.x - 28;
-            const inputX = playLeft - inputWidth - gapBeforePlay;
+            // Position input after Save button
+            const inputX = this.saveButtonX + 24 + gapAfterSave;
 
             // Add scroll offsets for absolute positioning relative to document body
             const pageX = window.scrollX || window.pageXOffset || 0;
@@ -412,12 +412,13 @@ export class GameScene extends Phaser.Scene {
     }
 
     createHeaderActionButtons() {
-        // Create compact header buttons for New, Save, Load, Config
+        // Create compact header buttons in order: Config, New, Load, Save
         const buttonY = 32; // Centered in 64px header (32px from top)
         const iconSize = 48; // Consistent size for all header icons
-        const spacing = 8; // Tighter spacing to keep buttons closer together
+        const spacing = 8; // Spacing between buttons
         
-        let buttonX = 70; // Move right for balanced spacing around title
+        // Start buttons after title area (title + mode text block) - moved further right for breathing room
+        let buttonX = 312;
         
         // Tooltip style for consistent light pink tooltips
         const tooltipStyle = {
@@ -428,7 +429,15 @@ export class GameScene extends Phaser.Scene {
             padding: { x: 6, y: 4 }
         };
         
-        // New button
+        // Config/Settings button (first)
+        if (this.settingsButton) {
+            this.settingsButton.x = buttonX;
+            this.settingsButton.y = buttonY;
+        }
+        
+        buttonX += iconSize + spacing;
+        
+        // New button (second)
         const newButton = this.add.container(buttonX, buttonY);
         const newIcon = this.add.image(0, 0, 'icon-new');
         newIcon.setOrigin(0.5);
@@ -450,29 +459,7 @@ export class GameScene extends Phaser.Scene {
         
         buttonX += iconSize + spacing;
         
-        // Save button
-        const saveButton = this.add.container(buttonX, buttonY);
-        const saveIcon = this.add.image(0, 0, 'icon-save');
-        saveIcon.setOrigin(0.5);
-        const saveScale = iconSize / Math.max(saveIcon.width, saveIcon.height);
-        saveIcon.setScale(saveScale);
-        saveIcon.setInteractive({ useHandCursor: true });
-        saveIcon.on('pointerdown', () => this.saveWorld());
-        saveButton.add([saveIcon]);
-        saveButton.setDepth(1000);
-        
-        // Save button tooltip
-        const saveTooltip = this.add.text(0, 35, 'Save', tooltipStyle);
-        saveTooltip.setOrigin(0.5, 0);
-        saveTooltip.setVisible(false);
-        saveTooltip.setDepth(2000);
-        saveButton.add([saveTooltip]);
-        saveIcon.on('pointerover', () => saveTooltip.setVisible(true));
-        saveIcon.on('pointerout', () => saveTooltip.setVisible(false));
-        
-        buttonX += iconSize + spacing;
-        
-        // Load button
+        // Load button (third)
         const loadButton = this.add.container(buttonX, buttonY);
         const loadIcon = this.add.image(0, 0, 'icon-load');
         loadIcon.setOrigin(0.5);
@@ -492,13 +479,30 @@ export class GameScene extends Phaser.Scene {
         loadIcon.on('pointerover', () => loadTooltip.setVisible(true));
         loadIcon.on('pointerout', () => loadTooltip.setVisible(false));
         
-        buttonX += iconSize + spacing + 8; // Small extra gap before config
+        buttonX += iconSize + spacing;
         
-        // Position config/settings button after Load
-        if (this.settingsButton) {
-            this.settingsButton.x = buttonX;
-            this.settingsButton.y = buttonY;
-        }
+        // Save button (fourth)
+        const saveButton = this.add.container(buttonX, buttonY);
+        const saveIcon = this.add.image(0, 0, 'icon-save');
+        saveIcon.setOrigin(0.5);
+        const saveScale = iconSize / Math.max(saveIcon.width, saveIcon.height);
+        saveIcon.setScale(saveScale);
+        saveIcon.setInteractive({ useHandCursor: true });
+        saveIcon.on('pointerdown', () => this.saveWorld());
+        saveButton.add([saveIcon]);
+        saveButton.setDepth(1000);
+        
+        // Save button tooltip
+        const saveTooltip = this.add.text(0, 35, 'Save', tooltipStyle);
+        saveTooltip.setOrigin(0.5, 0);
+        saveTooltip.setVisible(false);
+        saveTooltip.setDepth(2000);
+        saveButton.add([saveTooltip]);
+        saveIcon.on('pointerover', () => saveTooltip.setVisible(true));
+        saveIcon.on('pointerout', () => saveTooltip.setVisible(false));
+        
+        // Store Save button X position for positioning game name input
+        this.saveButtonX = buttonX;
     }
 
     createWorldNameField() {
@@ -625,18 +629,29 @@ export class GameScene extends Phaser.Scene {
             }
         );
     }
-
+    
     createModeIndicator() {
-        // Create mode indicator text below title
-        this.modeIndicator = this.add.text(GAME_WIDTH / 2, 42, 'Edit Mode', {
+        this.modeIndicator = this.add.text(0, 42, 'Edit Mode', {
             fontSize: '14px',
             fontFamily: 'Arial',
             color: '#666666'
         });
-        this.modeIndicator.setOrigin(0.5);
+
+        this.modeIndicator.setOrigin(0.5, 0.5);
         this.modeIndicator.setDepth(1000);
+
+        this.positionModeIndicator();
     }
 
+    positionModeIndicator() {
+        if (!this.titleText || !this.modeIndicator) {
+            return;
+        }
+
+        const titleBounds = this.titleText.getBounds();
+        this.modeIndicator.setPosition(titleBounds.centerX, 42);
+    }
+    
     /**
      * Hide or show all Build Mode visuals
      * Used when transitioning to/from Play Mode to prevent both scenes rendering at once
