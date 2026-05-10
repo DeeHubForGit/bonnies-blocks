@@ -48,11 +48,11 @@ export class GameScene extends Phaser.Scene {
     }
 
     /**
-     * Initialize with optional world data (from returning from Play mode)
+     * Initialize with optional world data (from returning from View mode)
      */
     init(data) {
         console.log('[GameScene] Init with data:', data ? 'world data present' : 'no data');
-        // Store grid data if passed from Play mode
+        // Store grid data if passed from View mode
         this.restoredGrid = data.grid || null;
     }
 
@@ -76,7 +76,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-bunny', 'assets/icons/bunny.png');
         this.load.image('icon-unicorn', 'assets/icons/unicorn.png');
         this.load.image('icon-settings', 'assets/icons/config.png');
-        this.load.image('icon-play', 'assets/icons/arrow_right.png');
+        this.load.image('icon-view', 'assets/icons/arrow_right.png');
         this.load.image('icon-edit', 'assets/icons/arrow_left.png');
         
         // Dialog assets
@@ -97,7 +97,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-tree', 'assets/icons/pink_tree.png');
         this.load.image('icon-bush-reindeer', 'assets/icons/bush_reindeer.png');
         
-        // World assets (for Play Mode) - top-down/isometric style
+        // World assets (for View Mode) - top-down/isometric style
         // These will use placeholders for now but can be replaced with real world sprites
         //this.load.image('world-grass-tile', 'assets/world/grass_tile.png');
         this.load.image('world-girl', 'assets/icons/blonde_girl.png');
@@ -121,8 +121,8 @@ export class GameScene extends Phaser.Scene {
 
         // Initialize or restore grid
         if (this.restoredGrid) {
-            // Restore grid from Play mode (preserve placed elements)
-            console.log('[GameScene] Restoring grid from Play mode');
+            // Restore grid from View mode (preserve placed elements)
+            console.log('[GameScene] Restoring grid from View mode');
             this.grid = this.restoredGrid;
             this.restoredGrid = null; // Clear after restoring
             // Create snapshot if it doesn't exist yet
@@ -153,7 +153,7 @@ export class GameScene extends Phaser.Scene {
         // Create settings button
         this.createSettingsButton();
 
-        // Mode indicator removed - not needed as Play/Edit button shows mode
+        // Mode indicator removed - not needed as View/Edit button shows mode
         
         // Create header action buttons (New, Save, Load)
         this.createHeaderActionButtons();
@@ -171,12 +171,12 @@ export class GameScene extends Phaser.Scene {
                 if (this.toolbar && this.toolbar.refreshResponsiveLayout) {
                     this.toolbar.refreshResponsiveLayout();
                 }
-                // Reposition Play button after toolbar rebuild
+                // Reposition View button after toolbar rebuild
                 this.positionPlayButton();
             });
         });
         
-        // Position play button at top right
+        // Position view button at top right
         this.positionPlayButton();
 
         // Render initial grid
@@ -207,7 +207,7 @@ export class GameScene extends Phaser.Scene {
             { key: 'icon-bush-reindeer', emoji: '🦌', color: '#8B4513' }
         ];
         
-        // Create world sprite placeholders for Play Mode (top-down style)
+        // Create world sprite placeholders for View Mode (top-down style)
         const worldPlaceholders = [
             { key: 'world-grass-tile', pattern: 'grass', color: '#7CB342' },
             { key: 'world-boy', emoji: '👦', color: '#87CEEB', topDown: true },
@@ -246,7 +246,7 @@ export class GameScene extends Phaser.Scene {
             this.textures.addCanvas(key, canvas);
         });
         
-        // Create world sprite placeholders for Play Mode
+        // Create world sprite placeholders for View Mode
         worldPlaceholders.forEach(({ key, emoji, pattern, color, topDown }) => {
             if (this.textures.exists(key)) {
                 return;
@@ -398,7 +398,7 @@ export class GameScene extends Phaser.Scene {
             const button = this.toolbar.modeToggleButton;
             const iconSize = 52;
 
-            // Position Play button after game name input
+            // Position View button after game name input
             // Input comes after Save button with reduced gap
             // Adjust for mobile - narrower input and tighter gaps
             const isMobile = window.innerWidth <= 600;
@@ -426,7 +426,7 @@ export class GameScene extends Phaser.Scene {
             const scaleX = canvas.width / GAME_WIDTH;
             const scaleY = canvas.height / GAME_HEIGHT;
 
-            // Adjust input width for mobile - slightly narrower to fit Play/Edit button
+            // Adjust input width for mobile - slightly narrower to fit View/Edit button
             const isMobile = window.innerWidth <= 600;
             const inputWidth = isMobile ? 120 : 150; // Reduced from 150 to 120 on mobile
             const gapAfterSave = isMobile ? 8 : 12; // Tighter gap on mobile
@@ -675,7 +675,7 @@ export class GameScene extends Phaser.Scene {
                 // Fit title text to prevent overlap with header buttons
                 this.fitTitleText();
                 
-                // Reposition Play button and world name field after title text changes
+                // Reposition View button and world name field after title text changes
                 this.positionPlayButton();
                 
                 // Show confirmation toast
@@ -714,7 +714,7 @@ export class GameScene extends Phaser.Scene {
 
     /**
      * Hide or show all Build Mode visuals
-     * Used when transitioning to/from Play Mode to prevent both scenes rendering at once
+     * Used when transitioning to/from View Mode to prevent both scenes rendering at once
      */
     setBuildViewVisible(visible) {
         console.log(`[GameScene] Setting Build view visibility: ${visible}`);
@@ -753,11 +753,11 @@ export class GameScene extends Phaser.Scene {
     }
 
     toggleMode() {
-        // Hide Build scene visuals before launching Play Mode
-        console.log('[GameScene] Launching Isometric Play Mode');
+        // Hide Build scene visuals before launching View Mode
+        console.log('[GameScene] Launching Isometric View Mode');
         this.setBuildViewVisible(false);
         
-        // Pass current grid to Play mode
+        // Pass current grid to View mode
         this.scene.launch('IsometricPlayScene', {
             grid: this.grid,
             childName: getChildName()
@@ -1519,6 +1519,32 @@ export class GameScene extends Phaser.Scene {
     }
 
     loadWorld() {
+        // Check if there are unsaved changes
+        if (this.hasUnsavedChanges()) {
+            this.modal.showConfirmDialog(
+                'Unsaved Changes',
+                'Do you want to save\nyour changes before loading\nanother world?',
+                () => {
+                    // Save button clicked - save first, then show load dialog
+                    this.saveCurrentWorld(() => {
+                        this.showLoadWorldDialog();
+                    }, false);
+                },
+                'Save',
+                'Cancel',
+                () => {
+                    // Cancel button clicked - skip saving, show load dialog
+                    this.showLoadWorldDialog();
+                }
+            );
+            return;
+        }
+
+        // No unsaved changes - show load dialog immediately
+        this.showLoadWorldDialog();
+    }
+
+    showLoadWorldDialog() {
         const worlds = getAllWorlds();
         
         this.modal.showListDialog(

@@ -1,6 +1,6 @@
 import { BLOCK_TYPES, TOOL_MODES, GAME_MODES, BLOCK_COLORS, PLAYABLE_HEIGHT, TOOLBAR_HEIGHT, GAME_WIDTH, HEADER_HEIGHT, PALETTE_COLORS, PALETTE_PATTERN_COLORS, PALETTE_OBJECTS, MOBILE_FAVORITES, isMobileView, isColorBlock, hasPattern, getPattern } from '../data/constants.js';
 
-// Mode toggle icon size constant (used for both Play and Edit arrows)
+// Mode toggle icon size constant (used for both View and Edit arrows)
 const MODE_TOGGLE_ICON_SIZE = 56;
 
 export class Toolbar {
@@ -93,7 +93,7 @@ export class Toolbar {
         
         // No More button on mobile - everything fits!
         
-        // Create mode toggle button (Play/Edit arrow)
+        // Create mode toggle button (View/Edit arrow)
         // Position at header y-coordinate (will be repositioned by GameScene.positionPlayButton())
         // Using a temporary x position - GameScene will calculate the correct position
         const headerY = 32; // Standard header y position
@@ -155,9 +155,9 @@ export class Toolbar {
         });
         objectX += objectButtonSize + gap;
         this.createFloatingToolIcon(objectX, row2Y, objectButtonSize, 'icon-clear', false, () => this.scene.clearWorld());
-        objectX += objectButtonSize + gap + 15; // Gap before Play button for visual separation
+        objectX += objectButtonSize + gap + 15; // Gap before View button for visual separation
         
-        // Mode toggle button (Play/Edit) - visually separated as main action, larger size for header
+        // Mode toggle button (View/Edit) - visually separated as main action, larger size for header
         this.createModeToggleButton(objectX, row2Y, 64);
     }
 
@@ -279,7 +279,7 @@ export class Toolbar {
     createObjectButton(x, y, size, toolType, label, iconKey) {
         const button = this.scene.add.container(x, y);
         
-        // Match Play Mode grass background
+        // Match View Mode grass background
         const bg = this.scene.add.rectangle(0, 0, size, size, 0x97B082)
             .setStrokeStyle(2, 0x000000)
             .setInteractive({ useHandCursor: true });
@@ -499,7 +499,7 @@ export class Toolbar {
         button.add([bg]);
         
         // Add icon image that changes based on mode - larger size for prominence
-        const icon = this.scene.add.image(0, 0, 'icon-play');
+        const icon = this.scene.add.image(0, 0, 'icon-view');
         icon.setOrigin(0.5);
         icon.setInteractive({ useHandCursor: true });
         const scale = MODE_TOGGLE_ICON_SIZE / Math.max(icon.width, icon.height);
@@ -507,7 +507,7 @@ export class Toolbar {
         button.add([icon]);
         
         // Create tooltip text (hidden by default) - light pink background with black text
-        const tooltip = this.scene.add.text(0, 45, 'Play Mode', {
+        const tooltip = this.scene.add.text(0, 45, 'View', {
             fontSize: '12px',
             fontFamily: 'Arial',
             color: '#000000',
@@ -531,15 +531,15 @@ export class Toolbar {
             
             // Update icon and tooltip based on mode
             if (this.scene.getGameMode() === GAME_MODES.BUILD) {
-                icon.setTexture('icon-play'); // Show Play icon in Edit mode
+                icon.setTexture('icon-view'); // Show View icon in Edit mode
                 const scale = MODE_TOGGLE_ICON_SIZE / Math.max(icon.width, icon.height);
                 icon.setScale(scale);
-                tooltip.setText('Play Mode');
+                tooltip.setText('View');
             } else {
-                icon.setTexture('icon-edit'); // Show Edit icon in Play mode
+                icon.setTexture('icon-edit'); // Show Edit icon in View mode
                 const scale = MODE_TOGGLE_ICON_SIZE / Math.max(icon.width, icon.height);
                 icon.setScale(scale);
-                tooltip.setText('Edit Mode');
+                tooltip.setText('Edit');
             }
         };
 
@@ -841,21 +841,21 @@ export class Toolbar {
     updateModeButtonState() {
         if (!this.modeToggleLabel) return;
         
-        // In Build mode, show Play icon
-        // In Play mode, show Edit icon
+        // In Build mode, show View icon
+        // In View mode, show Edit icon
         if (this.scene.getGameMode() === GAME_MODES.BUILD) {
-            this.modeToggleLabel.setTexture('icon-play');
+            this.modeToggleLabel.setTexture('icon-view');
             const scale = MODE_TOGGLE_ICON_SIZE / Math.max(this.modeToggleLabel.width, this.modeToggleLabel.height);
             this.modeToggleLabel.setScale(scale);
             if (this.modeToggleTooltip) {
-                this.modeToggleTooltip.setText('Play Mode');
+                this.modeToggleTooltip.setText('View');
             }
         } else {
             this.modeToggleLabel.setTexture('icon-edit');
             const scale = MODE_TOGGLE_ICON_SIZE / Math.max(this.modeToggleLabel.width, this.modeToggleLabel.height);
             this.modeToggleLabel.setScale(scale);
             if (this.modeToggleTooltip) {
-                this.modeToggleTooltip.setText('Edit Mode');
+                this.modeToggleTooltip.setText('Edit');
             }
         }
     }

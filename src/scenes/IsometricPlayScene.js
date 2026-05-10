@@ -205,22 +205,13 @@ export class IsometricPlayScene extends Phaser.Scene {
         });
         this.titleText.setOrigin(0.5);
         this.titleText.setDepth(10000);
-
-        // Add mode indicator
-        this.modeText = this.add.text(GAME_WIDTH / 2, 52, 'Play Mode', {
-            fontSize: '14px',
-            fontFamily: 'Arial',
-            color: '#666666'
-        });
-        this.modeText.setOrigin(0.5);
-        this.modeText.setDepth(10000);
     }
 
     buildTitleText(name) {
         if (name.endsWith('s') || name.endsWith('S')) {
-            return `${name}' Blocks`;
+            return `${name}' World`;
         } else {
-            return `${name}'s Blocks`;
+            return `${name}'s World`;
         }
     }
 
@@ -298,7 +289,7 @@ export class IsometricPlayScene extends Phaser.Scene {
             gameScene.setBuildViewVisible(true);
         }
         
-        // Stop this Play scene
+        // Stop this View scene
         this.scene.stop();
     }
 

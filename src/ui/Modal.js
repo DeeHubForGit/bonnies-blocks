@@ -85,12 +85,12 @@ export class Modal {
 
         // Buttons
         const buttonY = centerY + 70;
-        const cancelBtn = this.createButton(centerX - 80, buttonY, cancelText, 0xe0e0e0, () => {
+        const cancelBtn = this.createIconButton(centerX - 100, buttonY, cancelText, 0xe0e0e0, 'icon-cancel', () => {
             this.close();
             if (onCancel) onCancel();
         });
 
-        const confirmBtn = this.createButton(centerX + 80, buttonY, confirmText, 0xFFB6C1, () => {
+        const confirmBtn = this.createIconButton(centerX + 100, buttonY, confirmText, 0xFFB6C1, 'icon-save', () => {
             this.close();
             if (onConfirm) onConfirm();
         });
