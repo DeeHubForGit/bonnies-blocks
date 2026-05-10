@@ -193,6 +193,65 @@ export const PLAYER_SPEED = 200; // pixels per second
 export const STORAGE_KEY = 'bonnies_blocks_save';
 export const CHILD_NAME_KEY = 'bonnies_blocks_child_name';
 
+// Mobile breakpoint
+export const MOBILE_BREAKPOINT = 600; // px
+
+// Mobile favorites - subset of blocks/objects shown by default on mobile
+export const MOBILE_FAVORITES = {
+    // All basic colors (including Grey and Black)
+    colors: [
+        BLOCK_TYPES.GRASS,
+        BLOCK_TYPES.TEAL,
+        BLOCK_TYPES.BLUE,
+        BLOCK_TYPES.PURPLE,
+        BLOCK_TYPES.PINK,
+        BLOCK_TYPES.RED,
+        BLOCK_TYPES.ORANGE,
+        BLOCK_TYPES.YELLOW,
+        BLOCK_TYPES.WHITE,
+        BLOCK_TYPES.GREY,
+        BLOCK_TYPES.BLACK
+    ],
+    // All pattern colors
+    patterns: [
+        BLOCK_TYPES.WATER,
+        BLOCK_TYPES.GLITTER_PINK,
+        BLOCK_TYPES.RAINBOW
+    ],
+    // All objects
+    objects: [
+        BLOCK_TYPES.GIRL,
+        BLOCK_TYPES.BUNNY,
+        BLOCK_TYPES.UNICORN,
+        BLOCK_TYPES.FLOWER,
+        BLOCK_TYPES.BUSH_PINK_FLOWER,
+        BLOCK_TYPES.PALM_TREE,
+        BLOCK_TYPES.TREE,
+        BLOCK_TYPES.BUSH_REINDEER
+    ]
+};
+
+// Helper function to check if mobile view
+export function isMobileView() {
+    // Check window width
+    const windowWidth = window.innerWidth;
+    
+    // Also check game container width if available
+    const gameContainer = document.getElementById('game-container');
+    const containerWidth = gameContainer ? gameContainer.clientWidth : windowWidth;
+    
+    // Check canvas width if available
+    const canvas = document.querySelector('canvas');
+    const canvasWidth = canvas ? canvas.clientWidth : windowWidth;
+    
+    // Use the smallest width (most restrictive) for mobile detection
+    const effectiveWidth = Math.min(windowWidth, containerWidth, canvasWidth);
+    
+    const isMobile = effectiveWidth <= MOBILE_BREAKPOINT;
+    
+    return isMobile;
+}
+
 // Helper function to check if a block type is a color (including patterns)
 export function isColorBlock(blockType) {
     return PALETTE_COLORS.some(color => color.type === blockType) ||

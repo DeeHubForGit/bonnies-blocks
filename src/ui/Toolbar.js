@@ -1,4 +1,4 @@
-import { BLOCK_TYPES, TOOL_MODES, GAME_MODES, BLOCK_COLORS, PLAYABLE_HEIGHT, TOOLBAR_HEIGHT, GAME_WIDTH, HEADER_HEIGHT, PALETTE_COLORS, PALETTE_PATTERN_COLORS, PALETTE_OBJECTS, isColorBlock, hasPattern, getPattern } from '../data/constants.js';
+import { BLOCK_TYPES, TOOL_MODES, GAME_MODES, BLOCK_COLORS, PLAYABLE_HEIGHT, TOOLBAR_HEIGHT, GAME_WIDTH, HEADER_HEIGHT, PALETTE_COLORS, PALETTE_PATTERN_COLORS, PALETTE_OBJECTS, MOBILE_FAVORITES, isMobileView, isColorBlock, hasPattern, getPattern } from '../data/constants.js';
 
 // Mode toggle icon size constant (used for both Play and Edit arrows)
 const MODE_TOGGLE_ICON_SIZE = 56;
@@ -13,11 +13,103 @@ export class Toolbar {
         this.modeToggleLabel = null; // Reference to mode toggle label text
         this.modeToggleTooltip = null; // Reference to mode toggle tooltip
         this.buildToolsEnabled = true; // Track whether build tools are enabled
+        this.isExpanded = false; // Track mobile toolbar expansion state
+        this.expandedToolbar = null; // Reference to expanded toolbar container
+        this.isMobileLayout = isMobileView(); // Track current layout mode
+        this.resizeTimeoutId = null; // Debounce resize events
+        
+        console.log('[Toolbar] Constructor - window.innerWidth:', window.innerWidth, 'isMobileLayout:', this.isMobileLayout);
+        const canvas = document.querySelector('canvas');
+        if (canvas) {
+            console.log('[Toolbar] Canvas clientWidth:', canvas.clientWidth, 'canvas width:', canvas.width);
+        }
         
         this.createToolbar();
+        this.setupResizeListener();
     }
 
     createToolbar() {
+        console.log('[Toolbar] createToolbar() - isMobileLayout:', this.isMobileLayout);
+        
+        if (this.isMobileLayout) {
+            this.createMobileToolbar();
+        } else {
+            this.createDesktopToolbar();
+        }
+    }
+
+    createMobileToolbar() {
+        // Mobile: Show all colors and all objects (no More button needed)
+        const toolbarTop = HEADER_HEIGHT + PLAYABLE_HEIGHT;
+        const buttonSize = 36; // Slightly smaller to fit more buttons
+        const gap = 4; // Tighter gap
+        const startX = 32; // Shifted right by 12px from 20 to avoid left cutoff
+        
+        const row1Y = toolbarTop + 28;
+        let x = startX;
+        
+        // Add all basic colors
+        MOBILE_FAVORITES.colors.forEach((blockType) => {
+            const colorItem = PALETTE_COLORS.find(c => c.type === blockType);
+            if (colorItem) {
+                this.createColorButton(x, row1Y, buttonSize, colorItem.type, colorItem.label, colorItem.color);
+                x += buttonSize + gap;
+            }
+        });
+        
+        // Add small gap before patterns
+        x += 2;
+        
+        // Add favorite pattern colors
+        MOBILE_FAVORITES.patterns.forEach((blockType) => {
+            const patternItem = PALETTE_PATTERN_COLORS.find(p => p.type === blockType);
+            if (patternItem) {
+                this.createPatternColorButton(x, row1Y, buttonSize, patternItem.type, patternItem.label, patternItem.color, patternItem.pattern);
+                x += buttonSize + gap;
+            }
+        });
+        
+        // Row 2: Objects and tools
+        const row2Y = toolbarTop + 86;
+        let objectX = 32; // Shifted right to match colors row
+        const objectButtonSize = 46; // Slightly reduced to fit all objects
+        const objectGap = 3; // Very tight gap for objects
+        
+        // Add all objects
+        MOBILE_FAVORITES.objects.forEach((blockType) => {
+            const objectItem = PALETTE_OBJECTS.find(o => o.type === blockType);
+            if (objectItem) {
+                this.createObjectButton(objectX, row2Y, objectButtonSize, objectItem.type, objectItem.label, objectItem.icon);
+                objectX += objectButtonSize + objectGap;
+            }
+        });
+        
+        // Add small gap before tools
+        objectX += 6;
+        
+        // Add eraser
+        this.createFloatingToolIcon(objectX, row2Y, objectButtonSize, 'icon-erase', true, () => {
+            if (this.buildToolsEnabled) {
+                this.mode = TOOL_MODES.ERASE;
+                this.updateButtons();
+            }
+        });
+        objectX += objectButtonSize + objectGap;
+        
+        // Add clear all
+        this.createFloatingToolIcon(objectX, row2Y, objectButtonSize, 'icon-clear', false, () => this.scene.clearWorld());
+        
+        // No More button on mobile - everything fits!
+        
+        // Create mode toggle button (Play/Edit arrow)
+        // Position at header y-coordinate (will be repositioned by GameScene.positionPlayButton())
+        // Using a temporary x position - GameScene will calculate the correct position
+        const headerY = 32; // Standard header y position
+        const tempX = GAME_WIDTH - 60; // Temporary position, will be updated
+        this.createModeToggleButton(tempX, headerY, 56); // Smaller size for mobile header
+    }
+
+    createDesktopToolbar() {
         // Toolbar layout constants
         const toolbarTop = HEADER_HEIGHT + PLAYABLE_HEIGHT;
         const colorButtonSize = 38; // Smaller for color swatches
@@ -477,6 +569,268 @@ export class Toolbar {
         this.buttons.push({ container: button, bg, toolType: null, isErase: false, isAction: true, isPlus: false });
     }
 
+    createMoreButton(x, y, size) {
+        const button = this.scene.add.container(x, y);
+        
+        // Light purple/lavender background
+        const bg = this.scene.add.rectangle(0, 0, size, size, 0xE1BEE7)
+            .setStrokeStyle(2, 0x9C27B0)
+            .setInteractive({ useHandCursor: true });
+
+        // "More" text or icon
+        const moreText = this.scene.add.text(0, 0, 'More', {
+            fontSize: '14px',
+            fontFamily: 'Arial',
+            color: '#000000',
+            fontStyle: 'bold'
+        });
+        moreText.setOrigin(0.5);
+        
+        button.add([bg, moreText]);
+        button.setScale(1.18);
+        button.setDepth(1000);
+
+        bg.on('pointerdown', () => {
+            if (this.buildToolsEnabled) {
+                this.toggleExpandedToolbar();
+            }
+        });
+
+        this.buttons.push({ container: button, bg, toolType: null, isErase: false, isAction: true, isPlus: false, isMoreButton: true });
+    }
+
+    toggleExpandedToolbar() {
+        if (this.isExpanded) {
+            this.hideExpandedToolbar();
+        } else {
+            this.showExpandedToolbar();
+        }
+    }
+
+    showExpandedToolbar() {
+        if (this.expandedToolbar) return; // Already showing
+        
+        this.isExpanded = true;
+        
+        // Create semi-transparent overlay
+        const overlay = this.scene.add.rectangle(GAME_WIDTH / 2, (HEADER_HEIGHT + PLAYABLE_HEIGHT) / 2, GAME_WIDTH, PLAYABLE_HEIGHT, 0x000000, 0.3);
+        overlay.setDepth(1999);
+        overlay.setInteractive();
+        overlay.on('pointerdown', () => this.hideExpandedToolbar());
+        
+        // Create expanded toolbar container at bottom
+        const toolbarY = HEADER_HEIGHT + PLAYABLE_HEIGHT + TOOLBAR_HEIGHT / 2;
+        const mainContainer = this.scene.add.container(GAME_WIDTH / 2, toolbarY);
+        mainContainer.setDepth(2000);
+        
+        // Background panel
+        const panelWidth = GAME_WIDTH - 20;
+        const panelHeight = TOOLBAR_HEIGHT - 10;
+        const panel = this.scene.add.rectangle(0, 0, panelWidth, panelHeight, 0xE8F5E9)
+            .setStrokeStyle(3, 0x4CAF50);
+        mainContainer.add(panel);
+        
+        // Title
+        const title = this.scene.add.text(0, -panelHeight / 2 + 15, 'All Colors & Objects', {
+            fontSize: '16px',
+            fontFamily: 'Arial',
+            color: '#333333',
+            fontStyle: 'bold'
+        }).setOrigin(0.5);
+        mainContainer.add(title);
+        
+        // Create scrollable content container
+        const contentContainer = this.scene.add.container(0, 0);
+        contentContainer.setDepth(2001);
+        
+        const buttonSize = 32;
+        const gap = 4;
+        let contentX = 10; // Start with padding
+        const row1Y = -10;
+        const row2Y = 35;
+        
+        // Add all colors
+        PALETTE_COLORS.forEach((colorItem) => {
+            const btn = this.scene.add.rectangle(contentX, row1Y, buttonSize, buttonSize, colorItem.color)
+                .setStrokeStyle(2, 0x000000)
+                .setInteractive({ useHandCursor: true });
+            btn.on('pointerdown', () => {
+                if (this.buildToolsEnabled) {
+                    this.selectedTool = colorItem.type;
+                    this.mode = TOOL_MODES.PLACE;
+                    this.updateButtons();
+                    this.hideExpandedToolbar();
+                }
+            });
+            contentContainer.add(btn);
+            contentX += buttonSize + gap;
+        });
+        
+        // Add all pattern colors
+        PALETTE_PATTERN_COLORS.forEach((colorItem) => {
+            const btn = this.scene.add.rectangle(contentX, row1Y, buttonSize, buttonSize, colorItem.color)
+                .setStrokeStyle(2, 0x000000)
+                .setInteractive({ useHandCursor: true });
+            
+            // Add pattern indicator
+            if (colorItem.pattern && colorItem.type !== BLOCK_TYPES.WATER && colorItem.type !== BLOCK_TYPES.GLITTER_PINK) {
+                const patternText = this.scene.add.text(contentX, row1Y, colorItem.pattern, {
+                    fontSize: '14px',
+                    fontFamily: 'Arial'
+                }).setOrigin(0.5);
+                contentContainer.add(patternText);
+            }
+            
+            btn.on('pointerdown', () => {
+                if (this.buildToolsEnabled) {
+                    this.selectedTool = colorItem.type;
+                    this.mode = TOOL_MODES.PLACE;
+                    this.updateButtons();
+                    this.hideExpandedToolbar();
+                }
+            });
+            contentContainer.add(btn);
+            contentX += buttonSize + gap;
+        });
+        
+        // Add all objects on second row
+        contentX = 10;
+        PALETTE_OBJECTS.forEach((objectItem) => {
+            const btn = this.scene.add.rectangle(contentX, row2Y, buttonSize, buttonSize, 0x97B082)
+                .setStrokeStyle(2, 0x000000)
+                .setInteractive({ useHandCursor: true });
+            
+            // Add icon
+            const icon = this.scene.add.image(contentX, row2Y, objectItem.icon);
+            const scale = (buttonSize * 0.8) / Math.max(icon.width, icon.height);
+            icon.setScale(scale);
+            
+            btn.on('pointerdown', () => {
+                if (this.buildToolsEnabled) {
+                    this.selectedTool = objectItem.type;
+                    this.mode = TOOL_MODES.PLACE;
+                    this.updateButtons();
+                    this.hideExpandedToolbar();
+                }
+            });
+            contentContainer.add([btn, icon]);
+            contentX += buttonSize + gap;
+        });
+        
+        // Add Eraser and Clear All at end of row 2
+        contentX += 10; // Add gap
+        
+        // Eraser
+        const eraserBtn = this.scene.add.rectangle(contentX, row2Y, buttonSize, buttonSize, 0xFDF7D5)
+            .setStrokeStyle(2, 0x000000)
+            .setInteractive({ useHandCursor: true });
+        const eraserIcon = this.scene.add.image(contentX, row2Y, 'icon-erase');
+        eraserIcon.setScale((buttonSize * 0.7) / Math.max(eraserIcon.width, eraserIcon.height));
+        eraserBtn.on('pointerdown', () => {
+            if (this.buildToolsEnabled) {
+                this.mode = TOOL_MODES.ERASE;
+                this.updateButtons();
+                this.hideExpandedToolbar();
+            }
+        });
+        contentContainer.add([eraserBtn, eraserIcon]);
+        contentX += buttonSize + gap;
+        
+        // Clear All
+        const clearBtn = this.scene.add.rectangle(contentX, row2Y, buttonSize, buttonSize, 0xFDF7D5)
+            .setStrokeStyle(2, 0x000000)
+            .setInteractive({ useHandCursor: true });
+        const clearIcon = this.scene.add.image(contentX, row2Y, 'icon-clear');
+        clearIcon.setScale((buttonSize * 0.7) / Math.max(clearIcon.width, clearIcon.height));
+        clearBtn.on('pointerdown', () => {
+            this.scene.clearWorld();
+            this.hideExpandedToolbar();
+        });
+        contentContainer.add([clearBtn, clearIcon]);
+        contentX += buttonSize + gap;
+        
+        const contentWidth = contentX;
+        
+        // Create scrollable area if content is wider than panel
+        const scrollableWidth = panelWidth - 40; // Leave padding
+        
+        if (contentWidth > scrollableWidth) {
+            // Content needs scrolling
+            // Create mask for visible area
+            const maskShape = this.scene.make.graphics();
+            maskShape.fillStyle(0xffffff);
+            maskShape.fillRect(-scrollableWidth / 2, -panelHeight / 2 + 30, scrollableWidth, panelHeight - 40);
+            const mask = maskShape.createGeometryMask();
+            contentContainer.setMask(mask);
+            
+            // Position content container initially centered if smaller, or left-aligned if needs scrolling
+            contentContainer.x = -contentWidth / 2 + scrollableWidth / 2;
+            
+            // Make content draggable for horizontal scrolling
+            contentContainer.setInteractive(
+                new Phaser.Geom.Rectangle(-contentWidth / 2, -panelHeight / 2, contentWidth, panelHeight),
+                Phaser.Geom.Rectangle.Contains
+            );
+            
+            this.scene.input.setDraggable(contentContainer);
+            
+            let dragStartX = 0;
+            let containerStartX = contentContainer.x;
+            
+            contentContainer.on('dragstart', (pointer) => {
+                dragStartX = pointer.x;
+                containerStartX = contentContainer.x;
+            });
+            
+            contentContainer.on('drag', (pointer) => {
+                const dragDeltaX = pointer.x - dragStartX;
+                let newX = containerStartX + dragDeltaX;
+                
+                // Constrain to bounds
+                const minX = -contentWidth / 2 + scrollableWidth / 2;
+                const maxX = contentWidth / 2 - scrollableWidth / 2;
+                newX = Phaser.Math.Clamp(newX, minX, maxX);
+                
+                contentContainer.x = newX;
+            });
+            
+            mainContainer.add([maskShape, contentContainer]);
+            
+            // Add scroll indicators
+            const leftArrow = this.scene.add.text(-scrollableWidth / 2 - 15, 0, '◀', {
+                fontSize: '20px',
+                color: '#4CAF50'
+            }).setOrigin(0.5).setAlpha(0.6);
+            const rightArrow = this.scene.add.text(scrollableWidth / 2 + 15, 0, '▶', {
+                fontSize: '20px',
+                color: '#4CAF50'
+            }).setOrigin(0.5).setAlpha(0.6);
+            mainContainer.add([leftArrow, rightArrow]);
+        } else {
+            // Content fits, no scrolling needed - center it
+            contentContainer.x = -contentWidth / 2;
+            mainContainer.add(contentContainer);
+        }
+        
+        // Store reference
+        this.expandedToolbar = { overlay, container: mainContainer };
+    }
+
+    hideExpandedToolbar() {
+        if (!this.expandedToolbar) return;
+        
+        this.isExpanded = false;
+        
+        if (this.expandedToolbar.overlay) {
+            this.expandedToolbar.overlay.destroy();
+        }
+        if (this.expandedToolbar.container) {
+            this.expandedToolbar.container.destroy();
+        }
+        
+        this.expandedToolbar = null;
+    }
+
     setVisible(visible) {
         // Show or hide all toolbar buttons
         this.buttons.forEach(btn => {
@@ -570,5 +924,102 @@ export class Toolbar {
 
     getMode() {
         return this.mode;
+    }
+
+    setupResizeListener() {
+        this.resizeHandler = () => {
+            // Debounce resize events (150ms)
+            if (this.resizeTimeoutId) {
+                clearTimeout(this.resizeTimeoutId);
+            }
+            this.resizeTimeoutId = setTimeout(() => {
+                this.refreshResponsiveLayout();
+            }, 150);
+        };
+        
+        window.addEventListener('resize', this.resizeHandler);
+    }
+
+    refreshResponsiveLayout() {
+        const currentMobileView = isMobileView();
+        const canvas = document.querySelector('canvas');
+        console.log('[Toolbar] refreshResponsiveLayout() - current:', currentMobileView, 'stored:', this.isMobileLayout);
+        console.log('[Toolbar] - window.innerWidth:', window.innerWidth);
+        if (canvas) {
+            console.log('[Toolbar] - canvas.clientWidth:', canvas.clientWidth, 'canvas.width:', canvas.width);
+        }
+        
+        // If layout mode hasn't changed, do nothing
+        if (currentMobileView === this.isMobileLayout) {
+            console.log('[Toolbar] Layout unchanged, skipping rebuild');
+            // But still reposition the input in case scale changed
+            if (this.scene && this.scene.positionWorldNameField) {
+                this.scene.positionWorldNameField();
+            }
+            return;
+        }
+        
+        console.log('[Toolbar] Layout changed! Rebuilding toolbar from', this.isMobileLayout ? 'mobile' : 'desktop', 'to', currentMobileView ? 'mobile' : 'desktop');
+        
+        // Hide/destroy expanded toolbar if open
+        if (this.isExpanded) {
+            this.hideExpandedToolbar();
+        }
+        
+        // Destroy existing toolbar buttons and containers
+        this.buttons.forEach(btn => {
+            if (btn.container) {
+                btn.container.destroy();
+            }
+        });
+        
+        // Clear buttons array
+        this.buttons = [];
+        
+        // Reset mode toggle references
+        this.modeToggleButton = null;
+        this.modeToggleLabel = null;
+        this.modeToggleTooltip = null;
+        
+        // Update layout mode
+        this.isMobileLayout = currentMobileView;
+        
+        // Rebuild toolbar with new layout
+        this.createToolbar();
+        
+        // Reposition world name input to account for any scale changes
+        if (this.scene && this.scene.positionWorldNameField) {
+            this.scene.positionWorldNameField();
+        }
+        
+        console.log('[Toolbar] Rebuild complete');
+    }
+
+    destroy() {
+        // Clean up resize listener
+        if (this.resizeHandler) {
+            window.removeEventListener('resize', this.resizeHandler);
+            this.resizeHandler = null;
+        }
+        
+        // Clear debounce timeout
+        if (this.resizeTimeoutId) {
+            clearTimeout(this.resizeTimeoutId);
+            this.resizeTimeoutId = null;
+        }
+        
+        // Hide expanded toolbar if open
+        if (this.isExpanded) {
+            this.hideExpandedToolbar();
+        }
+        
+        // Destroy all buttons
+        this.buttons.forEach(btn => {
+            if (btn.container) {
+                btn.container.destroy();
+            }
+        });
+        
+        this.buttons = [];
     }
 }

@@ -11,6 +11,7 @@
     PLAYABLE_HEIGHT,
     TOOLBAR_HEIGHT,
     GAME_WIDTH,
+    GAME_HEIGHT,
     HEADER_HEIGHT,
     GRID_TOP_MARGIN,
     WORLD_SPRITES,
@@ -80,6 +81,7 @@ export class GameScene extends Phaser.Scene {
         // Dialog assets
         this.load.image('clear-game-image', 'assets/icons/clear_game.png');
         this.load.image('load-world-image', 'assets/icons/load_world.png');
+        this.load.image('girl-boy-name', 'assets/icons/girl_boy_name.png');
         this.load.image('icon-cancel', 'assets/icons/cancel.png');
         this.load.image('icon-bin', 'assets/icons/bin.png');
         
@@ -160,6 +162,21 @@ export class GameScene extends Phaser.Scene {
 
         // Create toolbar
         this.toolbar = new Toolbar(this);
+        
+        // Listen for Phaser scale resize events to rebuild toolbar on mobile/desktop switch
+        this.scale.on('resize', (gameSize) => {
+            console.log('[GameScene] Phaser scale resize event:', gameSize.width, 'x', gameSize.height);
+            // Delay slightly to ensure DOM updates are complete
+            this.time.delayedCall(200, () => {
+                if (this.toolbar && this.toolbar.refreshResponsiveLayout) {
+                    this.toolbar.refreshResponsiveLayout();
+                }
+                // Reposition world name input to account for new scale
+                if (this.worldNameInput) {
+                    this.positionWorldNameField();
+                }
+            });
+        });
         
         // Position play button at top right
         this.positionPlayButton();
@@ -299,7 +316,11 @@ export class GameScene extends Phaser.Scene {
         const title = this.buildTitleText(childName);
         
         // Create title text on the left side
-        this.titleText = this.add.text(58, 24, title, {
+        // Move left on mobile to avoid overlap with Config button
+        const isMobile = window.innerWidth <= 600;
+        const titleX = isMobile ? 46 : 58; // Move left by 12px on mobile
+        
+        this.titleText = this.add.text(titleX, 24, title, {
             fontSize: '28px',
             fontFamily: 'Arial',
             fontStyle: 'bold',
@@ -374,9 +395,12 @@ export class GameScene extends Phaser.Scene {
 
             // Position Play button after game name input
             // Input comes after Save button with reduced gap
-            const inputWidth = 150;
-            const gapAfterSave = 12; // Reduced from 16px for tighter spacing
-            const gapBeforePlay = 2;
+            // Adjust for mobile - narrower input and tighter gaps
+            const isMobile = window.innerWidth <= 600;
+            const inputWidth = isMobile ? 120 : 150;
+            const gapAfterSave = isMobile ? 8 : 12;
+            // Increase gap on mobile to prevent overlap with input
+            const gapBeforePlay = isMobile ? 22 : 2; // 20px more gap on mobile (was 12)
 
             const inputX = this.saveButtonX + 48 + gapAfterSave;
             const playX = inputX + inputWidth + gapBeforePlay + (iconSize / 2);
@@ -392,33 +416,54 @@ export class GameScene extends Phaser.Scene {
     positionWorldNameField() {
         if (this.worldNameInput) {
             const canvas = this.game.canvas.getBoundingClientRect();
+            
+            // Calculate scale factors (canvas displayed size vs game logical size)
+            const scaleX = canvas.width / GAME_WIDTH;
+            const scaleY = canvas.height / GAME_HEIGHT;
+            
+            console.log('[GameScene] positionWorldNameField - scaleX:', scaleX, 'scaleY:', scaleY);
+            console.log('[GameScene] canvas rect:', canvas.width, 'x', canvas.height, 'logical:', GAME_WIDTH, 'x', GAME_HEIGHT);
 
-            const inputWidth = 150;
-            const gapAfterSave = 12; // Reduced from 16px for tighter spacing
+            // Adjust input width for mobile - slightly narrower to fit Play/Edit button
+            const isMobile = window.innerWidth <= 600;
+            const inputWidth = isMobile ? 120 : 150; // Reduced from 150 to 120 on mobile
+            const gapAfterSave = isMobile ? 8 : 12; // Tighter gap on mobile
             const inputY = 18;
+            const inputHeight = 28;
+            const fontSize = 14;
 
-            // Position input after Save button
+            // Position input after Save button (in logical game coordinates)
             const inputX = this.saveButtonX + 24 + gapAfterSave;
 
             // Add scroll offsets for absolute positioning relative to document body
             const pageX = window.scrollX || window.pageXOffset || 0;
             const pageY = window.scrollY || window.pageYOffset || 0;
 
-            this.worldNameInput.style.left = (canvas.left + pageX + inputX) + 'px';
-            this.worldNameInput.style.top = (canvas.top + pageY + inputY) + 'px';
+            // Apply scale to position and size
+            this.worldNameInput.style.left = (canvas.left + pageX + inputX * scaleX) + 'px';
+            this.worldNameInput.style.top = (canvas.top + pageY + inputY * scaleY) + 'px';
             this.worldNameInput.style.right = 'auto';
-            this.worldNameInput.style.width = inputWidth + 'px';
+            this.worldNameInput.style.width = (inputWidth * scaleX) + 'px';
+            this.worldNameInput.style.height = (inputHeight * scaleY) + 'px';
+            this.worldNameInput.style.fontSize = (fontSize * scaleY) + 'px';
+            
+            console.log('[GameScene] Input positioned at:', this.worldNameInput.style.left, this.worldNameInput.style.top);
+            console.log('[GameScene] Input size:', this.worldNameInput.style.width, 'x', this.worldNameInput.style.height);
         }
     }
 
     createHeaderActionButtons() {
         // Create compact header buttons in order: Config, New, Load, Save
         const buttonY = 32; // Centered in 64px header (32px from top)
-        const iconSize = 48; // Consistent size for all header icons
-        const spacing = 8; // Spacing between buttons
         
-        // Start buttons after title area (title + mode text block) - moved further right for breathing room
-        let buttonX = 312;
+        // Adjust for mobile - smaller icons and tighter spacing
+        const isMobile = window.innerWidth <= 600;
+        const iconSize = isMobile ? 42 : 48; // Smaller icons on mobile
+        const spacing = isMobile ? 6 : 8; // Tighter spacing on mobile
+        
+        // Start buttons after title area (title + mode text block)
+        // On mobile, move right to avoid title overlap
+        let buttonX = isMobile ? 295 : 312; // Moved right by 15px on mobile (was 280)
         
         // Tooltip style for consistent light pink tooltips
         const tooltipStyle = {
@@ -433,6 +478,12 @@ export class GameScene extends Phaser.Scene {
         if (this.settingsButton) {
             this.settingsButton.x = buttonX;
             this.settingsButton.y = buttonY;
+            // Scale settings button for mobile if needed
+            if (isMobile && this.settingsButton.list && this.settingsButton.list[0]) {
+                const settingsIcon = this.settingsButton.list[0];
+                const settingsScale = iconSize / Math.max(settingsIcon.width, settingsIcon.height);
+                settingsIcon.setScale(settingsScale);
+            }
         }
         
         buttonX += iconSize + spacing;
@@ -612,8 +663,8 @@ export class GameScene extends Phaser.Scene {
         const currentName = getChildName();
         
         this.modal.showInputDialog(
-            'Child Name',
-            'Enter child name',
+            'Name',
+            'Enter name',
             currentName,
             (name) => {
                 const savedName = saveChildName(name);
@@ -651,7 +702,7 @@ export class GameScene extends Phaser.Scene {
         const titleBounds = this.titleText.getBounds();
         this.modeIndicator.setPosition(titleBounds.centerX, 42);
     }
-    
+
     /**
      * Hide or show all Build Mode visuals
      * Used when transitioning to/from Play Mode to prevent both scenes rendering at once
@@ -1576,6 +1627,16 @@ export class GameScene extends Phaser.Scene {
     }
     
     shutdown() {
+        // Clean up scale resize listener
+        if (this.scale) {
+            this.scale.off('resize');
+        }
+        
+        // Clean up toolbar resize listener
+        if (this.toolbar && this.toolbar.destroy) {
+            this.toolbar.destroy();
+        }
+        
         // Clean up HTML input element when scene shuts down
         if (this.worldNameInput && this.worldNameInput.parentNode) {
             this.worldNameInput.parentNode.removeChild(this.worldNameInput);
