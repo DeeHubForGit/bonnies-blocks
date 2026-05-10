@@ -27,5 +27,3 @@ const config = {
 
 // Create game instance
 const game = new Phaser.Game(config);
-
-console.log('[Main] Bonnie\'s Blocks game initialized!');

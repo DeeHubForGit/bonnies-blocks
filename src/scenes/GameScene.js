@@ -165,7 +165,6 @@ export class GameScene extends Phaser.Scene {
         
         // Listen for Phaser scale resize events to rebuild toolbar on mobile/desktop switch
         this.scale.on('resize', (gameSize) => {
-            console.log('[GameScene] Phaser scale resize event:', gameSize.width, 'x', gameSize.height);
             // Delay slightly to ensure DOM updates are complete
             this.time.delayedCall(200, () => {
                 if (this.toolbar && this.toolbar.refreshResponsiveLayout) {
@@ -420,9 +419,6 @@ export class GameScene extends Phaser.Scene {
             // Calculate scale factors (canvas displayed size vs game logical size)
             const scaleX = canvas.width / GAME_WIDTH;
             const scaleY = canvas.height / GAME_HEIGHT;
-            
-            console.log('[GameScene] positionWorldNameField - scaleX:', scaleX, 'scaleY:', scaleY);
-            console.log('[GameScene] canvas rect:', canvas.width, 'x', canvas.height, 'logical:', GAME_WIDTH, 'x', GAME_HEIGHT);
 
             // Adjust input width for mobile - slightly narrower to fit Play/Edit button
             const isMobile = window.innerWidth <= 600;
@@ -446,9 +442,6 @@ export class GameScene extends Phaser.Scene {
             this.worldNameInput.style.width = (inputWidth * scaleX) + 'px';
             this.worldNameInput.style.height = (inputHeight * scaleY) + 'px';
             this.worldNameInput.style.fontSize = (fontSize * scaleY) + 'px';
-            
-            console.log('[GameScene] Input positioned at:', this.worldNameInput.style.left, this.worldNameInput.style.top);
-            console.log('[GameScene] Input size:', this.worldNameInput.style.width, 'x', this.worldNameInput.style.height);
         }
     }
 

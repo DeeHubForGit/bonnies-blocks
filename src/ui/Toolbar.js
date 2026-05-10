@@ -18,19 +18,11 @@ export class Toolbar {
         this.isMobileLayout = isMobileView(); // Track current layout mode
         this.resizeTimeoutId = null; // Debounce resize events
         
-        console.log('[Toolbar] Constructor - window.innerWidth:', window.innerWidth, 'isMobileLayout:', this.isMobileLayout);
-        const canvas = document.querySelector('canvas');
-        if (canvas) {
-            console.log('[Toolbar] Canvas clientWidth:', canvas.clientWidth, 'canvas width:', canvas.width);
-        }
-        
         this.createToolbar();
         this.setupResizeListener();
     }
 
     createToolbar() {
-        console.log('[Toolbar] createToolbar() - isMobileLayout:', this.isMobileLayout);
-        
         if (this.isMobileLayout) {
             this.createMobileToolbar();
         } else {
@@ -942,24 +934,15 @@ export class Toolbar {
 
     refreshResponsiveLayout() {
         const currentMobileView = isMobileView();
-        const canvas = document.querySelector('canvas');
-        console.log('[Toolbar] refreshResponsiveLayout() - current:', currentMobileView, 'stored:', this.isMobileLayout);
-        console.log('[Toolbar] - window.innerWidth:', window.innerWidth);
-        if (canvas) {
-            console.log('[Toolbar] - canvas.clientWidth:', canvas.clientWidth, 'canvas.width:', canvas.width);
-        }
         
         // If layout mode hasn't changed, do nothing
         if (currentMobileView === this.isMobileLayout) {
-            console.log('[Toolbar] Layout unchanged, skipping rebuild');
             // But still reposition the input in case scale changed
             if (this.scene && this.scene.positionWorldNameField) {
                 this.scene.positionWorldNameField();
             }
             return;
         }
-        
-        console.log('[Toolbar] Layout changed! Rebuilding toolbar from', this.isMobileLayout ? 'mobile' : 'desktop', 'to', currentMobileView ? 'mobile' : 'desktop');
         
         // Hide/destroy expanded toolbar if open
         if (this.isExpanded) {
@@ -991,8 +974,6 @@ export class Toolbar {
         if (this.scene && this.scene.positionWorldNameField) {
             this.scene.positionWorldNameField();
         }
-        
-        console.log('[Toolbar] Rebuild complete');
     }
 
     destroy() {
