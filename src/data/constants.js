@@ -34,6 +34,7 @@ export const BLOCK_TYPES = {
     RAINBOW: 'rainbow',
     // Objects
     GIRL: 'girl',
+    BOY: 'boy',
     BUNNY: 'bunny',
     UNICORN: 'unicorn',
     FLOWER: 'flower',
@@ -68,6 +69,7 @@ export const BLOCK_COLORS = {
     [BLOCK_TYPES.RAINBOW]: 0xFF69B4, // Starting color, will cycle
     // Objects
     [BLOCK_TYPES.GIRL]: 0xFFFFFF,
+    [BLOCK_TYPES.BOY]: 0xFFFFFF,
     [BLOCK_TYPES.BUNNY]: 0xFFFFFF,
     [BLOCK_TYPES.UNICORN]: 0xFFFFFF,
     [BLOCK_TYPES.FLOWER]: 0xFFFFFF,
@@ -147,6 +149,7 @@ export const PALETTE_PRETTY_COLORS = [
 // Objects - characters and decorations
 export const PALETTE_OBJECTS = [
     { type: BLOCK_TYPES.GIRL, label: 'Girl', icon: 'icon-girl', width: 1, height: 1 },
+    { type: BLOCK_TYPES.BOY, label: 'Boy', icon: 'icon-boy', width: 1, height: 1 },
     { type: BLOCK_TYPES.BUNNY, label: 'Bunny', icon: 'icon-bunny', width: 1, height: 1 },
     { type: BLOCK_TYPES.UNICORN, label: 'Unicorn', icon: 'icon-unicorn', width: 1, height: 1 },
     { type: BLOCK_TYPES.FLOWER, label: 'Flower', icon: 'icon-flower', width: 1, height: 1 },
@@ -174,6 +177,7 @@ export const GAME_MODES = {
 export const WORLD_SPRITES = {
     // Objects - use world-facing sprites in Play Mode
     [BLOCK_TYPES.GIRL]: 'world-girl',
+    [BLOCK_TYPES.BOY]: 'world-boy',
     [BLOCK_TYPES.BUNNY]: 'world-bunny',
     [BLOCK_TYPES.UNICORN]: 'world-unicorn',
     [BLOCK_TYPES.FLOWER]: 'world-flower',
@@ -221,6 +225,7 @@ export const MOBILE_FAVORITES = {
     // All objects
     objects: [
         BLOCK_TYPES.GIRL,
+        BLOCK_TYPES.BOY,
         BLOCK_TYPES.BUNNY,
         BLOCK_TYPES.UNICORN,
         BLOCK_TYPES.FLOWER,
@@ -273,6 +278,7 @@ export function getPattern(blockType) {
 export function isWorldObject(blockType) {
     const objects = [
         BLOCK_TYPES.GIRL,
+        BLOCK_TYPES.BOY,
         BLOCK_TYPES.BUNNY,
         BLOCK_TYPES.UNICORN,
         BLOCK_TYPES.FLOWER,

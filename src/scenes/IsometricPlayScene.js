@@ -566,6 +566,9 @@ export class IsometricPlayScene extends Phaser.Scene {
         if (blockType === BLOCK_TYPES.GIRL) {
             targetHeight = this.isoTileHeight * 2.2;
             sprite.setOrigin(0.5, 0.85);
+        } else if (blockType === BLOCK_TYPES.BOY) {
+            targetHeight = this.isoTileHeight * 2.2;
+            sprite.setOrigin(0.5, 0.85);
         } else if (blockType === BLOCK_TYPES.TREE) {
             targetHeight = this.isoTileHeight * 3.1;
             sprite.setOrigin(0.5, 0.9); // Trees slightly lower anchor

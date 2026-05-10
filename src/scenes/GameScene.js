@@ -72,6 +72,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-clear', 'assets/icons/bin.png');
         this.load.image('icon-new', 'assets/icons/new.png');
         this.load.image('icon-girl', 'assets/icons/blonde_girl.png');
+        this.load.image('icon-boy', 'assets/icons/boy.png');
         this.load.image('icon-bunny', 'assets/icons/bunny.png');
         this.load.image('icon-unicorn', 'assets/icons/unicorn.png');
         this.load.image('icon-settings', 'assets/icons/config.png');
@@ -100,6 +101,7 @@ export class GameScene extends Phaser.Scene {
         // These will use placeholders for now but can be replaced with real world sprites
         //this.load.image('world-grass-tile', 'assets/world/grass_tile.png');
         this.load.image('world-girl', 'assets/icons/blonde_girl.png');
+        this.load.image('world-boy', 'assets/icons/boy.png');
         this.load.image('world-bunny', 'assets/icons/bunny.png');
         this.load.image('world-unicorn', 'assets/icons/unicorn.png');
         this.load.image('world-flower', 'assets/icons/flower.png');
@@ -199,6 +201,7 @@ export class GameScene extends Phaser.Scene {
     createPlaceholderIcons() {
         // Create emoji/text-based placeholders for missing toolbar icons
         const placeholders = [
+            { key: 'icon-boy', emoji: '👦', color: '#87CEEB' },
             { key: 'icon-flower', emoji: '🌸', color: '#FF69B4' },
             { key: 'icon-bush-pink-flower', emoji: '🌿', color: '#FFB6C1' },
             { key: 'icon-palm-tree', emoji: '🌴', color: '#4CAF50' },
@@ -210,6 +213,7 @@ export class GameScene extends Phaser.Scene {
         // Create world sprite placeholders for Play Mode (top-down style)
         const worldPlaceholders = [
             { key: 'world-grass-tile', pattern: 'grass', color: '#7CB342' },
+            { key: 'world-boy', emoji: '👦', color: '#87CEEB', topDown: true },
             { key: 'world-bunny', emoji: '🐰', color: '#E0E0E0', topDown: true },
             { key: 'world-unicorn', emoji: '🦄', color: '#E1BEE7', topDown: true },
             { key: 'world-flower', emoji: '🌺', color: '#FF69B4', topDown: true },
@@ -1220,7 +1224,8 @@ export class GameScene extends Phaser.Scene {
         // Check if this is an image-based object
         const imageObjects = [
             BLOCK_TYPES.BUNNY, 
-            BLOCK_TYPES.GIRL, 
+            BLOCK_TYPES.GIRL,
+            BLOCK_TYPES.BOY, 
             BLOCK_TYPES.UNICORN, 
             BLOCK_TYPES.FLOWER,
             BLOCK_TYPES.BUSH_PINK_FLOWER,
@@ -1234,6 +1239,7 @@ export class GameScene extends Phaser.Scene {
             let iconKey = '';
             if (blockType === BLOCK_TYPES.BUNNY) iconKey = 'icon-bunny';
             else if (blockType === BLOCK_TYPES.GIRL) iconKey = 'icon-girl';
+            else if (blockType === BLOCK_TYPES.BOY) iconKey = 'icon-boy';
             else if (blockType === BLOCK_TYPES.UNICORN) iconKey = 'icon-unicorn';
             else if (blockType === BLOCK_TYPES.FLOWER) iconKey = 'icon-flower';
             else if (blockType === BLOCK_TYPES.BUSH_PINK_FLOWER) iconKey = 'icon-bush-pink-flower';
