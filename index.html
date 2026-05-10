@@ -31,6 +31,11 @@
         
         /* Mobile-specific adjustments */
         @media (max-width: 600px) {
+            #game-container {
+                justify-content: flex-start; /* Align to top instead of center */
+                padding-top: 20px; /* Add small top padding (moves game up by ~60px compared to centered) */
+            }
+            
             canvas {
                 border-width: 2px; /* Thinner border on mobile to save space */
             }
