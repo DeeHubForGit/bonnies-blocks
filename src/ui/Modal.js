@@ -108,12 +108,17 @@ export class Modal {
         const centerY = GAME_HEIGHT / 2;
 
         // Title
-        const titleText = this.scene.add.text(centerX, centerY - 90, title, {
+        const titleText = this.scene.add.text(centerX, centerY - 180, title, {
             fontSize: '28px',
             fontFamily: 'Arial',
             color: '#333333',
             fontStyle: 'bold'
         }).setOrigin(0.5);
+
+        // Add girl-boy-name image under title
+        const childImage = this.scene.add.image(centerX, centerY - 75, 'girl-boy-name');
+        childImage.setOrigin(0.5);
+        childImage.setDisplaySize(240, 150);
 
         // Track input value
         let inputValue = defaultValue || '';
@@ -125,10 +130,10 @@ export class Modal {
         inputElement.placeholder = placeholder;
         inputElement.style.position = 'absolute';
         
-        // Position relative to canvas (centered where Phaser input was)
+        // Position relative to canvas - moved down to accommodate image
         const rect = this.scene.game.canvas.getBoundingClientRect();
         inputElement.style.left = rect.left + (GAME_WIDTH / 2 - 150) + 'px';
-        inputElement.style.top = rect.top + (GAME_HEIGHT / 2 - 10 - 22.5) + 'px';
+        inputElement.style.top = rect.top + (GAME_HEIGHT / 2 + 30 - 22.5) + 'px';
         
         inputElement.style.width = '300px';
         inputElement.style.height = '45px';
@@ -160,15 +165,15 @@ export class Modal {
             inputValue = e.target.value;
         });
 
-        // Buttons
-        const buttonY = centerY + 70;
-        const cancelBtn = this.createButton(centerX - 80, buttonY, 'Cancel', 0xe0e0e0, () => {
+        // Buttons with icons
+        const buttonY = centerY + 120;
+        const cancelBtn = this.createIconButton(centerX - 100, buttonY, 'Cancel', 0xe0e0e0, 'icon-cancel', () => {
             this.scene.isTextInputOpen = false;
             document.body.removeChild(inputElement);
             this.close();
         });
 
-        const saveBtn = this.createButton(centerX + 80, buttonY, 'Save', 0xFFB6C1, () => {
+        const saveBtn = this.createIconButton(centerX + 100, buttonY, 'Save', 0xFFB6C1, 'icon-save', () => {
             this.scene.isTextInputOpen = false;
             document.body.removeChild(inputElement);
             this.close();
@@ -188,7 +193,7 @@ export class Modal {
             }
         });
 
-        this.container.add([titleText, cancelBtn, saveBtn]);
+        this.container.add([titleText, childImage, cancelBtn, saveBtn]);
     }
 
     /**
