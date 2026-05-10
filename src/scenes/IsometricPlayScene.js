@@ -591,7 +591,7 @@ export class IsometricPlayScene extends Phaser.Scene {
             targetHeight = this.isoTileHeight * 1.4;
             sprite.setOrigin(0.5, 0.9);
         } else if (blockType === BLOCK_TYPES.UNICORN) {
-            targetHeight = this.isoTileHeight * 3.4;
+            targetHeight = this.isoTileHeight * 2.8;
             sprite.setOrigin(0.5, 0.9);
         }
         

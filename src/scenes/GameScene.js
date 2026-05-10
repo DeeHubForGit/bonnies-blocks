@@ -153,8 +153,7 @@ export class GameScene extends Phaser.Scene {
         // Create settings button
         this.createSettingsButton();
 
-        // Create mode indicator
-        this.createModeIndicator();
+        // Mode indicator removed - not needed as Play/Edit button shows mode
         
         // Create header action buttons (New, Save, Load)
         this.createHeaderActionButtons();
@@ -172,10 +171,8 @@ export class GameScene extends Phaser.Scene {
                 if (this.toolbar && this.toolbar.refreshResponsiveLayout) {
                     this.toolbar.refreshResponsiveLayout();
                 }
-                // Reposition world name input to account for new scale
-                if (this.worldNameInput) {
-                    this.positionWorldNameField();
-                }
+                // Reposition Play button after toolbar rebuild
+                this.positionPlayButton();
             });
         });
         
@@ -322,15 +319,20 @@ export class GameScene extends Phaser.Scene {
         // Move left on mobile to avoid overlap with Config button
         const isMobile = window.innerWidth <= 600;
         const titleX = isMobile ? 46 : 58; // Move left by 12px on mobile
+        const maxWidth = 230; // Safe width to avoid overlapping header buttons
         
         this.titleText = this.add.text(titleX, 24, title, {
             fontSize: '28px',
             fontFamily: 'Arial',
             fontStyle: 'bold',
-            color: '#333333'
+            color: '#333333',
+            wordWrap: { width: maxWidth, useAdvancedWrap: true }
         });
         this.titleText.setOrigin(0, 0.5); // Left-aligned
         this.titleText.setDepth(1000);
+        
+        // Fit title text to prevent overlap with header buttons
+        this.fitTitleText();
     }
 
     createSettingsButton() {
@@ -558,6 +560,7 @@ export class GameScene extends Phaser.Scene {
         const inputElement = document.createElement('input');
         inputElement.type = 'text';
         inputElement.placeholder = '';
+        inputElement.maxLength = 20; // Limit to 20 characters
         inputElement.style.position = 'absolute';
         inputElement.style.right = '15px';
         inputElement.style.top = '18px';
@@ -669,6 +672,9 @@ export class GameScene extends Phaser.Scene {
                 // Update title immediately
                 this.titleText.setText(this.buildTitleText(savedName));
                 
+                // Fit title text to prevent overlap with header buttons
+                this.fitTitleText();
+                
                 // Reposition Play button and world name field after title text changes
                 this.positionPlayButton();
                 
@@ -678,26 +684,32 @@ export class GameScene extends Phaser.Scene {
         );
     }
     
-    createModeIndicator() {
-        this.modeIndicator = this.add.text(0, 42, 'Edit Mode', {
-            fontSize: '14px',
-            fontFamily: 'Arial',
-            color: '#666666'
-        });
-
-        this.modeIndicator.setOrigin(0.5, 0.5);
-        this.modeIndicator.setDepth(1000);
-
-        this.positionModeIndicator();
+    positionModeIndicator() {
+        // Mode indicator removed - no longer needed
+        // This function kept for compatibility but does nothing
     }
 
-    positionModeIndicator() {
-        if (!this.titleText || !this.modeIndicator) {
+    fitTitleText() {
+        if (!this.titleText) {
             return;
         }
 
-        const titleBounds = this.titleText.getBounds();
-        this.modeIndicator.setPosition(titleBounds.centerX, 42);
+        const maxWidth = 230;
+        const maxHeight = 50; // Allow up to 2 lines
+        let fontSize = 28;
+
+        // Set word wrap width
+        this.titleText.setStyle({
+            wordWrap: { width: maxWidth, useAdvancedWrap: true }
+        });
+        
+        this.titleText.setFontSize(fontSize);
+
+        // If wrapped text is too tall, reduce font size
+        while (this.titleText.height > maxHeight && fontSize > 18) {
+            fontSize -= 1;
+            this.titleText.setFontSize(fontSize);
+        }
     }
 
     /**
@@ -714,7 +726,6 @@ export class GameScene extends Phaser.Scene {
         // Hide/show header elements
         if (this.titleText) this.titleText.setVisible(visible);
         if (this.settingsButton) this.settingsButton.setVisible(visible);
-        if (this.modeIndicator) this.modeIndicator.setVisible(visible);
         
         // Hide/show world name input field
         if (this.worldNameInput) {
@@ -1255,6 +1266,9 @@ export class GameScene extends Phaser.Scene {
             if (blockType === BLOCK_TYPES.PALM_TREE) {
                 // Palm trees slightly larger
                 targetSize = GRID_SIZE * 1.05;
+            } else if (blockType === BLOCK_TYPES.UNICORN) {
+                // Unicorn larger for better visibility in Edit Mode
+                targetSize = GRID_SIZE * 1.0;
             }
             const scale = targetSize / Math.max(sprite.width, sprite.height);
             sprite.setScale(scale);

@@ -120,6 +120,13 @@ export class Modal {
         childImage.setOrigin(0.5);
         childImage.setDisplaySize(240, 150);
 
+        // Add helper text about character limit
+        const helperText = this.scene.add.text(centerX, centerY + 70, 'Maximum 20 characters', {
+            fontSize: '12px',
+            fontFamily: 'Arial',
+            color: '#666666'
+        }).setOrigin(0.5);
+
         // Track input value
         let inputValue = defaultValue || '';
 
@@ -128,16 +135,35 @@ export class Modal {
         inputElement.type = 'text';
         inputElement.value = inputValue;
         inputElement.placeholder = placeholder;
+        inputElement.maxLength = 20; // Limit to 20 characters
         inputElement.style.position = 'absolute';
         
-        // Position relative to canvas - moved down to accommodate image
-        const rect = this.scene.game.canvas.getBoundingClientRect();
-        inputElement.style.left = rect.left + (GAME_WIDTH / 2 - 150) + 'px';
-        inputElement.style.top = rect.top + (GAME_HEIGHT / 2 + 30 - 22.5) + 'px';
+        // Position relative to canvas with proper scale handling
+        const canvas = this.scene.game.canvas.getBoundingClientRect();
         
-        inputElement.style.width = '300px';
-        inputElement.style.height = '45px';
-        inputElement.style.fontSize = '20px';
+        // Calculate scale factors (canvas displayed size vs game logical size)
+        const scaleX = canvas.width / GAME_WIDTH;
+        const scaleY = canvas.height / GAME_HEIGHT;
+        
+        // Input dimensions in logical coordinates
+        const inputWidth = 300;
+        const inputHeight = 45;
+        const fontSize = 20;
+        
+        // Logical position: centered horizontally, below the girl-boy image
+        const inputX = GAME_WIDTH / 2 - inputWidth / 2;
+        const inputY = GAME_HEIGHT / 2 + 30 - inputHeight / 2;
+        
+        // Add scroll offsets for absolute positioning
+        const pageX = window.scrollX || window.pageXOffset || 0;
+        const pageY = window.scrollY || window.pageYOffset || 0;
+        
+        // Apply scale to position and size
+        inputElement.style.left = (canvas.left + pageX + inputX * scaleX) + 'px';
+        inputElement.style.top = (canvas.top + pageY + inputY * scaleY) + 'px';
+        inputElement.style.width = (inputWidth * scaleX) + 'px';
+        inputElement.style.height = (inputHeight * scaleY) + 'px';
+        inputElement.style.fontSize = (fontSize * scaleY) + 'px';
         inputElement.style.textAlign = 'center';
         inputElement.style.border = '2px solid #FFB6C1';
         inputElement.style.borderRadius = '6px';
@@ -193,7 +219,7 @@ export class Modal {
             }
         });
 
-        this.container.add([titleText, childImage, cancelBtn, saveBtn]);
+        this.container.add([titleText, childImage, helperText, cancelBtn, saveBtn]);
     }
 
     /**
