@@ -305,9 +305,9 @@ export class GameScene extends Phaser.Scene {
     buildTitleText(name) {
         // Handle possessive apostrophe correctly
         if (name.endsWith('s') || name.endsWith('S')) {
-            return `${name}' Blocks`;
+            return `${name}' World`;
         } else {
-            return `${name}'s Blocks`;
+            return `${name}'s World`;
         }
     }
 
