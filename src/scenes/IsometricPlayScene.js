@@ -118,7 +118,7 @@ export class IsometricPlayScene extends Phaser.Scene {
     init(data) {
         console.log('[IsometricPlayScene] Initializing with world data');
         this.worldGrid = data.grid || this.createEmptyGrid();
-        this.childName = data.childName || 'Bonnie';
+        this.childName = data.childName || 'Bunnies';
     }
 
     createEmptyGrid() {
@@ -208,6 +208,11 @@ export class IsometricPlayScene extends Phaser.Scene {
     }
 
     buildTitleText(name) {
+        // Special case for "My" - no apostrophe needed
+        if (name === 'My') {
+            return 'My World';
+        }
+        
         if (name.endsWith('s') || name.endsWith('S')) {
             return `${name}' World`;
         } else {

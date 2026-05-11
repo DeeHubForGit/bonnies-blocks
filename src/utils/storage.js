@@ -3,11 +3,11 @@ import { STORAGE_KEY, CHILD_NAME_KEY } from '../data/constants.js';
 const WORLDS_KEY = STORAGE_KEY + '_worlds';
 
 /**
- * Get the stored child name or default to 'Bonnie'
+ * Get the stored child name or default to 'Bunnies'
  */
 export function getChildName() {
     const storedName = localStorage.getItem(CHILD_NAME_KEY);
-    return storedName && storedName.trim() ? storedName.trim() : 'Bonnie';
+    return storedName && storedName.trim() ? storedName.trim() : 'Bunnies';
 }
 
 /**
@@ -18,7 +18,7 @@ export function saveChildName(name) {
     const trimmed = name ? name.trim() : '';
     // Enforce 20-character limit
     const limited = trimmed.substring(0, 20);
-    const finalName = limited || 'Bonnie';
+    const finalName = limited || 'Bunnies';
     localStorage.setItem(CHILD_NAME_KEY, finalName);
     return finalName;
 }

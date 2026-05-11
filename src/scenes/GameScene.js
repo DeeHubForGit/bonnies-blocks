@@ -303,6 +303,11 @@ export class GameScene extends Phaser.Scene {
     }
 
     buildTitleText(name) {
+        // Special case for "Bunnies" - no apostrophe needed
+        if (name === 'Bunnies') {
+            return 'Bunnies World';
+        }
+        
         // Handle possessive apostrophe correctly
         if (name.endsWith('s') || name.endsWith('S')) {
             return `${name}' World`;
