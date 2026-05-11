@@ -208,9 +208,9 @@ export class IsometricPlayScene extends Phaser.Scene {
     }
 
     buildTitleText(name) {
-        // Special case for "My" - no apostrophe needed
-        if (name === 'My') {
-            return 'My World';
+        // Special case for "Bunnies" - no apostrophe needed
+        if (name === 'Bunnies') {
+            return 'Bunnies World';
         }
         
         if (name.endsWith('s') || name.endsWith('S')) {
