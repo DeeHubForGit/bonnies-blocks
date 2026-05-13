@@ -192,6 +192,15 @@ export class GameScene extends Phaser.Scene {
             loop: true
         });
 
+        // Warn about unsaved changes before closing/refreshing tab
+        this.beforeUnloadHandler = (event) => {
+            if (this.hasUnsavedChanges()) {
+                event.preventDefault();
+                event.returnValue = ''; // Required for Chrome
+            }
+        };
+        window.addEventListener('beforeunload', this.beforeUnloadHandler);
+
         console.log('[GameScene] Game ready!');
     }
 
@@ -1679,6 +1688,12 @@ export class GameScene extends Phaser.Scene {
         // Clean up toolbar resize listener
         if (this.toolbar && this.toolbar.destroy) {
             this.toolbar.destroy();
+        }
+        
+        // Clean up beforeunload listener
+        if (this.beforeUnloadHandler) {
+            window.removeEventListener('beforeunload', this.beforeUnloadHandler);
+            this.beforeUnloadHandler = null;
         }
         
         // Clean up HTML input element when scene shuts down
