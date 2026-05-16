@@ -387,7 +387,7 @@ export class Toolbar {
         icon.setScale(scale);
         
         button.add([icon]);
-        button.setScale(1.18);
+        button.setScale(1.78); // 25% larger than object buttons for better visibility
         button.setDepth(1000);
         
         // Create tooltip with light pink background and black text
