@@ -84,7 +84,8 @@ export class GameScene extends Phaser.Scene {
         this.load.image('load-world-image', 'assets/icons/load_world.png');
         this.load.image('girl-boy-name', 'assets/icons/girl_boy_name.png');
         this.load.image('icon-cancel', 'assets/icons/cancel.png');
-        this.load.image('icon-bin', 'assets/icons/bin.png');
+        this.load.image('icon-bin', 'assets/icons/bin_basic.png');
+        this.load.image('icon-tick', 'assets/icons/tick.png');
         
         // New icons - load with error handling
         this.load.on('loaderror', (file) => {
@@ -337,9 +338,18 @@ export class GameScene extends Phaser.Scene {
         
         this.titleText = this.add.text(titleX, 24, title, {
             fontSize: '28px',
-            fontFamily: 'Arial',
+            fontFamily: '"Fredoka", "Comic Sans MS", cursive, sans-serif',
             fontStyle: 'bold',
-            color: '#333333',
+            color: '#FF69B4',
+            stroke: '#FFFFFF',
+            strokeThickness: 4,
+            shadow: {
+                offsetX: 1,
+                offsetY: 2,
+                color: '#C46BA0',
+                blur: 0,
+                fill: true
+            },
             wordWrap: { width: maxWidth, useAdvancedWrap: true }
         });
         this.titleText.setOrigin(0, 0.5); // Left-aligned

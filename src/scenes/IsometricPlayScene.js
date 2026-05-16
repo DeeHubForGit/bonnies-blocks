@@ -199,9 +199,18 @@ export class IsometricPlayScene extends Phaser.Scene {
         const title = this.buildTitleText(this.childName);
         this.titleText = this.add.text(GAME_WIDTH / 2, 24, title, {
             fontSize: '28px',
-            fontFamily: 'Arial',
+            fontFamily: '"Fredoka", "Comic Sans MS", cursive, sans-serif',
             fontStyle: 'bold',
-            color: '#333333'
+            color: '#FF69B4',
+            stroke: '#FFFFFF',
+            strokeThickness: 4,
+            shadow: {
+                offsetX: 1,
+                offsetY: 2,
+                color: '#C46BA0',
+                blur: 0,
+                fill: true
+            }
         });
         this.titleText.setOrigin(0.5);
         this.titleText.setDepth(10000);
