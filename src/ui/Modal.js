@@ -90,7 +90,7 @@ export class Modal {
             if (onCancel) onCancel();
         });
 
-        const confirmBtn = this.createIconButton(centerX + 100, buttonY, confirmText, 0xFFB6C1, 'icon-save', () => {
+        const confirmBtn = this.createIconButton(centerX + 100, buttonY, confirmText, 0xFFB6C1, 'icon-tick', () => {
             this.close();
             if (onConfirm) onConfirm();
         });
@@ -199,7 +199,7 @@ export class Modal {
             this.close();
         });
 
-        const saveBtn = this.createIconButton(centerX + 100, buttonY, 'Save', 0xFFB6C1, 'icon-save', () => {
+        const saveBtn = this.createIconButton(centerX + 100, buttonY, 'Save', 0xFFB6C1, 'icon-tick', () => {
             this.scene.isTextInputOpen = false;
             document.body.removeChild(inputElement);
             this.close();
@@ -758,8 +758,8 @@ export class Modal {
 
         // Icon on the left
         const icon = this.scene.add.image(-45, 0, iconKey);
-        const maxIconWidth = 36;
-        const maxIconHeight = 36;
+        const maxIconWidth = 46;
+        const maxIconHeight = 46;
         const iconScale = Math.min(maxIconWidth / icon.width, maxIconHeight / icon.height);
         icon.setScale(iconScale);
 
