@@ -567,24 +567,25 @@ export class IsometricPlayScene extends Phaser.Scene {
             sprite.setOrigin(0.5, 0.85);
         } else if (blockType === BLOCK_TYPES.TREE) {
             targetHeight = this.isoTileHeight * 3.1;
-            sprite.setOrigin(0.5, 0.9); // Trees slightly lower anchor
+            sprite.setOrigin(0.5, 0.9);
+            sprite.y += this.isoTileHeight * 0.2;
         } else if (blockType === BLOCK_TYPES.PALM_TREE) {
             // Palm trees (large tropical plants)
-            targetHeight = this.isoTileHeight * 4.2;
-            sprite.setOrigin(0.5, 0.85);
+            targetHeight = this.isoTileHeight * 2.8;
+            sprite.setOrigin(0.7, 0.85);
         } else if (blockType === BLOCK_TYPES.FLOWER) {
             targetHeight = this.isoTileHeight * 1.3;
             sprite.setOrigin(0.5, 0.7);
         } else if (blockType === BLOCK_TYPES.BUSH_PINK_FLOWER) {
-            targetHeight = this.isoTileHeight * 1.2;
+            targetHeight = this.isoTileHeight * 1.4;
             sprite.setOrigin(0.5, 0.75);
-        } else if (blockType === BLOCK_TYPES.BUSH_REINDEER) {
-            targetHeight = this.isoTileHeight * 2.4;
+        } else if (blockType === BLOCK_TYPES.BUSH_CAT) {
+            targetHeight = this.isoTileHeight * 2.0;
             sprite.setOrigin(0.5, 0.9);
-            // Move reindeer slightly forward on the tile so the feet sit better
+            // Move cat slightly forward on the tile so the feet sit better
             sprite.y += this.isoTileHeight * 0.22;
         } else if (blockType === BLOCK_TYPES.BUNNY) {
-            targetHeight = this.isoTileHeight * 1.4;
+            targetHeight = this.isoTileHeight * 1.6;
             sprite.setOrigin(0.5, 0.9);
         } else if (blockType === BLOCK_TYPES.UNICORN) {
             targetHeight = this.isoTileHeight * 2.8;

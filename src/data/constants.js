@@ -41,7 +41,7 @@ export const BLOCK_TYPES = {
     BUSH_PINK_FLOWER: 'bushPinkFlower',
     PALM_TREE: 'palmTree',
     TREE: 'tree',
-    BUSH_REINDEER: 'bushReindeer'
+    BUSH_CAT: 'bushCat'
 };
 
 // Block colors for rendering
@@ -76,7 +76,7 @@ export const BLOCK_COLORS = {
     [BLOCK_TYPES.BUSH_PINK_FLOWER]: 0xFFFFFF,
     [BLOCK_TYPES.PALM_TREE]: 0xFFFFFF,
     [BLOCK_TYPES.TREE]: 0xFFFFFF,
-    [BLOCK_TYPES.BUSH_REINDEER]: 0xFFFFFF
+    [BLOCK_TYPES.BUSH_CAT]: 0xFFFFFF
 };
 
 // Pattern overlays for pattern blocks
@@ -156,7 +156,7 @@ export const PALETTE_OBJECTS = [
     { type: BLOCK_TYPES.BUSH_PINK_FLOWER, label: 'Bush', icon: 'icon-bush-pink-flower', width: 1, height: 1 },
     { type: BLOCK_TYPES.PALM_TREE, label: 'Palm Trees', icon: 'icon-palm-tree', width: 1, height: 1 },
     { type: BLOCK_TYPES.TREE, label: 'Tree', icon: 'icon-tree', width: 1, height: 1 },
-    { type: BLOCK_TYPES.BUSH_REINDEER, label: 'Bush Reindeer', icon: 'icon-bush-reindeer', width: 1, height: 1 }
+    { type: BLOCK_TYPES.BUSH_CAT, label: 'Bush Cat', icon: 'icon-bush-cat', width: 1, height: 1 }
 ];
 
 // Tool modes
@@ -171,11 +171,11 @@ export const GAME_MODES = {
     PLAY: 'play'
 };
 
-// World sprite mappings for Play Mode
+// World sprite mappings for View Mode
 // Maps block types to world-appropriate sprite keys
-// Toolbar uses 'icon-*' assets, Play Mode uses 'world-*' assets
+// Toolbar uses 'icon-*' assets, View Mode uses 'world-*' assets
 export const WORLD_SPRITES = {
-    // Objects - use world-facing sprites in Play Mode
+    // Objects - use world-facing sprites in View Mode
     [BLOCK_TYPES.GIRL]: 'world-girl',
     [BLOCK_TYPES.BOY]: 'world-boy',
     [BLOCK_TYPES.BUNNY]: 'world-bunny',
@@ -184,7 +184,7 @@ export const WORLD_SPRITES = {
     [BLOCK_TYPES.BUSH_PINK_FLOWER]: 'world-bush-pink-flower',
     [BLOCK_TYPES.PALM_TREE]: 'world-palm-tree',
     [BLOCK_TYPES.TREE]: 'world-tree',
-    [BLOCK_TYPES.BUSH_REINDEER]: 'world-bush-reindeer'
+    [BLOCK_TYPES.BUSH_CAT]: 'world-bush-cat'
     // Ground tiles
     //GRASS_TILE: 'world-grass-tile'
 };
@@ -232,7 +232,7 @@ export const MOBILE_FAVORITES = {
         BLOCK_TYPES.BUSH_PINK_FLOWER,
         BLOCK_TYPES.PALM_TREE,
         BLOCK_TYPES.TREE,
-        BLOCK_TYPES.BUSH_REINDEER
+        BLOCK_TYPES.BUSH_CAT
     ]
 };
 
@@ -285,7 +285,7 @@ export function isWorldObject(blockType) {
         BLOCK_TYPES.BUSH_PINK_FLOWER,
         BLOCK_TYPES.PALM_TREE,
         BLOCK_TYPES.TREE,
-        BLOCK_TYPES.BUSH_REINDEER
+        BLOCK_TYPES.BUSH_CAT
     ];
     return objects.includes(blockType);
 }

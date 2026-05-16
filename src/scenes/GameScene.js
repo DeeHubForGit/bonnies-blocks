@@ -95,7 +95,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-bush-pink-flower', 'assets/icons/bush_pink_flower.png');
         this.load.image('icon-palm-tree', 'assets/icons/palm_trees.png');
         this.load.image('icon-tree', 'assets/icons/pink_tree.png');
-        this.load.image('icon-bush-reindeer', 'assets/icons/bush_reindeer.png');
+        this.load.image('icon-bush-cat', 'assets/icons/bush_cat.png');
         
         // World assets (for View Mode) - top-down/isometric style
         // These will use placeholders for now but can be replaced with real world sprites
@@ -108,7 +108,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('world-bush-pink-flower', 'assets/icons/bush_pink_flower.png');
         this.load.image('world-palm-tree', 'assets/icons/palm_trees.png');
         this.load.image('world-tree', 'assets/icons/pink_tree.png');
-        this.load.image('world-bush-reindeer', 'assets/icons/bush_reindeer.png');
+        this.load.image('world-bush-cat', 'assets/icons/bush_cat.png');
 
         console.log('[GameScene] Loading assets...');
     }
@@ -213,7 +213,7 @@ export class GameScene extends Phaser.Scene {
             { key: 'icon-palm-tree', emoji: '🌴', color: '#4CAF50' },
             { key: 'icon-tree', emoji: '🌳', color: '#228B22' },
             { key: 'icon-unicorn', emoji: '🦄', color: '#E0B0FF' },
-            { key: 'icon-bush-reindeer', emoji: '🦌', color: '#8B4513' }
+            { key: 'icon-bush-cat', emoji: '🦌', color: '#8B4513' }
         ];
         
         // Create world sprite placeholders for View Mode (top-down style)
@@ -226,7 +226,7 @@ export class GameScene extends Phaser.Scene {
             { key: 'world-bush-pink-flower', emoji: '🌿', color: '#FFB6C1', topDown: true },
             { key: 'world-palm-tree', emoji: '🌴', color: '#4CAF50', topDown: true },
             { key: 'world-tree', emoji: '🌲', color: '#2E7D32', topDown: true },
-            { key: 'world-bush-reindeer', emoji: '🦌', color: '#8B4513', topDown: true }
+            { key: 'world-bush-cat', emoji: '🦌', color: '#8B4513', topDown: true }
         ];
 
         // Create toolbar icon placeholders
@@ -471,7 +471,7 @@ export class GameScene extends Phaser.Scene {
         
         // Adjust for mobile - smaller icons and tighter spacing
         const isMobile = window.innerWidth <= 600;
-        const iconSize = isMobile ? 42 : 48; // Smaller icons on mobile
+        const iconSize = isMobile ? 45 : 52; // 7% larger for better visibility
         const spacing = isMobile ? 6 : 8; // Tighter spacing on mobile
         
         // Start buttons after title area (title + mode text block)
@@ -1256,7 +1256,7 @@ export class GameScene extends Phaser.Scene {
             BLOCK_TYPES.BUSH_PINK_FLOWER,
             BLOCK_TYPES.PALM_TREE, 
             BLOCK_TYPES.TREE, 
-            BLOCK_TYPES.BUSH_REINDEER
+            BLOCK_TYPES.BUSH_CAT
         ];
 
         if (imageObjects.includes(blockType)) {
@@ -1270,7 +1270,7 @@ export class GameScene extends Phaser.Scene {
             else if (blockType === BLOCK_TYPES.BUSH_PINK_FLOWER) iconKey = 'icon-bush-pink-flower';
             else if (blockType === BLOCK_TYPES.PALM_TREE) iconKey = 'icon-palm-tree';
             else if (blockType === BLOCK_TYPES.TREE) iconKey = 'icon-tree';
-            else if (blockType === BLOCK_TYPES.BUSH_REINDEER) iconKey = 'icon-bush-reindeer';
+            else if (blockType === BLOCK_TYPES.BUSH_CAT) iconKey = 'icon-bush-cat';
 
             // Render object using toolbar icon
             const sprite = this.add.image(x, y, iconKey);
