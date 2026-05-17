@@ -605,7 +605,7 @@ export class GameScene extends Phaser.Scene {
         inputElement.style.borderRadius = '4px';
         inputElement.style.backgroundColor = '#FFFFFF';
         inputElement.style.outline = 'none';
-        inputElement.style.zIndex = '1000';
+        inputElement.style.zIndex = '500'; // Lower z-index to prevent overlap with canvas elements
         
         document.body.appendChild(inputElement);
         this.worldNameInput = inputElement;

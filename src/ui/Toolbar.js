@@ -1,4 +1,4 @@
-import { BLOCK_TYPES, TOOL_MODES, GAME_MODES, BLOCK_COLORS, PLAYABLE_HEIGHT, TOOLBAR_HEIGHT, GAME_WIDTH, HEADER_HEIGHT, PALETTE_COLORS, PALETTE_PATTERN_COLORS, PALETTE_OBJECTS, MOBILE_FAVORITES, isMobileView, isColorBlock, hasPattern, getPattern } from '../data/constants.js';
+import { BLOCK_TYPES, TOOL_MODES, GAME_MODES, BLOCK_COLORS, PLAYABLE_HEIGHT, TOOLBAR_HEIGHT, GAME_WIDTH, HEADER_HEIGHT, PALETTE_COLORS, PALETTE_PATTERN_COLORS, PALETTE_OBJECTS, MOBILE_FAVORITES, isMobileView, isMobilePortrait, isColorBlock, hasPattern, getPattern } from '../data/constants.js';
 
 // Mode toggle icon size constant (used for both View and Edit arrows)
 const MODE_TOGGLE_ICON_SIZE = 56;
@@ -62,8 +62,21 @@ export class Toolbar {
         });
         
         // Row 2: Objects and tools
-        const row2Y = toolbarTop + 78;
-        let objectX = 15; // Adjusted left to fit dragon
+        // On mobile portrait, position row2 based on input box to prevent overlap
+        const desktopRow2Y = toolbarTop + 78;
+        
+        // Get input box dimensions from GameScene
+        const inputBox = {
+            y: 18,  // Input box Y position from GameScene.positionWorldNameField
+            height: 28  // Input box height from GameScene.createWorldNameInput
+        };
+        const spacing = 4; // Small buffer to ensure arrow sits inside button
+        
+        const row2Y = isMobilePortrait() 
+            ? inputBox.y + inputBox.height + spacing 
+            : desktopRow2Y;
+        
+        let objectX = 27; // Increased from 15 to prevent left cutoff on mobile
         const objectButtonSize = 42; // Reduced from 44 to fit dragon
         const objectGap = 3; // Tight gap for all objects including dragon
         
@@ -171,7 +184,7 @@ export class Toolbar {
             .setInteractive({ useHandCursor: true });
 
         button.add([bg]);
-        button.setDepth(1000);
+        button.setDepth(1500); // Increased depth for mobile visibility
 
         bg.on('pointerdown', () => {
             // Only allow tool selection if build tools are enabled
@@ -263,7 +276,7 @@ export class Toolbar {
             button.add([patternText]);
         }
         
-        button.setDepth(1000);
+        button.setDepth(1500); // Increased depth for mobile visibility
 
         bg.on('pointerdown', () => {
             // Only allow tool selection if build tools are enabled
@@ -296,7 +309,7 @@ export class Toolbar {
         
         button.add([icon]);
         button.setScale(1.18);
-        button.setDepth(1000);
+        button.setDepth(1500); // Increased depth for mobile visibility
 
         bg.on('pointerdown', () => {
             // Only allow tool selection if build tools are enabled
@@ -325,7 +338,7 @@ export class Toolbar {
 
         button.add([bg, eraserIcon]);
         button.setScale(1.18);
-        button.setDepth(1000);
+        button.setDepth(1500); // Increased depth for mobile visibility
 
         bg.on('pointerdown', () => {
             // Only allow tool selection if build tools are enabled
@@ -358,7 +371,7 @@ export class Toolbar {
         plusGraphic.strokePath();
         
         button.add([bg, plusGraphic]);
-        button.setDepth(1000);
+        button.setDepth(1500); // Increased depth for mobile visibility
 
         bg.on('pointerdown', () => {
             // Only allow interaction if build tools are enabled
@@ -389,7 +402,7 @@ export class Toolbar {
         
         button.add([icon]);
         button.setScale(1.55); // Reduced scale for better tablet fit
-        button.setDepth(1000);
+        button.setDepth(1500); // Increased depth for mobile visibility
         
         // Create tooltip with light pink background and black text
         const tooltipStyle = {
@@ -476,7 +489,7 @@ export class Toolbar {
         }
 
         button.setScale(1.18);
-        button.setDepth(1000);
+        button.setDepth(1500); // Increased depth for mobile visibility
 
         bg.on('pointerdown', () => {
             bg.setFillStyle(0xFBC02D);
@@ -520,7 +533,7 @@ export class Toolbar {
         tooltip.setDepth(2000);
         button.add([tooltip]);
         
-        button.setDepth(1000);
+        button.setDepth(1500); // Increased depth for mobile visibility
 
         // Event handler function for toggling mode
         const handleClick = () => {
@@ -581,7 +594,7 @@ export class Toolbar {
         
         button.add([bg, moreText]);
         button.setScale(1.18);
-        button.setDepth(1000);
+        button.setDepth(1500); // Increased depth for mobile visibility
 
         bg.on('pointerdown', () => {
             if (this.buildToolsEnabled) {
@@ -891,10 +904,10 @@ export class Toolbar {
                 // Highlight erase button when active
                 if (this.mode === TOOL_MODES.ERASE) {
                     btn.bg.setStrokeStyle(3, 0xFFFF00);
-                    btn.container.setDepth(1001); // Bring to front
+                    btn.container.setDepth(1501); // Bring to front
                 } else {
                     btn.bg.setStrokeStyle(2, 0x000000);
-                    btn.container.setDepth(1000); // Normal depth
+                    btn.container.setDepth(1500); // Normal depth
                 }
             } else {
                 // Highlight selected tool
@@ -902,10 +915,10 @@ export class Toolbar {
                 if (isSelected) {
                     // Reduced stroke width to minimize overlap with adjacent buttons
                     btn.bg.setStrokeStyle(3, 0xFFFF00);
-                    btn.container.setDepth(1001); // Bring to front so border shows on top
+                    btn.container.setDepth(1501); // Bring to front so border shows on top
                 } else {
                     btn.bg.setStrokeStyle(2, 0x000000);
-                    btn.container.setDepth(1000); // Normal depth
+                    btn.container.setDepth(1500); // Normal depth
                 }
             }
         });

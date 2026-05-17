@@ -277,6 +277,13 @@ export function isMobileView() {
     return isMobile;
 }
 
+// Helper function to check if mobile portrait orientation
+export function isMobilePortrait() {
+    const windowWidth = window.innerWidth;
+    const windowHeight = window.innerHeight;
+    return windowWidth <= MOBILE_BREAKPOINT && windowHeight > windowWidth;
+}
+
 // Helper function to check if a block type is a color (including patterns)
 export function isColorBlock(blockType) {
     return PALETTE_COLORS.some(color => color.type === blockType) ||
