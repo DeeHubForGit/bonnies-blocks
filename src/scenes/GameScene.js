@@ -74,6 +74,8 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-new', 'assets/icons/new.png');
         this.load.image('icon-girl', 'assets/icons/blonde_girl.png');
         this.load.image('icon-boy', 'assets/icons/boy.png');
+        this.load.image('icon-purple-girl', 'assets/icons/girl_purple.png');
+        this.load.image('icon-yellow-boy', 'assets/icons/boy_yellow.png');
         this.load.image('icon-bunny', 'assets/icons/bunny.png');
         this.load.image('icon-unicorn', 'assets/icons/unicorn.png');
         this.load.image('icon-settings', 'assets/icons/config.png');
@@ -105,6 +107,8 @@ export class GameScene extends Phaser.Scene {
         //this.load.image('world-grass-tile', 'assets/world/grass_tile.png');
         this.load.image('world-girl', 'assets/icons/blonde_girl.png');
         this.load.image('world-boy', 'assets/icons/boy.png');
+        this.load.image('world-purple-girl', 'assets/icons/girl_purple.png');
+        this.load.image('world-yellow-boy', 'assets/icons/boy_yellow.png');
         this.load.image('world-bunny', 'assets/icons/bunny.png');
         this.load.image('world-unicorn', 'assets/icons/unicorn.png');
         this.load.image('world-flower', 'assets/icons/flower.png');
@@ -1262,7 +1266,9 @@ export class GameScene extends Phaser.Scene {
         const imageObjects = [
             BLOCK_TYPES.BUNNY, 
             BLOCK_TYPES.GIRL,
-            BLOCK_TYPES.BOY, 
+            BLOCK_TYPES.BOY,
+            BLOCK_TYPES.PURPLE_GIRL,
+            BLOCK_TYPES.YELLOW_BOY,
             BLOCK_TYPES.UNICORN, 
             BLOCK_TYPES.FLOWER,
             BLOCK_TYPES.BUSH_PINK_FLOWER,
@@ -1277,6 +1283,8 @@ export class GameScene extends Phaser.Scene {
             if (blockType === BLOCK_TYPES.BUNNY) iconKey = 'icon-bunny';
             else if (blockType === BLOCK_TYPES.GIRL) iconKey = 'icon-girl';
             else if (blockType === BLOCK_TYPES.BOY) iconKey = 'icon-boy';
+            else if (blockType === BLOCK_TYPES.PURPLE_GIRL) iconKey = 'icon-purple-girl';
+            else if (blockType === BLOCK_TYPES.YELLOW_BOY) iconKey = 'icon-yellow-boy';
             else if (blockType === BLOCK_TYPES.UNICORN) iconKey = 'icon-unicorn';
             else if (blockType === BLOCK_TYPES.FLOWER) iconKey = 'icon-flower';
             else if (blockType === BLOCK_TYPES.BUSH_PINK_FLOWER) iconKey = 'icon-bush-pink-flower';
