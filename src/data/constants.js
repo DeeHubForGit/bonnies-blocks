@@ -23,6 +23,7 @@ export const BLOCK_TYPES = {
     TEAL: 'teal',
     WHITE: 'white',
     GREY: 'grey',
+    BROWN: 'brown',
     BLACK: 'black',
     // Pattern blocks (magical building blocks)
     HEART_PINK: 'heartPink',
@@ -58,6 +59,7 @@ export const BLOCK_COLORS = {
     [BLOCK_TYPES.TEAL]: 0x1ABC9C,
     [BLOCK_TYPES.WHITE]: 0xFFFFFF,
     [BLOCK_TYPES.GREY]: 0x808080,
+    [BLOCK_TYPES.BROWN]: 0x8B4513,
     [BLOCK_TYPES.BLACK]: 0x333333,
     // Pattern blocks (base colors)
     [BLOCK_TYPES.HEART_PINK]: 0xFFB6D9,
@@ -125,6 +127,7 @@ export const PALETTE_COLORS = [
     // Neutrals
     { type: BLOCK_TYPES.WHITE, label: 'White', color: BLOCK_COLORS[BLOCK_TYPES.WHITE], category: ITEM_CATEGORIES.COLOR },
     { type: BLOCK_TYPES.GREY, label: 'Grey', color: BLOCK_COLORS[BLOCK_TYPES.GREY], category: ITEM_CATEGORIES.COLOR },
+    { type: BLOCK_TYPES.BROWN, label: 'Brown', color: BLOCK_COLORS[BLOCK_TYPES.BROWN], category: ITEM_CATEGORIES.COLOR },
     { type: BLOCK_TYPES.BLACK, label: 'Black', color: BLOCK_COLORS[BLOCK_TYPES.BLACK], category: ITEM_CATEGORIES.COLOR }
 ];
 
@@ -214,6 +217,7 @@ export const MOBILE_FAVORITES = {
         BLOCK_TYPES.YELLOW,
         BLOCK_TYPES.WHITE,
         BLOCK_TYPES.GREY,
+        BLOCK_TYPES.BROWN,
         BLOCK_TYPES.BLACK
     ],
     // All pattern colors
