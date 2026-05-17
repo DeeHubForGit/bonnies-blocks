@@ -37,7 +37,7 @@ export class Toolbar {
         const gap = 4; // Tighter gap
         const startX = 32; // Shifted right by 12px from 20 to avoid left cutoff
         
-        const row1Y = toolbarTop + 28;
+        const row1Y = toolbarTop + 24;
         let x = startX;
         
         // Add all basic colors
@@ -62,7 +62,7 @@ export class Toolbar {
         });
         
         // Row 2: Objects and tools
-        const row2Y = toolbarTop + 86;
+        const row2Y = toolbarTop + 78;
         let objectX = 32; // Shifted right to match colors row
         const objectButtonSize = 46; // Slightly reduced to fit all objects
         const objectGap = 3; // Very tight gap for objects
@@ -110,7 +110,7 @@ export class Toolbar {
         const startX = 35; // Nudged right to prevent left edge cutoff
         
         // Row 1: Basic colors + Pattern colors (all draggable paint colors)
-        const row1Y = toolbarTop + 28;
+        const row1Y = toolbarTop + 24;
         // Align color row left edge with scaled image button row below
         // Image buttons (52px) scaled 1.18x = 61.36px visual width
         // Visual left edge of image button at x=35: 35 - 61.36/2 = 4.32px
@@ -134,7 +134,7 @@ export class Toolbar {
         });
         
         // Row 2: Objects and tools (add more vertical spacing from row 1)
-        const row2Y = toolbarTop + 86;
+        const row2Y = toolbarTop + 78;
         let objectX = startX;
 
         // Add objects
@@ -387,7 +387,7 @@ export class Toolbar {
         icon.setScale(scale);
         
         button.add([icon]);
-        button.setScale(1.78); // 25% larger than object buttons for better visibility
+        button.setScale(1.55); // Reduced scale for better tablet fit
         button.setDepth(1000);
         
         // Create tooltip with light pink background and black text

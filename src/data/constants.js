@@ -1,13 +1,14 @@
 // Game configuration constants
-export const GAME_WIDTH = 800;
+export const GAME_WIDTH = 760;
 export const HEADER_HEIGHT = 50; // Height reserved for title at top
 export const GRID_TOP_MARGIN = 10; // Extra space below header for breathing room
-export const GAME_HEIGHT = 600; // Total canvas height - reduced from 650 to 600 for better desktop/tablet fit
+export const GAME_HEIGHT = 560; // Total canvas height - reduced to 560 for better tablet fit
 export const TOOLBAR_HEIGHT = 120; // Height reserved for toolbar at bottom (increased for 2 rows)
-export const PLAYABLE_HEIGHT = GAME_HEIGHT - HEADER_HEIGHT - TOOLBAR_HEIGHT; // 430px for grid
-export const GRID_SIZE = 50; // Size of each grid cell in pixels
-export const GRID_COLS = 16; // 800 / 50 = 16 columns
-export const GRID_ROWS = 8; // 430 / 50 = 8 rows (reduced from 9 for better fit)
+export const PLAYABLE_HEIGHT = GAME_HEIGHT - HEADER_HEIGHT - TOOLBAR_HEIGHT; // 390px for grid
+export const GRID_SIZE = 47; // Size of each grid cell in pixels (reduced from 50 for better fit)
+export const GRID_COLS = 16; // 16 columns * 47px = 752px grid width
+export const GRID_ROWS = 8; // Grid now uses 47px cells to fit within available space
+export const GRID_LEFT_OFFSET = 4; // Horizontal offset to center grid better
 
 // Block types
 export const BLOCK_TYPES = {

@@ -2,6 +2,7 @@
     GRID_SIZE, 
     GRID_COLS, 
     GRID_ROWS, 
+    GRID_LEFT_OFFSET,
     BLOCK_TYPES, 
     BLOCK_COLORS, 
     PLAYER_COLOR,
@@ -82,6 +83,7 @@ export class GameScene extends Phaser.Scene {
         // Dialog assets
         this.load.image('clear-game-image', 'assets/icons/clear_game.png');
         this.load.image('load-world-image', 'assets/icons/load_world.png');
+        this.load.image('save-dialog-image', 'assets/icons/save_dialog.png');
         this.load.image('girl-boy-name', 'assets/icons/girl_boy_name.png');
         this.load.image('icon-cancel', 'assets/icons/cancel.png');
         this.load.image('icon-bin', 'assets/icons/bin_basic.png');
@@ -333,7 +335,7 @@ export class GameScene extends Phaser.Scene {
         // Create title text on the left side
         // Move left on mobile to avoid overlap with Config button
         const isMobile = window.innerWidth <= 600;
-        const titleX = isMobile ? 46 : 58; // Move left by 12px on mobile
+        const titleX = isMobile ? 20 : 25; // Position closer to left edge
         const maxWidth = 230; // Safe width to avoid overlapping header buttons
         
         this.titleText = this.add.text(titleX, 24, title, {
@@ -426,7 +428,7 @@ export class GameScene extends Phaser.Scene {
             // Input comes after Save button with reduced gap
             // Adjust for mobile - narrower input and tighter gaps
             const isMobile = window.innerWidth <= 600;
-            const inputWidth = isMobile ? 120 : 150;
+            const inputWidth = isMobile ? 120 : 130; // Match reduced desktop width
             const gapAfterSave = isMobile ? 8 : 12;
             // Increase gap on mobile to prevent overlap with input
             const gapBeforePlay = isMobile ? 22 : 2; // 20px more gap on mobile (was 12)
@@ -452,7 +454,7 @@ export class GameScene extends Phaser.Scene {
 
             // Adjust input width for mobile - slightly narrower to fit View/Edit button
             const isMobile = window.innerWidth <= 600;
-            const inputWidth = isMobile ? 120 : 150; // Reduced from 150 to 120 on mobile
+            const inputWidth = isMobile ? 120 : 130; // Reduced desktop width to 130
             const gapAfterSave = isMobile ? 8 : 12; // Tighter gap on mobile
             const inputY = 18;
             const inputHeight = 28;
@@ -486,7 +488,7 @@ export class GameScene extends Phaser.Scene {
         
         // Start buttons after title area (title + mode text block)
         // On mobile, move right to avoid title overlap
-        let buttonX = isMobile ? 295 : 312; // Moved right by 15px on mobile (was 280)
+        let buttonX = isMobile ? 295 : 275; // Moved left to center header group better
         
         // Tooltip style for consistent light pink tooltips
         const tooltipStyle = {
@@ -811,7 +813,7 @@ export class GameScene extends Phaser.Scene {
                 const blockType = this.grid[row][col];
                 if (!isSolidBlock(blockType)) {
                     // Found a safe spot - place player here
-                    this.player.x = col * GRID_SIZE + GRID_SIZE / 2;
+                    this.player.x = GRID_LEFT_OFFSET + col * GRID_SIZE + GRID_SIZE / 2;
                     this.player.y = HEADER_HEIGHT + GRID_TOP_MARGIN + row * GRID_SIZE + GRID_SIZE / 2;
                     return;
                 }
@@ -845,12 +847,12 @@ export class GameScene extends Phaser.Scene {
         // Horizontal lines (offset by HEADER_HEIGHT + GRID_TOP_MARGIN)
         for (let row = 0; row <= GRID_ROWS; row++) {
             const y = HEADER_HEIGHT + GRID_TOP_MARGIN + row * GRID_SIZE + 0.5;
-            graphics.lineBetween(0, y, GRID_COLS * GRID_SIZE, y);
+            graphics.lineBetween(GRID_LEFT_OFFSET, y, GRID_LEFT_OFFSET + GRID_COLS * GRID_SIZE, y);
         }
 
         // Vertical lines (offset by HEADER_HEIGHT + GRID_TOP_MARGIN)
         for (let col = 0; col <= GRID_COLS; col++) {
-            const x = col * GRID_SIZE + 0.5;
+            const x = GRID_LEFT_OFFSET + col * GRID_SIZE + 0.5;
             graphics.lineBetween(x, HEADER_HEIGHT + GRID_TOP_MARGIN, x, HEADER_HEIGHT + GRID_TOP_MARGIN + GRID_ROWS * GRID_SIZE);
         }
 
@@ -1012,7 +1014,7 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
-        const gridX = Math.floor(pointer.x / GRID_SIZE);
+        const gridX = Math.floor((pointer.x - GRID_LEFT_OFFSET) / GRID_SIZE);
         const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
 
         // Check if click is within grid bounds
@@ -1041,12 +1043,12 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
-        const gridX = Math.floor(pointer.x / GRID_SIZE);
+        const gridX = Math.floor((pointer.x - GRID_LEFT_OFFSET) / GRID_SIZE);
         const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
 
         // Check if hover is within grid bounds
         if (gridX >= 0 && gridX < GRID_COLS && gridY >= 0 && gridY < GRID_ROWS) {
-            const x = gridX * GRID_SIZE + GRID_SIZE / 2;
+            const x = GRID_LEFT_OFFSET + gridX * GRID_SIZE + GRID_SIZE / 2;
             const y = HEADER_HEIGHT + GRID_TOP_MARGIN + gridY * GRID_SIZE + GRID_SIZE / 2;
             
             // Move and show hover rectangle
@@ -1252,7 +1254,7 @@ export class GameScene extends Phaser.Scene {
             return; // Nothing to render in Build Mode
         }
 
-        const x = col * GRID_SIZE + GRID_SIZE / 2;
+        const x = GRID_LEFT_OFFSET + col * GRID_SIZE + GRID_SIZE / 2;
         const y = HEADER_HEIGHT + GRID_TOP_MARGIN + row * GRID_SIZE + GRID_SIZE / 2;
         const color = BLOCK_COLORS[blockType];
 
@@ -1559,7 +1561,8 @@ export class GameScene extends Phaser.Scene {
                 () => {
                     // Cancel button clicked - skip saving, show load dialog
                     this.showLoadWorldDialog();
-                }
+                },
+                'save-dialog-image'
             );
             return;
         }
@@ -1634,7 +1637,8 @@ export class GameScene extends Phaser.Scene {
                 () => {
                     // User clicked No - create new world without saving
                     this.performCreateNewWorld();
-                }
+                },
+                'save-dialog-image'
             );
         } else {
             // No changes, just create new world
