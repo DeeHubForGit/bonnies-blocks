@@ -173,6 +173,9 @@ export class GameScene extends Phaser.Scene {
         // Create toolbar
         this.toolbar = new Toolbar(this);
         
+        // Create footer text
+        this.createFooterText();
+        
         // Listen for Phaser scale resize events to rebuild toolbar on mobile/desktop switch
         this.scale.on('resize', (gameSize) => {
             // Delay slightly to ensure DOM updates are complete
@@ -653,6 +656,21 @@ export class GameScene extends Phaser.Scene {
         inputElement.addEventListener('keypress', (e) => {
             e.stopPropagation();
         });
+    }
+    
+    createFooterText() {
+        // Add small footer text at bottom of canvas
+        const footerText = '© 2026 Dee Bath. Thanks to John Sherwood for your advice and encouragement.';
+        const footerY = GAME_HEIGHT - 3; // Position at very bottom, just above border
+        
+        this.footerLabel = this.add.text(GAME_WIDTH / 2, footerY, footerText, {
+            fontSize: '9px',
+            fontFamily: 'Arial',
+            color: '#000000',
+            alpha: 0.6
+        });
+        this.footerLabel.setOrigin(0.5, 1); // Center horizontally, align to bottom
+        this.footerLabel.setDepth(100); // Low depth so it stays behind most UI
     }
     
     updateWorldNameTooltipPosition() {
