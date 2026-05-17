@@ -62,19 +62,9 @@ export class Toolbar {
         });
         
         // Row 2: Objects and tools
-        // On mobile portrait, position row2 based on input box to prevent overlap
-        const desktopRow2Y = toolbarTop + 78;
-        
-        // Get input box dimensions from GameScene
-        const inputBox = {
-            y: 18,  // Input box Y position from GameScene.positionWorldNameField
-            height: 28  // Input box height from GameScene.createWorldNameInput
-        };
-        const spacing = 4; // Small buffer to ensure arrow sits inside button
-        
-        const row2Y = isMobilePortrait() 
-            ? inputBox.y + inputBox.height + spacing 
-            : desktopRow2Y;
+        // Use tighter vertical spacing on mobile portrait to fit both toolbar rows
+        const row2Offset = isMobilePortrait() ? 72 : 78;
+        const row2Y = toolbarTop + row2Offset;
         
         let objectX = 27; // Increased from 15 to prevent left cutoff on mobile
         const objectButtonSize = 42; // Reduced from 44 to fit dragon
