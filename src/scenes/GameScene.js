@@ -437,7 +437,7 @@ export class GameScene extends Phaser.Scene {
             const inputWidth = isMobile ? 120 : 130; // Match reduced desktop width
             const gapAfterSave = isMobile ? 8 : 12;
             // Increase gap on mobile to prevent overlap with input
-            const gapBeforePlay = isMobile ? 22 : 2; // 20px more gap on mobile (was 12)
+            const gapBeforePlay = isMobile ? 32 : 2; // Increased mobile gap to prevent overlap
 
             const inputX = this.saveButtonX + 48 + gapAfterSave;
             const playX = inputX + inputWidth + gapBeforePlay + (iconSize / 2);
