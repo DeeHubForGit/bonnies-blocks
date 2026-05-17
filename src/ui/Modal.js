@@ -59,22 +59,40 @@ export class Modal {
     /**
      * Show a confirmation dialog with Cancel and Confirm buttons
      */
-    showConfirmDialog(title, message, onConfirm, confirmText = 'Confirm', cancelText = 'Cancel', onCancel = null) {
+    showConfirmDialog(title, message, onConfirm, confirmText = 'Confirm', cancelText = 'Cancel', onCancel = null, imageKey = null) {
         this.createModalBase();
 
         const centerX = GAME_WIDTH / 2;
         const centerY = GAME_HEIGHT / 2;
 
+        // Adjust layout based on whether image is present
+        const titleY = imageKey ? centerY - 150 : centerY - 90;
+        const imageY = centerY - 50;
+        const messageY = imageKey ? centerY + 50 : centerY - 20;
+        const buttonY = imageKey ? centerY + 120 : centerY + 70;
+
         // Title
-        const titleText = this.scene.add.text(centerX, centerY - 90, title, {
+        const titleText = this.scene.add.text(centerX, titleY, title, {
             fontSize: '28px',
             fontFamily: 'Arial',
             color: '#333333',
             fontStyle: 'bold'
         }).setOrigin(0.5);
 
+        const elements = [titleText];
+
+        // Optional image between title and message
+        if (imageKey) {
+            const dialogImage = this.scene.add.image(centerX, imageY, imageKey);
+            const maxImageWidth = 200;
+            const maxImageHeight = 140;
+            const imageScale = Math.min(maxImageWidth / dialogImage.width, maxImageHeight / dialogImage.height);
+            dialogImage.setScale(imageScale);
+            elements.push(dialogImage);
+        }
+
         // Message
-        const messageText = this.scene.add.text(centerX, centerY - 20, message, {
+        const messageText = this.scene.add.text(centerX, messageY, message, {
             fontSize: '18px',
             fontFamily: 'Arial',
             color: '#333333',
@@ -84,7 +102,6 @@ export class Modal {
         }).setOrigin(0.5);
 
         // Buttons
-        const buttonY = centerY + 70;
         const cancelBtn = this.createIconButton(centerX - 100, buttonY, cancelText, 0xe0e0e0, 'icon-cancel', () => {
             this.close();
             if (onCancel) onCancel();
@@ -95,7 +112,8 @@ export class Modal {
             if (onConfirm) onConfirm();
         });
 
-        this.container.add([titleText, messageText, cancelBtn, confirmBtn]);
+        elements.push(messageText, cancelBtn, confirmBtn);
+        this.container.add(elements);
     }
 
     /**
