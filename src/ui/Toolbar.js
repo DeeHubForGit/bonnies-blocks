@@ -105,9 +105,10 @@ export class Toolbar {
         // Toolbar layout constants
         const toolbarTop = HEADER_HEIGHT + PLAYABLE_HEIGHT;
         const colorButtonSize = 38; // Smaller for color swatches
-        const objectButtonSize = 48; // Reduced from 48 to fit dragon
-        const gap = 4; // Reduced from 4 to save space for dragon
-        const startX = 28; // Adjusted to help center content
+        const objectButtonSize = 44; // Adjusted to fit dragon without overlap
+        const gap = 4; // Standard gap
+        const objectStep = 53; // Accounts for 1.18 scale (44 * 1.18 ≈ 52) plus small gap
+        const startX = 28; // Starting position for objects
         
         // Row 1: Basic colors + Pattern colors (all draggable paint colors)
         const row1Y = toolbarTop + 24;
@@ -140,7 +141,7 @@ export class Toolbar {
         // Add objects
         PALETTE_OBJECTS.forEach((objectItem) => {
             this.createObjectButton(objectX, row2Y, objectButtonSize, objectItem.type, objectItem.label, objectItem.icon);
-            objectX += objectButtonSize + gap;
+            objectX += objectStep; // Use objectStep to account for scaled button size
         });
         
         // Add visual gap before function buttons
