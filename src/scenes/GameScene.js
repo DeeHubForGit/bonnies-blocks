@@ -78,6 +78,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('icon-yellow-boy', 'assets/icons/boy_yellow.png');
         this.load.image('icon-bunny', 'assets/icons/bunny.png');
         this.load.image('icon-unicorn', 'assets/icons/unicorn.png');
+        this.load.image('icon-dragon', 'assets/icons/dragon.png');
         this.load.image('icon-settings', 'assets/icons/config.png');
         this.load.image('icon-view', 'assets/icons/arrow_right.png');
         this.load.image('icon-edit', 'assets/icons/arrow_left.png');
@@ -111,6 +112,7 @@ export class GameScene extends Phaser.Scene {
         this.load.image('world-yellow-boy', 'assets/icons/boy_yellow.png');
         this.load.image('world-bunny', 'assets/icons/bunny.png');
         this.load.image('world-unicorn', 'assets/icons/unicorn.png');
+        this.load.image('world-dragon', 'assets/icons/dragon.png');
         this.load.image('world-flower', 'assets/icons/flower.png');
         this.load.image('world-bush-pink-flower', 'assets/icons/bush_pink_flower.png');
         this.load.image('world-palm-tree', 'assets/icons/palm_trees.png');
@@ -1269,7 +1271,8 @@ export class GameScene extends Phaser.Scene {
             BLOCK_TYPES.BOY,
             BLOCK_TYPES.PURPLE_GIRL,
             BLOCK_TYPES.YELLOW_BOY,
-            BLOCK_TYPES.UNICORN, 
+            BLOCK_TYPES.UNICORN,
+            BLOCK_TYPES.DRAGON,
             BLOCK_TYPES.FLOWER,
             BLOCK_TYPES.BUSH_PINK_FLOWER,
             BLOCK_TYPES.PALM_TREE, 
@@ -1286,6 +1289,7 @@ export class GameScene extends Phaser.Scene {
             else if (blockType === BLOCK_TYPES.PURPLE_GIRL) iconKey = 'icon-purple-girl';
             else if (blockType === BLOCK_TYPES.YELLOW_BOY) iconKey = 'icon-yellow-boy';
             else if (blockType === BLOCK_TYPES.UNICORN) iconKey = 'icon-unicorn';
+            else if (blockType === BLOCK_TYPES.DRAGON) iconKey = 'icon-dragon';
             else if (blockType === BLOCK_TYPES.FLOWER) iconKey = 'icon-flower';
             else if (blockType === BLOCK_TYPES.BUSH_PINK_FLOWER) iconKey = 'icon-bush-pink-flower';
             else if (blockType === BLOCK_TYPES.PALM_TREE) iconKey = 'icon-palm-tree';
@@ -1302,6 +1306,9 @@ export class GameScene extends Phaser.Scene {
                 targetSize = GRID_SIZE * 1.05;
             } else if (blockType === BLOCK_TYPES.UNICORN) {
                 // Unicorn larger for better visibility in Edit Mode
+                targetSize = GRID_SIZE * 1.0;
+            } else if (blockType === BLOCK_TYPES.DRAGON) {
+                // Dragon same size as unicorn for consistency
                 targetSize = GRID_SIZE * 1.0;
             }
             const scale = targetSize / Math.max(sprite.width, sprite.height);

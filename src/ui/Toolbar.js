@@ -63,9 +63,9 @@ export class Toolbar {
         
         // Row 2: Objects and tools
         const row2Y = toolbarTop + 78;
-        let objectX = 32; // Shifted right to match colors row
-        const objectButtonSize = 44; // Reduced from 46 to fit two additional character buttons
-        const objectGap = 3; // Very tight gap for objects
+        let objectX = 15; // Adjusted left to fit dragon
+        const objectButtonSize = 42; // Reduced from 44 to fit dragon
+        const objectGap = 3; // Tight gap for all objects including dragon
         
         // Add all objects
         MOBILE_FAVORITES.objects.forEach((blockType) => {
@@ -77,7 +77,7 @@ export class Toolbar {
         });
         
         // Add small gap before tools
-        objectX += 6;
+        objectX += 4;
         
         // Add eraser
         this.createFloatingToolIcon(objectX, row2Y, objectButtonSize, 'icon-erase', true, () => {
@@ -105,8 +105,8 @@ export class Toolbar {
         // Toolbar layout constants
         const toolbarTop = HEADER_HEIGHT + PLAYABLE_HEIGHT;
         const colorButtonSize = 38; // Smaller for color swatches
-        const objectButtonSize = 48; // Reduced from 52 to fit two additional character buttons
-        const gap = 4; // Reduced from 5 to save space for new buttons
+        const objectButtonSize = 48; // Reduced from 48 to fit dragon
+        const gap = 4; // Reduced from 4 to save space for dragon
         const startX = 28; // Adjusted to help center content
         
         // Row 1: Basic colors + Pattern colors (all draggable paint colors)
@@ -144,7 +144,7 @@ export class Toolbar {
         });
         
         // Add visual gap before function buttons
-        objectX += 10;
+        objectX += 8;
         
         // Add eraser and clear as floating icons (no background boxes)
         this.createFloatingToolIcon(objectX, row2Y, objectButtonSize, 'icon-erase', true, () => {
@@ -155,10 +155,10 @@ export class Toolbar {
         });
         objectX += objectButtonSize + gap;
         this.createFloatingToolIcon(objectX, row2Y, objectButtonSize, 'icon-clear', false, () => this.scene.clearWorld());
-        objectX += objectButtonSize + gap + 8; // Gap before View button for visual separation
+        objectX += objectButtonSize + gap + 6; // Gap before View button for visual separation
         
         // Mode toggle button (View/Edit) - visually separated as main action, larger size for header
-        this.createModeToggleButton(objectX, row2Y, 58); // Slightly reduced from 64 to fit layout
+        this.createModeToggleButton(objectX, row2Y, 56); // Slightly reduced from 58 to fit layout
     }
 
     createColorButton(x, y, size, toolType, label, color) {

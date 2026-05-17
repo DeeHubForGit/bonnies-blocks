@@ -574,6 +574,12 @@ export class IsometricPlayScene extends Phaser.Scene {
         } else if (blockType === BLOCK_TYPES.BOY) {
             targetHeight = this.isoTileHeight * 2.2;
             sprite.setOrigin(0.5, 0.85);
+        } else if (blockType === BLOCK_TYPES.PURPLE_GIRL) {
+            targetHeight = this.isoTileHeight * 2.2;
+            sprite.setOrigin(0.5, 0.85);
+        } else if (blockType === BLOCK_TYPES.YELLOW_BOY) {
+            targetHeight = this.isoTileHeight * 2.2;
+            sprite.setOrigin(0.5, 0.85);
         } else if (blockType === BLOCK_TYPES.TREE) {
             targetHeight = this.isoTileHeight * 3.1;
             sprite.setOrigin(0.5, 0.9);
@@ -598,6 +604,9 @@ export class IsometricPlayScene extends Phaser.Scene {
             sprite.setOrigin(0.5, 0.9);
         } else if (blockType === BLOCK_TYPES.UNICORN) {
             targetHeight = this.isoTileHeight * 2.8;
+            sprite.setOrigin(0.5, 0.9);
+        } else if (blockType === BLOCK_TYPES.DRAGON) {
+            targetHeight = this.isoTileHeight * 2.4;
             sprite.setOrigin(0.5, 0.9);
         }
         
