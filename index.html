@@ -13,15 +13,17 @@
             background-color: #87CEEB;
             font-family: 'Comic Sans MS', cursive, sans-serif;
             width: 100vw;
-            height: 100vh;
+            height: 100dvh;
             overflow: hidden;
         }
+
         #game-container {
             width: 100vw;
-            height: 100vh;
             height: 100dvh;
             box-sizing: border-box;
             padding: 8px;
+            padding-top: max(8px, env(safe-area-inset-top));
+            padding-bottom: max(8px, env(safe-area-inset-bottom));
             display: flex;
             align-items: center;
             justify-content: center;
