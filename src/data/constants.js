@@ -10,6 +10,17 @@ export const GRID_COLS = 16; // 16 columns * 47px = 752px grid width
 export const GRID_ROWS = 8; // Grid now uses 47px cells to fit within available space
 export const GRID_LEFT_OFFSET = 4; // Horizontal offset to center grid better
 
+// Mobile Portrait configuration - simplified layout for phone screens
+export const MOBILE_PORTRAIT_WIDTH = 400;
+export const MOBILE_PORTRAIT_HEIGHT = 760;
+export const MOBILE_PORTRAIT_HEADER_HEIGHT = 105; // Taller header for better title spacing: title on line 1, buttons on line 2
+export const MOBILE_PORTRAIT_TOOLBAR_HEIGHT = 245; // Taller toolbar for 4 rows: color row 1, color row 2, image row 1, image row 2 + footer
+export const MOBILE_PORTRAIT_PLAYABLE_HEIGHT = MOBILE_PORTRAIT_HEIGHT - MOBILE_PORTRAIT_HEADER_HEIGHT - MOBILE_PORTRAIT_TOOLBAR_HEIGHT; // 410px
+export const MOBILE_PORTRAIT_GRID_SIZE = 52; // Larger cells for easy tapping
+export const MOBILE_PORTRAIT_GRID_COLS = 7; // 7 columns * 52px = 364px
+export const MOBILE_PORTRAIT_GRID_ROWS = 8; // 8 rows * 52px = 416px (fits in 410px playable height)
+export const MOBILE_PORTRAIT_GRID_LEFT_OFFSET = 18;
+
 // Block types
 export const BLOCK_TYPES = {
     EMPTY: 'empty',
@@ -240,6 +251,49 @@ export const MOBILE_FAVORITES = {
         BLOCK_TYPES.RAINBOW
     ],
     // All objects
+    objects: [
+        BLOCK_TYPES.GIRL,
+        BLOCK_TYPES.BOY,
+        BLOCK_TYPES.PURPLE_GIRL,
+        BLOCK_TYPES.YELLOW_BOY,
+        BLOCK_TYPES.BUNNY,
+        BLOCK_TYPES.UNICORN,
+        BLOCK_TYPES.DRAGON,
+        BLOCK_TYPES.FLOWER,
+        BLOCK_TYPES.BUSH_PINK_FLOWER,
+        BLOCK_TYPES.PALM_TREE,
+        BLOCK_TYPES.TREE,
+        BLOCK_TYPES.BUSH_CAT
+    ]
+};
+
+// Mobile Portrait favorites - expanded with 2 color rows for better selection
+export const MOBILE_PORTRAIT_FAVORITES = {
+    // Color row 1 - primary colors
+    colorsRow1: [
+        BLOCK_TYPES.GRASS,    // green
+        BLOCK_TYPES.TEAL,     // teal
+        BLOCK_TYPES.BLUE,     // blue
+        BLOCK_TYPES.PURPLE,   // purple
+        BLOCK_TYPES.PINK,     // pink
+        BLOCK_TYPES.RED,      // red
+        BLOCK_TYPES.ORANGE,   // orange
+        BLOCK_TYPES.YELLOW,   // yellow
+    ],
+    // Color row 2 - secondary colors + patterns
+    colorsRow2: [
+        BLOCK_TYPES.WHITE,    // white
+        BLOCK_TYPES.GREY,     // grey
+        BLOCK_TYPES.BROWN,    // brown
+        BLOCK_TYPES.BLACK     // black
+    ],
+    // Pattern colors (water, pink pattern, rainbow)
+    patterns: [
+        BLOCK_TYPES.WATER,        // water
+        BLOCK_TYPES.GLITTER_PINK, // pink pattern
+        BLOCK_TYPES.RAINBOW       // rainbow
+    ],
+    // Essential objects only
     objects: [
         BLOCK_TYPES.GIRL,
         BLOCK_TYPES.BOY,

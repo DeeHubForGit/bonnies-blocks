@@ -1,4 +1,4 @@
-import { BLOCK_TYPES, TOOL_MODES, GAME_MODES, BLOCK_COLORS, PLAYABLE_HEIGHT, TOOLBAR_HEIGHT, GAME_WIDTH, HEADER_HEIGHT, PALETTE_COLORS, PALETTE_PATTERN_COLORS, PALETTE_OBJECTS, MOBILE_FAVORITES, isMobileView, isMobilePortrait, isColorBlock, hasPattern, getPattern } from '../data/constants.js';
+import { BLOCK_TYPES, TOOL_MODES, GAME_MODES, BLOCK_COLORS, PLAYABLE_HEIGHT, TOOLBAR_HEIGHT, GAME_WIDTH, HEADER_HEIGHT, GRID_TOP_MARGIN, MOBILE_PORTRAIT_WIDTH, MOBILE_PORTRAIT_HEIGHT, MOBILE_PORTRAIT_HEADER_HEIGHT, MOBILE_PORTRAIT_PLAYABLE_HEIGHT, MOBILE_PORTRAIT_TOOLBAR_HEIGHT, MOBILE_PORTRAIT_GRID_SIZE, MOBILE_PORTRAIT_GRID_ROWS, PALETTE_COLORS, PALETTE_PATTERN_COLORS, PALETTE_OBJECTS, MOBILE_FAVORITES, MOBILE_PORTRAIT_FAVORITES, isMobileView, isMobilePortrait, isColorBlock, hasPattern, getPattern } from '../data/constants.js';
 
 // Mode toggle icon size constant (used for both View and Edit arrows)
 const MODE_TOGGLE_ICON_SIZE = 56;
@@ -31,77 +31,169 @@ export class Toolbar {
     }
 
     createMobileToolbar() {
-        // Mobile: Show all colors and all objects (no More button needed)
-        const toolbarTop = HEADER_HEIGHT + PLAYABLE_HEIGHT;
-        const buttonSize = 36; // Slightly smaller to fit more buttons
-        const gap = 4; // Tighter gap
-        const startX = 32; // Shifted right by 12px from 20 to avoid left cutoff
+        // Detect portrait mode and use appropriate dimensions/favorites
+        const isPortrait = isMobilePortrait();
         
+        // Calculate toolbar position based on actual grid bottom
+        let toolbarTop;
+        if (isPortrait) {
+            // Mobile portrait: position toolbar below the actual grid
+            const gridTop = MOBILE_PORTRAIT_HEADER_HEIGHT + GRID_TOP_MARGIN;
+            const gridHeight = MOBILE_PORTRAIT_GRID_ROWS * MOBILE_PORTRAIT_GRID_SIZE;
+            const gridBottom = gridTop + gridHeight;
+            const gapBelowGrid = 8; // Gap between grid and toolbar
+            toolbarTop = gridBottom + gapBelowGrid;
+        } else {
+            // Non-portrait: use playable height as before
+            toolbarTop = HEADER_HEIGHT + PLAYABLE_HEIGHT;
+        }
+        
+        const buttonSize = isPortrait ? 38 : 36;
+        const gap = 4;
+        const startX = isPortrait ? 26 : 32; // Moved right on portrait for better visibility
+        
+        // Use portrait-specific favorites if in portrait mode
+        const favorites = isPortrait ? MOBILE_PORTRAIT_FAVORITES : MOBILE_FAVORITES;
+        
+        // Row 1: First set of colors (top row)
         const row1Y = toolbarTop + 24;
         let x = startX;
         
-        // Add all basic colors
-        MOBILE_FAVORITES.colors.forEach((blockType) => {
-            const colorItem = PALETTE_COLORS.find(c => c.type === blockType);
-            if (colorItem) {
-                this.createColorButton(x, row1Y, buttonSize, colorItem.type, colorItem.label, colorItem.color);
-                x += buttonSize + gap;
-            }
-        });
+        if (isPortrait) {
+            // Portrait: Two color rows
+            // Color Row 1
+            favorites.colorsRow1.forEach((blockType) => {
+                const colorItem = PALETTE_COLORS.find(c => c.type === blockType);
+                if (colorItem) {
+                    this.createColorButton(x, row1Y, buttonSize, colorItem.type, colorItem.label, colorItem.color);
+                    x += buttonSize + gap;
+                }
+            });
+            
+            // Color Row 2
+            const row2Y = toolbarTop + 66;
+            x = startX;
+            
+            favorites.colorsRow2.forEach((blockType) => {
+                const colorItem = PALETTE_COLORS.find(c => c.type === blockType);
+                if (colorItem) {
+                    this.createColorButton(x, row2Y, buttonSize, colorItem.type, colorItem.label, colorItem.color);
+                    x += buttonSize + gap;
+                }
+            });
+            
+            // Add patterns to end of row 2
+            x += 2; // Small gap
+            favorites.patterns.forEach((blockType) => {
+                const patternItem = PALETTE_PATTERN_COLORS.find(p => p.type === blockType);
+                if (patternItem) {
+                    this.createPatternColorButton(x, row2Y, buttonSize, patternItem.type, patternItem.label, patternItem.color, patternItem.pattern);
+                    x += buttonSize + gap;
+                }
+            });
+            
+            // Row 3: Image buttons (first row) - more spacing below color rows
+            const row3Y = toolbarTop + 116;
+            let objectX = startX + 6; // Align with color buttons
+            const objectButtonSize = 42;
+            const objectGap = 3;
+            const objectVisualStep = Math.ceil(objectButtonSize * 1.18) + 4; // Account for 1.18 scale + gap
+            const objectsPerRow = 7; // Split objects into 2 rows
+            
+            // First 7 objects
+            const objectsRow1 = favorites.objects.slice(0, objectsPerRow);
+            objectsRow1.forEach((blockType) => {
+                const objectItem = PALETTE_OBJECTS.find(o => o.type === blockType);
+                if (objectItem) {
+                    this.createObjectButton(objectX, row3Y, objectButtonSize, objectItem.type, objectItem.label, objectItem.icon);
+                    objectX += objectVisualStep;
+                }
+            });
+            
+            // Row 4: Image buttons (second row) - remaining objects + tools
+            const row4Y = toolbarTop + 172;
+            objectX = 32;
+            
+            // Remaining objects
+            const objectsRow2 = favorites.objects.slice(objectsPerRow);
+            objectsRow2.forEach((blockType) => {
+                const objectItem = PALETTE_OBJECTS.find(o => o.type === blockType);
+                if (objectItem) {
+                    this.createObjectButton(objectX, row4Y, objectButtonSize, objectItem.type, objectItem.label, objectItem.icon);
+                    objectX += objectVisualStep;
+                }
+            });
+            
+            // Add tools to end of row 4
+            objectX += 4;
+            this.createFloatingToolIcon(objectX, row4Y, objectButtonSize, 'icon-erase', true, () => {
+                if (this.buildToolsEnabled) {
+                    this.mode = TOOL_MODES.ERASE;
+                    this.updateButtons();
+                }
+            });
+            objectX += objectVisualStep;
+            this.createFloatingToolIcon(objectX, row4Y, objectButtonSize, 'icon-clear', false, () => this.scene.clearWorld());
+        } else {
+            // Non-portrait: Single color row (original logic)
+            favorites.colors.forEach((blockType) => {
+                const colorItem = PALETTE_COLORS.find(c => c.type === blockType);
+                if (colorItem) {
+                    this.createColorButton(x, row1Y, buttonSize, colorItem.type, colorItem.label, colorItem.color);
+                    x += buttonSize + gap;
+                }
+            });
+            
+            // Add small gap before patterns
+            x += 2;
+            
+            // Add pattern colors
+            favorites.patterns.forEach((blockType) => {
+                const patternItem = PALETTE_PATTERN_COLORS.find(p => p.type === blockType);
+                if (patternItem) {
+                    this.createPatternColorButton(x, row1Y, buttonSize, patternItem.type, patternItem.label, patternItem.color, patternItem.pattern);
+                    x += buttonSize + gap;
+                }
+            });
+            
+            // Row 2: Objects and tools
+            const row2Y = toolbarTop + 72;
+            
+            let objectX = 27;
+            const objectButtonSize = 42;
+            const objectGap = 3;
+            
+            // Add objects
+            favorites.objects.forEach((blockType) => {
+                const objectItem = PALETTE_OBJECTS.find(o => o.type === blockType);
+                if (objectItem) {
+                    this.createObjectButton(objectX, row2Y, objectButtonSize, objectItem.type, objectItem.label, objectItem.icon);
+                    objectX += objectButtonSize + objectGap;
+                }
+            });
+            
+            // Add small gap before tools
+            objectX += 4;
+            
+            // Add eraser
+            this.createFloatingToolIcon(objectX, row2Y, objectButtonSize, 'icon-erase', true, () => {
+                if (this.buildToolsEnabled) {
+                    this.mode = TOOL_MODES.ERASE;
+                    this.updateButtons();
+                }
+            });
+            objectX += objectButtonSize + objectGap;
+            
+            // Add clear all
+            this.createFloatingToolIcon(objectX, row2Y, objectButtonSize, 'icon-clear', false, () => this.scene.clearWorld());
+        }
         
-        // Add small gap before patterns
-        x += 2;
-        
-        // Add favorite pattern colors
-        MOBILE_FAVORITES.patterns.forEach((blockType) => {
-            const patternItem = PALETTE_PATTERN_COLORS.find(p => p.type === blockType);
-            if (patternItem) {
-                this.createPatternColorButton(x, row1Y, buttonSize, patternItem.type, patternItem.label, patternItem.color, patternItem.pattern);
-                x += buttonSize + gap;
-            }
-        });
-        
-        // Row 2: Objects and tools
-        // Use tighter vertical spacing on mobile portrait to fit both toolbar rows
-        const row2Offset = isMobilePortrait() ? 72 : 78;
-        const row2Y = toolbarTop + row2Offset;
-        
-        let objectX = 27; // Increased from 15 to prevent left cutoff on mobile
-        const objectButtonSize = 42; // Reduced from 44 to fit dragon
-        const objectGap = 3; // Tight gap for all objects including dragon
-        
-        // Add all objects
-        MOBILE_FAVORITES.objects.forEach((blockType) => {
-            const objectItem = PALETTE_OBJECTS.find(o => o.type === blockType);
-            if (objectItem) {
-                this.createObjectButton(objectX, row2Y, objectButtonSize, objectItem.type, objectItem.label, objectItem.icon);
-                objectX += objectButtonSize + objectGap;
-            }
-        });
-        
-        // Add small gap before tools
-        objectX += 4;
-        
-        // Add eraser
-        this.createFloatingToolIcon(objectX, row2Y, objectButtonSize, 'icon-erase', true, () => {
-            if (this.buildToolsEnabled) {
-                this.mode = TOOL_MODES.ERASE;
-                this.updateButtons();
-            }
-        });
-        objectX += objectButtonSize + objectGap;
-        
-        // Add clear all
-        this.createFloatingToolIcon(objectX, row2Y, objectButtonSize, 'icon-clear', false, () => this.scene.clearWorld());
-        
-        // No More button on mobile - everything fits!
-        
-        // Create mode toggle button (View/Edit arrow)
-        // Position at header y-coordinate (will be repositioned by GameScene.positionPlayButton())
-        // Using a temporary x position - GameScene will calculate the correct position
-        const headerY = 32; // Standard header y position
-        const tempX = GAME_WIDTH - 60; // Temporary position, will be updated
-        this.createModeToggleButton(tempX, headerY, 56); // Smaller size for mobile header
+        // Mode toggle button is created by GameScene.positionPlayButton()
+        // Position will be set there after calculating button and input positions
+        const gameWidth = isPortrait ? MOBILE_PORTRAIT_WIDTH : GAME_WIDTH;
+        const headerY = isPortrait ? 62 : 32;
+        const tempX = isPortrait ? 0 : (gameWidth - 60); // Portrait X set by positionPlayButton()
+        this.createModeToggleButton(tempX, headerY, isPortrait ? 50 : 50);
     }
 
     createDesktopToolbar() {

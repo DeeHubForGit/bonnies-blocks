@@ -1,18 +1,24 @@
 import { 
     GRID_SIZE, 
     GRID_COLS, 
-    GRID_ROWS, 
+    GRID_ROWS,
+    MOBILE_PORTRAIT_GRID_SIZE,
+    MOBILE_PORTRAIT_GRID_COLS,
+    MOBILE_PORTRAIT_GRID_ROWS,
     BLOCK_TYPES, 
     BLOCK_COLORS, 
     PLAYER_SPEED,
     GAME_WIDTH,
     GAME_HEIGHT,
+    MOBILE_PORTRAIT_WIDTH,
+    MOBILE_PORTRAIT_HEIGHT,
     HEADER_HEIGHT,
     WORLD_SPRITES,
     isSolidBlock,
     isWorldObject,
     hasPattern,
-    getPattern
+    getPattern,
+    isMobilePortrait
 } from '../data/constants.js';
 import { getChildName } from '../utils/storage.js';
 
@@ -31,10 +37,13 @@ const MAX_PLAYABLE_WIDTH = GAME_WIDTH - (HORIZONTAL_MARGIN * 2);
  * Calculate optimal tile size to fit the world on screen
  * Returns adjusted tile dimensions if map is too wide
  */
-function calculateOptimalTileSize() {
+function calculateOptimalTileSize(gridCols, gridRows, gameWidth) {
+    const HORIZONTAL_MARGIN = 30;
+    const MAX_PLAYABLE_WIDTH = gameWidth - (HORIZONTAL_MARGIN * 2);
+    
     // Calculate required map width with base tile size
-    const minIsoX = -(GRID_ROWS - 1) * (BASE_ISO_TILE_WIDTH / 2);
-    const maxIsoX = (GRID_COLS - 1) * (BASE_ISO_TILE_WIDTH / 2);
+    const minIsoX = -(gridRows - 1) * (BASE_ISO_TILE_WIDTH / 2);
+    const maxIsoX = (gridCols - 1) * (BASE_ISO_TILE_WIDTH / 2);
     const baseMapWidth = maxIsoX - minIsoX;
     
     // Check if we need to scale down
@@ -60,19 +69,25 @@ function calculateOptimalTileSize() {
  * Calculate the origin point for the isometric world
  * Centers the map properly within available screen space with safe margins
  */
-function calculateIsoWorldOrigin(tileWidth, tileHeight) {
+function calculateIsoWorldOrigin(tileWidth, tileHeight, gridCols, gridRows, gameWidth, gameHeight) {
+    const TOP_RESERVED = 85;
+    const BOTTOM_RESERVED = 70;
+    const VERTICAL_PADDING = 10;
+    const HORIZONTAL_MARGIN = 30;
+    const MAX_PLAYABLE_WIDTH = gameWidth - (HORIZONTAL_MARGIN * 2);
+    
     // Calculate isometric map bounds
-    const minIsoX = -(GRID_ROWS - 1) * (tileWidth / 2);
-    const maxIsoX = (GRID_COLS - 1) * (tileWidth / 2);
+    const minIsoX = -(gridRows - 1) * (tileWidth / 2);
+    const maxIsoX = (gridCols - 1) * (tileWidth / 2);
     const minIsoY = 0;
-    const maxIsoY = (GRID_COLS + GRID_ROWS - 2) * (tileHeight / 2);
+    const maxIsoY = (gridCols + gridRows - 2) * (tileHeight / 2);
     
     const mapWidth = maxIsoX - minIsoX;
     const mapHeight = maxIsoY - minIsoY;
     
     // Calculate available space with safe margins
     const availableWidth = MAX_PLAYABLE_WIDTH;
-    const availableHeight = GAME_HEIGHT - TOP_RESERVED - BOTTOM_RESERVED - (VERTICAL_PADDING * 2);
+    const availableHeight = gameHeight - TOP_RESERVED - BOTTOM_RESERVED - (VERTICAL_PADDING * 2);
     
     // Center horizontally within safe area
     const originX = HORIZONTAL_MARGIN + (availableWidth - mapWidth) / 2 - minIsoX;
@@ -121,11 +136,34 @@ export class IsometricPlayScene extends Phaser.Scene {
         this.childName = data.childName || 'Bunnies';
     }
 
+    // Helper methods to get correct dimensions based on device orientation
+    getGameWidth() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_WIDTH : GAME_WIDTH;
+    }
+
+    getGameHeight() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_HEIGHT : GAME_HEIGHT;
+    }
+
+    getGridSize() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_GRID_SIZE : GRID_SIZE;
+    }
+
+    getGridCols() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_GRID_COLS : GRID_COLS;
+    }
+
+    getGridRows() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_GRID_ROWS : GRID_ROWS;
+    }
+
     createEmptyGrid() {
+        const gridRows = this.getGridRows();
+        const gridCols = this.getGridCols();
         const grid = [];
-        for (let row = 0; row < GRID_ROWS; row++) {
+        for (let row = 0; row < gridRows; row++) {
             grid[row] = [];
-            for (let col = 0; col < GRID_COLS; col++) {
+            for (let col = 0; col < gridCols; col++) {
                 grid[row][col] = BLOCK_TYPES.EMPTY;
             }
         }
@@ -141,8 +179,14 @@ export class IsometricPlayScene extends Phaser.Scene {
     create() {
         console.log('[IsometricPlayScene] Creating isometric world view');
 
+        // Get responsive dimensions
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
+        const gameWidth = this.getGameWidth();
+        const gameHeight = this.getGameHeight();
+
         // Calculate optimal tile size to fit screen with margins
-        const tileConfig = calculateOptimalTileSize();
+        const tileConfig = calculateOptimalTileSize(gridCols, gridRows, gameWidth);
         this.isoTileWidth = tileConfig.ISO_TILE_WIDTH;
         this.isoTileHeight = tileConfig.ISO_TILE_HEIGHT;
         this.scaleFactor = tileConfig.scaleFactor;
@@ -154,7 +198,14 @@ export class IsometricPlayScene extends Phaser.Scene {
         });
 
         // Calculate world origin for proper centering with safe margins
-        this.isoOrigin = calculateIsoWorldOrigin(this.isoTileWidth, this.isoTileHeight);
+        this.isoOrigin = calculateIsoWorldOrigin(
+            this.isoTileWidth, 
+            this.isoTileHeight, 
+            gridCols, 
+            gridRows, 
+            gameWidth, 
+            gameHeight
+        );
         console.log('[IsometricPlayScene] World origin:', {
             x: this.isoOrigin.originX.toFixed(2),
             y: this.isoOrigin.originY.toFixed(2),
@@ -163,10 +214,10 @@ export class IsometricPlayScene extends Phaser.Scene {
 
         // Add water background
         const bg = this.add.rectangle(
-            GAME_WIDTH / 2,
-            GAME_HEIGHT / 2,
-            GAME_WIDTH,
-            GAME_HEIGHT,
+            gameWidth / 2,
+            gameHeight / 2,
+            gameWidth,
+            gameHeight,
             0x6EC6E8
         );
         bg.setDepth(-100);
@@ -311,11 +362,14 @@ export class IsometricPlayScene extends Phaser.Scene {
      * Create sand island border behind grass grid
      */
     createSandIsland() {
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
+        
         // Calculate the four corners of the grass grid
         const topCorner = this.gridToIso(0, 0);
-        const rightCorner = this.gridToIso(GRID_COLS - 1, 0);
-        const bottomCorner = this.gridToIso(GRID_COLS - 1, GRID_ROWS - 1);
-        const leftCorner = this.gridToIso(0, GRID_ROWS - 1);
+        const rightCorner = this.gridToIso(gridCols - 1, 0);
+        const bottomCorner = this.gridToIso(gridCols - 1, gridRows - 1);
+        const leftCorner = this.gridToIso(0, gridRows - 1);
 
         // Expand corners slightly to create sand border (add padding)
         const padding = this.isoTileWidth * 0.6; // Sand extends beyond grass
@@ -364,6 +418,9 @@ export class IsometricPlayScene extends Phaser.Scene {
      * Render the entire world as isometric
      */
     renderIsometricWorld() {
+        const gridRows = this.getGridRows();
+        const gridCols = this.getGridCols();
+        
         // Clear existing sprites
         this.worldSprites.forEach(sprite => sprite.destroy());
         this.worldSprites = [];
@@ -371,8 +428,8 @@ export class IsometricPlayScene extends Phaser.Scene {
         // Collect all tiles with their positions for depth sorting
         const tiles = [];
         
-        for (let row = 0; row < GRID_ROWS; row++) {
-            for (let col = 0; col < GRID_COLS; col++) {
+        for (let row = 0; row < gridRows; row++) {
+            for (let col = 0; col < gridCols; col++) {
                 tiles.push({ row, col, blockType: this.worldGrid[row][col] });
             }
         }
@@ -639,9 +696,12 @@ export class IsometricPlayScene extends Phaser.Scene {
     }
 
     findSafeSpawnPosition() {
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
+        
         // Try to spawn at current position if safe
-        if (this.playerGridX >= 0 && this.playerGridX < GRID_COLS && 
-            this.playerGridY >= 0 && this.playerGridY < GRID_ROWS) {
+        if (this.playerGridX >= 0 && this.playerGridX < gridCols && 
+            this.playerGridY >= 0 && this.playerGridY < gridRows) {
             const currentBlock = this.worldGrid[this.playerGridY][this.playerGridX];
             if (!isSolidBlock(currentBlock)) {
                 return { row: this.playerGridY, col: this.playerGridX };
@@ -649,8 +709,8 @@ export class IsometricPlayScene extends Phaser.Scene {
         }
         
         // Find first empty/walkable tile
-        for (let row = 0; row < GRID_ROWS; row++) {
-            for (let col = 0; col < GRID_COLS; col++) {
+        for (let row = 0; row < gridRows; row++) {
+            for (let col = 0; col < gridCols; col++) {
                 const blockType = this.worldGrid[row][col];
                 if (!isSolidBlock(blockType)) {
                     return { row, col };
@@ -659,7 +719,7 @@ export class IsometricPlayScene extends Phaser.Scene {
         }
         
         // Emergency fallback
-        return { row: Math.floor(GRID_ROWS / 2), col: Math.floor(GRID_COLS / 2) };
+        return { row: Math.floor(gridRows / 2), col: Math.floor(gridCols / 2) };
     }
 
     setupInput() {
@@ -696,6 +756,9 @@ export class IsometricPlayScene extends Phaser.Scene {
     }
 
     movePlayer(deltaCol, deltaRow) {
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
+        
         // Throttle movement
         const now = Date.now();
         if (this.lastMove && now - this.lastMove < 150) {
@@ -707,7 +770,7 @@ export class IsometricPlayScene extends Phaser.Scene {
         const newRow = this.playerGridY + deltaRow;
 
         // Check bounds
-        if (newCol < 0 || newCol >= GRID_COLS || newRow < 0 || newRow >= GRID_ROWS) {
+        if (newCol < 0 || newCol >= gridCols || newRow < 0 || newRow >= gridRows) {
             return;
         }
 

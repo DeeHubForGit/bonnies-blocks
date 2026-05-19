@@ -3,6 +3,15 @@
     GRID_COLS, 
     GRID_ROWS, 
     GRID_LEFT_OFFSET,
+    MOBILE_PORTRAIT_GRID_SIZE,
+    MOBILE_PORTRAIT_GRID_COLS,
+    MOBILE_PORTRAIT_GRID_ROWS,
+    MOBILE_PORTRAIT_GRID_LEFT_OFFSET,
+    MOBILE_PORTRAIT_WIDTH,
+    MOBILE_PORTRAIT_HEIGHT,
+    MOBILE_PORTRAIT_HEADER_HEIGHT,
+    MOBILE_PORTRAIT_TOOLBAR_HEIGHT,
+    MOBILE_PORTRAIT_PLAYABLE_HEIGHT,
     BLOCK_TYPES, 
     BLOCK_COLORS, 
     PLAYER_COLOR,
@@ -19,7 +28,8 @@
     isColorBlock,
     isSolidBlock,
     hasPattern,
-    getPattern
+    getPattern,
+    isMobilePortrait
 } from '../data/constants.js';
 import { Toolbar } from '../ui/Toolbar.js';
 import { Modal } from '../ui/Modal.js';
@@ -63,6 +73,43 @@ export class GameScene extends Phaser.Scene {
             return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
         }
         return false;
+    }
+
+    // Helper methods to get correct dimensions based on device orientation
+    getGameWidth() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_WIDTH : GAME_WIDTH;
+    }
+
+    getGameHeight() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_HEIGHT : GAME_HEIGHT;
+    }
+
+    getHeaderHeight() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_HEADER_HEIGHT : HEADER_HEIGHT;
+    }
+
+    getToolbarHeight() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_TOOLBAR_HEIGHT : TOOLBAR_HEIGHT;
+    }
+
+    getPlayableHeight() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_PLAYABLE_HEIGHT : PLAYABLE_HEIGHT;
+    }
+
+    getGridSize() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_GRID_SIZE : GRID_SIZE;
+    }
+
+    getGridCols() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_GRID_COLS : GRID_COLS;
+    }
+
+    getGridRows() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_GRID_ROWS : GRID_ROWS;
+    }
+
+    getGridLeftOffset() {
+        return isMobilePortrait() ? MOBILE_PORTRAIT_GRID_LEFT_OFFSET : GRID_LEFT_OFFSET;
     }
 
     preload() {
@@ -313,9 +360,11 @@ export class GameScene extends Phaser.Scene {
     initializeGrid() {
         // Create 2D array for grid
         this.grid = [];
-        for (let row = 0; row < GRID_ROWS; row++) {
+        const rows = this.getGridRows();
+        const cols = this.getGridCols();
+        for (let row = 0; row < rows; row++) {
             this.grid[row] = [];
-            for (let col = 0; col < GRID_COLS; col++) {
+            for (let col = 0; col < cols; col++) {
                 this.grid[row][col] = BLOCK_TYPES.EMPTY;
             }
         }
@@ -341,13 +390,26 @@ export class GameScene extends Phaser.Scene {
         const childName = getChildName();
         const title = this.buildTitleText(childName);
         
-        // Create title text on the left side
-        // Move left on mobile to avoid overlap with Config button
         const isMobile = window.innerWidth <= 600;
-        const titleX = isMobile ? 20 : 25; // Position closer to left edge
-        const maxWidth = 230; // Safe width to avoid overlapping header buttons
+        const isPortrait = isMobilePortrait();
         
-        this.titleText = this.add.text(titleX, 24, title, {
+        // Portrait mode: center title on first line (Y=24)
+        // Other modes: left-align on single line
+        let titleX, titleY, maxWidth, originX;
+        
+        if (isPortrait) {
+            titleX = this.getGameWidth() / 2;
+            titleY = 22; // Higher position with more breathing room below
+            maxWidth = this.getGameWidth() - 40; // Leave margins
+            originX = 0.5; // Centered
+        } else {
+            titleX = isMobile ? 20 : 25;
+            titleY = 24;
+            maxWidth = 230;
+            originX = 0; // Left-aligned
+        }
+        
+        this.titleText = this.add.text(titleX, titleY, title, {
             fontSize: '28px',
             fontFamily: '"Fredoka", "Comic Sans MS", cursive, sans-serif',
             fontStyle: 'bold',
@@ -363,7 +425,7 @@ export class GameScene extends Phaser.Scene {
             },
             wordWrap: { width: maxWidth, useAdvancedWrap: true }
         });
-        this.titleText.setOrigin(0, 0.5); // Left-aligned
+        this.titleText.setOrigin(originX, 0.5);
         this.titleText.setDepth(1000);
         
         // Fit title text to prevent overlap with header buttons
@@ -431,23 +493,32 @@ export class GameScene extends Phaser.Scene {
     positionPlayButton() {
         if (this.toolbar && this.toolbar.modeToggleButton) {
             const button = this.toolbar.modeToggleButton;
-            const iconSize = 52;
+            const isPortrait = isMobilePortrait();
+            const iconSize = isPortrait ? 50 : 52;
 
             // Position View button after game name input
-            // Input comes after Save button with reduced gap
-            // Adjust for mobile - narrower input and tighter gaps
             const isMobile = window.innerWidth <= 600;
-            const inputWidth = isMobile ? 120 : 130; // Match reduced desktop width
-            const gapAfterSave = isMobile ? 8 : 12;
-            // Increase gap on mobile to prevent overlap with input
-            const gapBeforePlay = isMobile ? 32 : 2; // Increased mobile gap to prevent overlap
-
-            const inputX = this.saveButtonX + 48 + gapAfterSave;
-            const playX = inputX + inputWidth + gapBeforePlay + (iconSize / 2);
-
-            const maxX = GAME_WIDTH - (iconSize / 2) - 10;
-            button.x = Math.min(playX, maxX);
-            button.y = 32;
+            
+            if (isPortrait) {
+                // Portrait: smaller input, positioned after Save button on line 2
+                const inputWidth = 80;
+                const gapAfterSave = 4;
+                const gapBeforePlay = 24; // Increased gap for clearer separation
+                const inputX = this.saveButtonX + 21 + gapAfterSave; // 21 = half of 42px button
+                const playX = inputX + inputWidth + gapBeforePlay + (iconSize / 2);
+                button.x = playX;
+                button.y = 72; // Match updated button row position
+            } else {
+                // Non-portrait original logic
+                const inputWidth = isMobile ? 120 : 130;
+                const gapAfterSave = isMobile ? 8 : 12;
+                const gapBeforePlay = isMobile ? 32 : 2;
+                const inputX = this.saveButtonX + 48 + gapAfterSave;
+                const playX = inputX + inputWidth + gapBeforePlay + (iconSize / 2);
+                const maxX = GAME_WIDTH - (iconSize / 2) - 10;
+                button.x = Math.min(playX, maxX);
+                button.y = 32;
+            }
 
             this.positionWorldNameField();
         }
@@ -455,22 +526,37 @@ export class GameScene extends Phaser.Scene {
     
     positionWorldNameField() {
         if (this.worldNameInput) {
+            const isPortrait = isMobilePortrait();
+            this.worldNameInput.style.display = 'block'; // Always show input
+            
             const canvas = this.game.canvas.getBoundingClientRect();
             
             // Calculate scale factors (canvas displayed size vs game logical size)
-            const scaleX = canvas.width / GAME_WIDTH;
-            const scaleY = canvas.height / GAME_HEIGHT;
+            const gameWidth = this.getGameWidth();
+            const gameHeight = this.getGameHeight();
+            const scaleX = canvas.width / gameWidth;
+            const scaleY = canvas.height / gameHeight;
 
-            // Adjust input width for mobile - slightly narrower to fit View/Edit button
-            const isMobile = window.innerWidth <= 600;
-            const inputWidth = isMobile ? 120 : 130; // Reduced desktop width to 130
-            const gapAfterSave = isMobile ? 8 : 12; // Tighter gap on mobile
-            const inputY = 18;
-            const inputHeight = 28;
-            const fontSize = 14;
-
-            // Position input after Save button (in logical game coordinates)
-            const inputX = this.saveButtonX + 24 + gapAfterSave;
+            let inputWidth, gapAfterSave, inputX, inputY, inputHeight, fontSize;
+            
+            if (isPortrait) {
+                // Portrait: smaller input on line 2, after Save button
+                inputWidth = 80;
+                gapAfterSave = 4;
+                inputX = this.saveButtonX + 21 + gapAfterSave; // 21 = half of 42px button
+                inputY = 58; // Align with buttons on line 2 (72 - 14 = 58)
+                inputHeight = 28;
+                fontSize = 12; // Slightly smaller font
+            } else {
+                // Non-portrait original positioning
+                const isMobile = window.innerWidth <= 600;
+                inputWidth = isMobile ? 120 : 130;
+                gapAfterSave = isMobile ? 8 : 12;
+                inputX = this.saveButtonX + 24 + gapAfterSave;
+                inputY = 18;
+                inputHeight = 28;
+                fontSize = 14;
+            }
 
             // Add scroll offsets for absolute positioning relative to document body
             const pageX = window.scrollX || window.pageXOffset || 0;
@@ -487,17 +573,25 @@ export class GameScene extends Phaser.Scene {
     }
 
     createHeaderActionButtons() {
-        // Create compact header buttons in order: Config, New, Load, Save
-        const buttonY = 32; // Centered in 64px header (32px from top)
-        
-        // Adjust for mobile - smaller icons and tighter spacing
         const isMobile = window.innerWidth <= 600;
-        const iconSize = isMobile ? 45 : 52; // 7% larger for better visibility
-        const spacing = isMobile ? 6 : 8; // Tighter spacing on mobile
+        const isPortrait = isMobilePortrait();
         
-        // Start buttons after title area (title + mode text block)
-        // On mobile, move right to avoid title overlap
-        let buttonX = isMobile ? 295 : 275; // Moved left to center header group better
+        // Portrait mode: left-align buttons on second line (Y=72) to make room for input & View arrow
+        // Other modes: single line at Y=32
+        let buttonY, iconSize, spacing, buttonX;
+        
+        if (isPortrait) {
+            buttonY = 72; // Second line in 105px header (more space from title)
+            iconSize = 42; // Slightly smaller for portrait
+            spacing = 5;
+            // Left-align buttons starting at X=10 to make room for input and View arrow
+            buttonX = 10 + (iconSize / 2);
+        } else {
+            buttonY = 32;
+            iconSize = isMobile ? 45 : 52;
+            spacing = isMobile ? 6 : 8;
+            buttonX = isMobile ? 295 : 275;
+        }
         
         // Tooltip style for consistent light pink tooltips
         const tooltipStyle = {
@@ -512,12 +606,9 @@ export class GameScene extends Phaser.Scene {
         if (this.settingsButton) {
             this.settingsButton.x = buttonX;
             this.settingsButton.y = buttonY;
-            // Scale settings button for mobile if needed
-            if (isMobile && this.settingsButton.list && this.settingsButton.list[0]) {
-                const settingsIcon = this.settingsButton.list[0];
-                const settingsScale = iconSize / Math.max(settingsIcon.width, settingsIcon.height);
-                settingsIcon.setScale(settingsScale);
-            }
+            // Scale settings button consistently
+            const targetHeight = iconSize;
+            this.settingsButton.setDisplaySize(targetHeight * this.settingsButtonAspectRatio, targetHeight);
         }
         
         buttonX += iconSize + spacing;
@@ -659,11 +750,13 @@ export class GameScene extends Phaser.Scene {
     }
     
     createFooterText() {
-        // Add small footer text at bottom of canvas
+        // Add small footer text below toolbar (not in grid area)
         const footerText = '© 2026 Dee Bath. Thanks to John Sherwood for your advice and encouragement.';
-        const footerY = GAME_HEIGHT - 3; // Position at very bottom, just above border
+        const gameHeight = this.getGameHeight();
+        const gameWidth = this.getGameWidth();
+        const footerY = gameHeight - 8; // Position near bottom, below toolbar
         
-        this.footerLabel = this.add.text(GAME_WIDTH / 2, footerY, footerText, {
+        this.footerLabel = this.add.text(gameWidth / 2, footerY, footerText, {
             fontSize: '9px',
             fontFamily: 'Arial',
             color: '#000000',
@@ -818,12 +911,18 @@ export class GameScene extends Phaser.Scene {
     }
 
     findSafeSpawnPosition() {
+        const gridSize = this.getGridSize();
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
+        const headerHeight = this.getHeaderHeight();
+        const gridLeftOffset = this.getGridLeftOffset();
+
         // First check if current player position is valid
-        const currentGridX = Math.floor((this.player.x - GRID_SIZE / 2) / GRID_SIZE);
-        const currentGridY = Math.floor((this.player.y - HEADER_HEIGHT - GRID_TOP_MARGIN - GRID_SIZE / 2) / GRID_SIZE);
+        const currentGridX = Math.floor((this.player.x - gridLeftOffset - gridSize / 2) / gridSize);
+        const currentGridY = Math.floor((this.player.y - headerHeight - GRID_TOP_MARGIN - gridSize / 2) / gridSize);
         
-        if (currentGridX >= 0 && currentGridX < GRID_COLS && 
-            currentGridY >= 0 && currentGridY < GRID_ROWS) {
+        if (currentGridX >= 0 && currentGridX < gridCols && 
+            currentGridY >= 0 && currentGridY < gridRows) {
             const currentBlock = this.grid[currentGridY][currentGridX];
             if (!isSolidBlock(currentBlock)) {
                 // Current position is safe, keep player there
@@ -832,21 +931,21 @@ export class GameScene extends Phaser.Scene {
         }
         
         // Find first empty/walkable tile
-        for (let row = 0; row < GRID_ROWS; row++) {
-            for (let col = 0; col < GRID_COLS; col++) {
+        for (let row = 0; row < gridRows; row++) {
+            for (let col = 0; col < gridCols; col++) {
                 const blockType = this.grid[row][col];
                 if (!isSolidBlock(blockType)) {
                     // Found a safe spot - place player here
-                    this.player.x = GRID_LEFT_OFFSET + col * GRID_SIZE + GRID_SIZE / 2;
-                    this.player.y = HEADER_HEIGHT + GRID_TOP_MARGIN + row * GRID_SIZE + GRID_SIZE / 2;
+                    this.player.x = gridLeftOffset + col * gridSize + gridSize / 2;
+                    this.player.y = headerHeight + GRID_TOP_MARGIN + row * gridSize + gridSize / 2;
                     return;
                 }
             }
         }
         
         // If no empty tiles found, place at center (emergency fallback)
-        this.player.x = Math.floor(GRID_COLS / 2) * GRID_SIZE + GRID_SIZE / 2;
-        this.player.y = HEADER_HEIGHT + GRID_TOP_MARGIN + Math.floor(GRID_ROWS / 2) * GRID_SIZE + GRID_SIZE / 2;
+        this.player.x = gridLeftOffset + Math.floor(gridCols / 2) * gridSize + gridSize / 2;
+        this.player.y = headerHeight + GRID_TOP_MARGIN + Math.floor(gridRows / 2) * gridSize + gridSize / 2;
     }
 
     getGameMode() {
@@ -857,27 +956,50 @@ export class GameScene extends Phaser.Scene {
         // Create graphics object for grid
         const graphics = this.add.graphics();
 
+        const gameWidth = this.getGameWidth();
+        const gameHeight = this.getGameHeight();
+        const headerHeight = this.getHeaderHeight();
+        const toolbarHeight = this.getToolbarHeight();
+        const playableHeight = this.getPlayableHeight();
+        const gridSize = this.getGridSize();
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
+        const gridLeftOffset = this.getGridLeftOffset();
+
+        // Calculate toolbar top position based on actual grid bottom for mobile portrait
+        let toolbarTop;
+        const isPortrait = isMobilePortrait();
+        if (isPortrait) {
+            const gridTop = headerHeight + GRID_TOP_MARGIN;
+            const gridHeight = gridRows * gridSize;
+            const gridBottom = gridTop + gridHeight;
+            const gapAfterGrid = 8;
+            toolbarTop = gridBottom + gapAfterGrid;
+        } else {
+            toolbarTop = headerHeight + playableHeight;
+        }
+
         // Draw toolbar background
         graphics.fillStyle(0x333333, 0.2);
-        graphics.fillRect(0, HEADER_HEIGHT + PLAYABLE_HEIGHT, GAME_WIDTH, TOOLBAR_HEIGHT);
+        graphics.fillRect(0, toolbarTop, gameWidth, toolbarHeight);
 
         // Draw separator line between playable area and toolbar
         graphics.lineStyle(3, 0x000000, 0.8);
-        graphics.lineBetween(0, HEADER_HEIGHT + PLAYABLE_HEIGHT, GAME_WIDTH, HEADER_HEIGHT + PLAYABLE_HEIGHT);
+        graphics.lineBetween(0, toolbarTop, gameWidth, toolbarTop);
 
         // Draw grid lines with 0.5 pixel offset for crisp rendering
         graphics.lineStyle(1, 0x5F8F56, 0.35);
 
-        // Horizontal lines (offset by HEADER_HEIGHT + GRID_TOP_MARGIN)
-        for (let row = 0; row <= GRID_ROWS; row++) {
-            const y = HEADER_HEIGHT + GRID_TOP_MARGIN + row * GRID_SIZE + 0.5;
-            graphics.lineBetween(GRID_LEFT_OFFSET, y, GRID_LEFT_OFFSET + GRID_COLS * GRID_SIZE, y);
+        // Horizontal lines
+        for (let row = 0; row <= gridRows; row++) {
+            const y = headerHeight + GRID_TOP_MARGIN + row * gridSize + 0.5;
+            graphics.lineBetween(gridLeftOffset, y, gridLeftOffset + gridCols * gridSize, y);
         }
 
-        // Vertical lines (offset by HEADER_HEIGHT + GRID_TOP_MARGIN)
-        for (let col = 0; col <= GRID_COLS; col++) {
-            const x = GRID_LEFT_OFFSET + col * GRID_SIZE + 0.5;
-            graphics.lineBetween(x, HEADER_HEIGHT + GRID_TOP_MARGIN, x, HEADER_HEIGHT + GRID_TOP_MARGIN + GRID_ROWS * GRID_SIZE);
+        // Vertical lines
+        for (let col = 0; col <= gridCols; col++) {
+            const x = gridLeftOffset + col * gridSize + 0.5;
+            graphics.lineBetween(x, headerHeight + GRID_TOP_MARGIN, x, headerHeight + GRID_TOP_MARGIN + gridRows * gridSize);
         }
 
         // Set depth so grid lines appear above blocks and player but below UI
@@ -887,18 +1009,25 @@ export class GameScene extends Phaser.Scene {
     }
 
     createPlayer() {
-        // Set physics world bounds to playable area only (accounting for header area)
-        this.physics.world.setBounds(0, HEADER_HEIGHT + GRID_TOP_MARGIN, GAME_WIDTH, PLAYABLE_HEIGHT - GRID_TOP_MARGIN);
+        const gameWidth = this.getGameWidth();
+        const headerHeight = this.getHeaderHeight();
+        const playableHeight = this.getPlayableHeight();
+        const gridSize = this.getGridSize();
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
 
-        // Player starts in the middle of the grid (offset by HEADER_HEIGHT + GRID_TOP_MARGIN)
-        const startX = Math.floor(GRID_COLS / 2) * GRID_SIZE + GRID_SIZE / 2;
-        const startY = HEADER_HEIGHT + GRID_TOP_MARGIN + Math.floor(GRID_ROWS / 2) * GRID_SIZE + GRID_SIZE / 2;
+        // Set physics world bounds to playable area only
+        this.physics.world.setBounds(0, headerHeight + GRID_TOP_MARGIN, gameWidth, playableHeight - GRID_TOP_MARGIN);
+
+        // Player starts in the middle of the grid
+        const startX = Math.floor(gridCols / 2) * gridSize + gridSize / 2;
+        const startY = headerHeight + GRID_TOP_MARGIN + Math.floor(gridRows / 2) * gridSize + gridSize / 2;
 
         // Create player as girl sprite instead of circle
         this.player = this.add.image(startX, startY, 'icon-girl');
         
         // Scale player to fit nicely in the tile (about 80% of tile size)
-        const playerSize = GRID_SIZE * 0.8;
+        const playerSize = gridSize * 0.8;
         const scale = playerSize / Math.max(this.player.width, this.player.height);
         this.player.setScale(scale);
         
@@ -909,8 +1038,8 @@ export class GameScene extends Phaser.Scene {
         this.physics.add.existing(this.player);
         this.player.body.setCollideWorldBounds(true);
         
-        // Set smaller collision body for better movement feel
-        const bodySize = GRID_SIZE * 0.6;
+        // Set smaller collision body for better movement feel (responsive to grid size)
+        const bodySize = gridSize * 0.6;
         this.player.body.setSize(bodySize, bodySize);
     }
 
@@ -936,8 +1065,11 @@ export class GameScene extends Phaser.Scene {
                     // Check if pointer is inside playable grid bounds
                     if (this.isPointerInGrid(pointer)) {
                         this.isDragging = true;
-                        const gridX = Math.floor(pointer.x / GRID_SIZE);
-                        const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
+                        const gridSize = this.getGridSize();
+                        const headerHeight = this.getHeaderHeight();
+                        const gridLeftOffset = this.getGridLeftOffset();
+                        const gridX = Math.floor((pointer.x - gridLeftOffset) / gridSize);
+                        const gridY = Math.floor((pointer.y - headerHeight - GRID_TOP_MARGIN) / gridSize);
                         this.lastPaintedCell = `${gridX}_${gridY}`;
                     }
                 }
@@ -980,8 +1112,9 @@ export class GameScene extends Phaser.Scene {
             }
         });
 
-        // Create hover rectangle once
-        this.hoverRect = this.add.rectangle(0, 0, GRID_SIZE, GRID_SIZE);
+        // Create hover rectangle once (size set dynamically based on grid)
+        const gridSize = this.getGridSize();
+        this.hoverRect = this.add.rectangle(0, 0, gridSize, gridSize);
         this.hoverRect.setStrokeStyle(2, 0xffffff, 0.8);
         this.hoverRect.setFillStyle(0xffffff, 0.1);
         this.hoverRect.setDepth(50);
@@ -989,28 +1122,46 @@ export class GameScene extends Phaser.Scene {
     }
 
     isPointerInGrid(pointer) {
-        // Check if pointer is within playable grid bounds
-        if (pointer.y < HEADER_HEIGHT + GRID_TOP_MARGIN || pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT) {
+        const gridSize = this.getGridSize();
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
+        const headerHeight = this.getHeaderHeight();
+        const gridLeftOffset = this.getGridLeftOffset();
+
+        // Check if pointer is within actual grid bounds
+        const gridTop = headerHeight + GRID_TOP_MARGIN;
+        const gridBottom = gridTop + (gridRows * gridSize);
+        
+        if (pointer.y < gridTop || pointer.y >= gridBottom) {
             return false;
         }
 
-        const gridX = Math.floor(pointer.x / GRID_SIZE);
-        const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
+        const gridX = Math.floor((pointer.x - gridLeftOffset) / gridSize);
+        const gridY = Math.floor((pointer.y - headerHeight - GRID_TOP_MARGIN) / gridSize);
 
-        return gridX >= 0 && gridX < GRID_COLS && gridY >= 0 && gridY < GRID_ROWS;
+        return gridX >= 0 && gridX < gridCols && gridY >= 0 && gridY < gridRows;
     }
 
     handleDragPaint(pointer) {
-        // Ignore if outside playable grid area
-        if (pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT || pointer.y < HEADER_HEIGHT + GRID_TOP_MARGIN) {
+        const gridSize = this.getGridSize();
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
+        const headerHeight = this.getHeaderHeight();
+        const gridLeftOffset = this.getGridLeftOffset();
+
+        // Ignore if outside actual grid area
+        const gridTop = headerHeight + GRID_TOP_MARGIN;
+        const gridBottom = gridTop + (gridRows * gridSize);
+        
+        if (pointer.y < gridTop || pointer.y >= gridBottom) {
             return;
         }
 
-        const gridX = Math.floor(pointer.x / GRID_SIZE);
-        const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
+        const gridX = Math.floor((pointer.x - gridLeftOffset) / gridSize);
+        const gridY = Math.floor((pointer.y - headerHeight - GRID_TOP_MARGIN) / gridSize);
 
         // Check if within grid bounds
-        if (gridX < 0 || gridX >= GRID_COLS || gridY < 0 || gridY >= GRID_ROWS) {
+        if (gridX < 0 || gridX >= gridCols || gridY < 0 || gridY >= gridRows) {
             return;
         }
 
@@ -1033,16 +1184,25 @@ export class GameScene extends Phaser.Scene {
             return;
         }
 
-        // Ignore clicks outside the playable grid area
-        if (pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT || pointer.y < HEADER_HEIGHT + GRID_TOP_MARGIN) {
+        const gridSize = this.getGridSize();
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
+        const headerHeight = this.getHeaderHeight();
+        const gridLeftOffset = this.getGridLeftOffset();
+
+        // Ignore clicks outside the actual grid area
+        const gridTop = headerHeight + GRID_TOP_MARGIN;
+        const gridBottom = gridTop + (gridRows * gridSize);
+        
+        if (pointer.y < gridTop || pointer.y >= gridBottom) {
             return;
         }
 
-        const gridX = Math.floor((pointer.x - GRID_LEFT_OFFSET) / GRID_SIZE);
-        const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
+        const gridX = Math.floor((pointer.x - gridLeftOffset) / gridSize);
+        const gridY = Math.floor((pointer.y - headerHeight - GRID_TOP_MARGIN) / gridSize);
 
         // Check if click is within grid bounds
-        if (gridX < 0 || gridX >= GRID_COLS || gridY < 0 || gridY >= GRID_ROWS) {
+        if (gridX < 0 || gridX >= gridCols || gridY < 0 || gridY >= gridRows) {
             return;
         }
 
@@ -1061,19 +1221,28 @@ export class GameScene extends Phaser.Scene {
     }
 
     handleGridHover(pointer) {
-        // Ignore hover outside the playable grid area
-        if (pointer.y >= HEADER_HEIGHT + PLAYABLE_HEIGHT || pointer.y < HEADER_HEIGHT + GRID_TOP_MARGIN) {
+        const gridSize = this.getGridSize();
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
+        const headerHeight = this.getHeaderHeight();
+        const gridLeftOffset = this.getGridLeftOffset();
+
+        // Ignore hover outside the actual grid area
+        const gridTop = headerHeight + GRID_TOP_MARGIN;
+        const gridBottom = gridTop + (gridRows * gridSize);
+        
+        if (pointer.y < gridTop || pointer.y >= gridBottom) {
             this.hoverRect.setVisible(false);
             return;
         }
 
-        const gridX = Math.floor((pointer.x - GRID_LEFT_OFFSET) / GRID_SIZE);
-        const gridY = Math.floor((pointer.y - HEADER_HEIGHT - GRID_TOP_MARGIN) / GRID_SIZE);
+        const gridX = Math.floor((pointer.x - gridLeftOffset) / gridSize);
+        const gridY = Math.floor((pointer.y - headerHeight - GRID_TOP_MARGIN) / gridSize);
 
         // Check if hover is within grid bounds
-        if (gridX >= 0 && gridX < GRID_COLS && gridY >= 0 && gridY < GRID_ROWS) {
-            const x = GRID_LEFT_OFFSET + gridX * GRID_SIZE + GRID_SIZE / 2;
-            const y = HEADER_HEIGHT + GRID_TOP_MARGIN + gridY * GRID_SIZE + GRID_SIZE / 2;
+        if (gridX >= 0 && gridX < gridCols && gridY >= 0 && gridY < gridRows) {
+            const x = gridLeftOffset + gridX * gridSize + gridSize / 2;
+            const y = headerHeight + GRID_TOP_MARGIN + gridY * gridSize + gridSize / 2;
             
             // Move and show hover rectangle
             this.hoverRect.setPosition(x, y);
@@ -1091,9 +1260,12 @@ export class GameScene extends Phaser.Scene {
         });
         this.tileGraphics = {};
 
+        const gridRows = this.getGridRows();
+        const gridCols = this.getGridCols();
+
         // Render all tiles in Build Mode (flat editor style)
-        for (let row = 0; row < GRID_ROWS; row++) {
-            for (let col = 0; col < GRID_COLS; col++) {
+        for (let row = 0; row < gridRows; row++) {
+            for (let col = 0; col < gridCols; col++) {
                 this.renderTile(col, row);
             }
         }
@@ -1278,8 +1450,12 @@ export class GameScene extends Phaser.Scene {
             return; // Nothing to render in Build Mode
         }
 
-        const x = GRID_LEFT_OFFSET + col * GRID_SIZE + GRID_SIZE / 2;
-        const y = HEADER_HEIGHT + GRID_TOP_MARGIN + row * GRID_SIZE + GRID_SIZE / 2;
+        const gridSize = this.getGridSize();
+        const gridLeftOffset = this.getGridLeftOffset();
+        const headerHeight = this.getHeaderHeight();
+
+        const x = gridLeftOffset + col * gridSize + gridSize / 2;
+        const y = headerHeight + GRID_TOP_MARGIN + row * gridSize + gridSize / 2;
         const color = BLOCK_COLORS[blockType];
 
         // Check if this is an image-based object
@@ -1318,16 +1494,16 @@ export class GameScene extends Phaser.Scene {
             const sprite = this.add.image(x, y, iconKey);
             
             // Standard sizing for Build Mode
-            let targetSize = GRID_SIZE * 0.9;
+            let targetSize = gridSize * 0.9;
             if (blockType === BLOCK_TYPES.PALM_TREE) {
                 // Palm trees slightly larger
-                targetSize = GRID_SIZE * 1.05;
+                targetSize = gridSize * 1.05;
             } else if (blockType === BLOCK_TYPES.UNICORN) {
                 // Unicorn larger for better visibility in Edit Mode
-                targetSize = GRID_SIZE * 1.0;
+                targetSize = gridSize * 1.0;
             } else if (blockType === BLOCK_TYPES.DRAGON) {
                 // Dragon same size as unicorn for consistency
-                targetSize = GRID_SIZE * 1.0;
+                targetSize = gridSize * 1.0;
             }
             const scale = targetSize / Math.max(sprite.width, sprite.height);
             sprite.setScale(scale);
@@ -1339,7 +1515,7 @@ export class GameScene extends Phaser.Scene {
             const container = this.add.container(x, y);
             
             // Base colored block
-            const block = this.add.rectangle(0, 0, GRID_SIZE, GRID_SIZE, color);
+            const block = this.add.rectangle(0, 0, gridSize, gridSize, color);
             block.setDepth(5);
             container.add(block);
             
@@ -1356,11 +1532,11 @@ export class GameScene extends Phaser.Scene {
                     // Draw smooth curved wave line using line segments
                     const yOffset = (i - 1) * 12;
                     wave.beginPath();
-                    wave.moveTo(-GRID_SIZE/2, yOffset);
-                    for (let x = -GRID_SIZE/2; x <= GRID_SIZE/2; x += 2) {
-                        const phase = (x / GRID_SIZE) * Math.PI * 2;
-                        const y = yOffset + Math.sin(phase) * 4;
-                        wave.lineTo(x, y);
+                    wave.moveTo(-gridSize/2, yOffset);
+                    for (let wx = -gridSize/2; wx <= gridSize/2; wx += 2) {
+                        const phase = (wx / gridSize) * Math.PI * 2;
+                        const wy = yOffset + Math.sin(phase) * 4;
+                        wave.lineTo(wx, wy);
                     }
                     wave.strokePath();
                     
@@ -1419,20 +1595,24 @@ export class GameScene extends Phaser.Scene {
             this.tileGraphics[key] = container;
         } else {
             // Render regular colored block - flat rendering for Build Mode
-            const block = this.add.rectangle(x, y, GRID_SIZE, GRID_SIZE, color);
+            const gridSize = this.getGridSize();
+            const block = this.add.rectangle(x, y, gridSize, gridSize, color);
             block.setDepth(5);
             this.tileGraphics[key] = block;
         }
     }
     
     cycleRainbowColors() {
+        const gridRows = this.getGridRows();
+        const gridCols = this.getGridCols();
+        
         // Cycle through rainbow colors for all rainbow blocks
         this.rainbowIndex = (this.rainbowIndex + 1) % this.rainbowColors.length;
         const newColor = this.rainbowColors[this.rainbowIndex];
         
         // Update all rainbow block tiles
-        for (let row = 0; row < GRID_ROWS; row++) {
-            for (let col = 0; col < GRID_COLS; col++) {
+        for (let row = 0; row < gridRows; row++) {
+            for (let col = 0; col < gridCols; col++) {
                 if (this.grid[row][col] === BLOCK_TYPES.RAINBOW) {
                     const key = `${col}_${row}`;
                     const container = this.tileGraphics[key];
@@ -1506,12 +1686,18 @@ export class GameScene extends Phaser.Scene {
     }
 
     wouldCollideWithBlock(x, y) {
+        const gridSize = this.getGridSize();
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
+        const headerHeight = this.getHeaderHeight();
+        const gridLeftOffset = this.getGridLeftOffset();
+
         // Check if position would be inside a solid block
-        const gridX = Math.floor((x - GRID_SIZE / 2) / GRID_SIZE);
-        const gridY = Math.floor((y - HEADER_HEIGHT - GRID_SIZE / 2) / GRID_SIZE);
+        const gridX = Math.floor((x - gridLeftOffset - gridSize / 2) / gridSize);
+        const gridY = Math.floor((y - headerHeight - GRID_TOP_MARGIN - gridSize / 2) / gridSize);
 
         // Check bounds
-        if (gridX < 0 || gridX >= GRID_COLS || gridY < 0 || gridY >= GRID_ROWS) {
+        if (gridX < 0 || gridX >= gridCols || gridY < 0 || gridY >= gridRows) {
             return false;
         }
 
@@ -1626,13 +1812,17 @@ export class GameScene extends Phaser.Scene {
     }
 
     loadWorldData(worldData) {
+        const gridRows = this.getGridRows();
+        const gridCols = this.getGridCols();
+        const gridSize = this.getGridSize();
+        
         // Trim or pad the loaded grid to match current dimensions
         const loadedGrid = worldData.grid;
         this.grid = [];
         
-        for (let row = 0; row < GRID_ROWS; row++) {
+        for (let row = 0; row < gridRows; row++) {
             this.grid[row] = [];
-            for (let col = 0; col < GRID_COLS; col++) {
+            for (let col = 0; col < gridCols; col++) {
                 // Use loaded data if it exists within bounds, otherwise use EMPTY
                 if (loadedGrid[row] && loadedGrid[row][col] !== undefined) {
                     this.grid[row][col] = loadedGrid[row][col];
@@ -1644,8 +1834,8 @@ export class GameScene extends Phaser.Scene {
         
         if (worldData.playerPosition) {
             // Ensure player position is within new grid bounds
-            const clampedX = Math.min(worldData.playerPosition.x, GRID_COLS * GRID_SIZE - GRID_SIZE / 2);
-            const clampedY = Math.min(worldData.playerPosition.y, GRID_ROWS * GRID_SIZE - GRID_SIZE / 2);
+            const clampedX = Math.min(worldData.playerPosition.x, gridCols * gridSize - gridSize / 2);
+            const clampedY = Math.min(worldData.playerPosition.y, gridRows * gridSize - gridSize / 2);
             this.player.x = clampedX;
             this.player.y = clampedY;
         }
@@ -1680,13 +1870,16 @@ export class GameScene extends Phaser.Scene {
     }
 
     hasUnsavedChanges() {
+        const gridRows = this.getGridRows();
+        const gridCols = this.getGridCols();
+        
         // Compare current grid with saved snapshot
         if (!this.savedGridSnapshot) {
             return false; // No snapshot, assume no changes
         }
         
-        for (let row = 0; row < GRID_ROWS; row++) {
-            for (let col = 0; col < GRID_COLS; col++) {
+        for (let row = 0; row < gridRows; row++) {
+            for (let col = 0; col < gridCols; col++) {
                 if (this.grid[row][col] !== this.savedGridSnapshot[row][col]) {
                     return true;
                 }
@@ -1712,11 +1905,14 @@ export class GameScene extends Phaser.Scene {
     }
 
     clearWorld() {
+        const gridRows = this.getGridRows();
+        const gridCols = this.getGridCols();
+        
         this.modal.showClearWorldDialog(() => {
             this.grid = [];
-            for (let row = 0; row < GRID_ROWS; row++) {
+            for (let row = 0; row < gridRows; row++) {
                 this.grid[row] = [];
-                for (let col = 0; col < GRID_COLS; col++) {
+                for (let col = 0; col < gridCols; col++) {
                     this.grid[row][col] = BLOCK_TYPES.EMPTY;
                 }
             }
