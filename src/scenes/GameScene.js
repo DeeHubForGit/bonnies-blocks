@@ -751,10 +751,12 @@ export class GameScene extends Phaser.Scene {
     
     createFooterText() {
         // Add small footer text below toolbar (not in grid area)
-        const footerText = '© 2026 Dee Bath. Thanks to John Sherwood for your advice and encouragement.';
+        const footerText = '© 2026 Dee Bath. Thanks to John Sherwood for your encouragement.';
         const gameHeight = this.getGameHeight();
         const gameWidth = this.getGameWidth();
-        const footerY = gameHeight - 8; // Position near bottom, below toolbar
+        // Position near bottom, below toolbar
+        const isMobile = isMobilePortrait();
+        const footerY = isMobile ? gameHeight - 8 : gameHeight - 2;
         
         this.footerLabel = this.add.text(gameWidth / 2, footerY, footerText, {
             fontSize: '9px',
