@@ -248,7 +248,10 @@ export class IsometricPlayScene extends Phaser.Scene {
 
     createTitle() {
         const title = this.buildTitleText(this.childName);
-        this.titleText = this.add.text(GAME_WIDTH / 2, 24, title, {
+        // Use responsive width so title centers correctly on mobile portrait
+        const gameWidth = this.getGameWidth();
+        const titleX = gameWidth / 2;
+        this.titleText = this.add.text(titleX, 24, title, {
             fontSize: '28px',
             fontFamily: '"Fredoka", "Comic Sans MS", cursive, sans-serif',
             fontStyle: 'bold',
