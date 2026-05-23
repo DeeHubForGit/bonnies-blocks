@@ -1,4 +1,4 @@
-import { GAME_WIDTH, GAME_HEIGHT } from '../data/constants.js';
+import { GAME_WIDTH, GAME_HEIGHT, MOBILE_PORTRAIT_WIDTH, isMobilePortrait } from '../data/constants.js';
 
 /**
  * Reusable modal system for dialogs and messages
@@ -15,21 +15,24 @@ export class Modal {
      * Show a toast notification (small temporary message)
      */
     showToast(message, duration = 2000) {
-        const toast = this.scene.add.container(GAME_WIDTH / 2, 95);
+        const isMobile = isMobilePortrait();
+        const gameWidth = isMobile ? MOBILE_PORTRAIT_WIDTH : GAME_WIDTH;
+        const toast = this.scene.add.container(gameWidth / 2, 95);
         
-        const toastWidth = 430;
-        const toastHeight = 56;
+        const toastWidth = isMobile ? 320 : 430;
+        const toastHeight = isMobile ? 50 : 56;
         const bg = this.scene.add.rectangle(0, 0, toastWidth, toastHeight, 0xFFB6C1, 0.95);
         bg.setStrokeStyle(3, 0xFFFFFF);
         bg.setDisplaySize(toastWidth, toastHeight);
         
+        const textFontSize = isMobile ? '16px' : '18px';
         const text = this.scene.add.text(0, 0, message, {
-            fontSize: '18px',
+            fontSize: textFontSize,
             fontFamily: 'Arial',
             color: '#000000',
             fontStyle: 'bold',
             align: 'center',
-            wordWrap: { width: 390 }
+            wordWrap: { width: toastWidth - 40 }
         }).setOrigin(0.5);
 
         toast.add([bg, text]);
@@ -62,10 +65,14 @@ export class Modal {
     showConfirmDialog(title, message, onConfirm, confirmText = 'Confirm', cancelText = 'Cancel', onCancel = null, imageKey = null) {
         this.createModalBase();
 
-        const centerX = GAME_WIDTH / 2;
+        const isMobile = isMobilePortrait();
+        const gameWidth = isMobile ? MOBILE_PORTRAIT_WIDTH : GAME_WIDTH;
+        const centerX = gameWidth / 2;
         const centerY = GAME_HEIGHT / 2;
 
-        // Adjust layout based on whether image is present
+        // Adjust layout based on whether image is present and mobile state
+        const titleFontSize = isMobile ? '24px' : '28px';
+        const messageFontSize = isMobile ? '16px' : '18px';
         const titleY = imageKey ? centerY - 150 : centerY - 90;
         const imageY = centerY - 50;
         const messageY = imageKey ? centerY + 50 : centerY - 20;
@@ -73,10 +80,12 @@ export class Modal {
 
         // Title
         const titleText = this.scene.add.text(centerX, titleY, title, {
-            fontSize: '28px',
+            fontSize: titleFontSize,
             fontFamily: 'Arial',
             color: '#333333',
-            fontStyle: 'bold'
+            fontStyle: 'bold',
+            align: 'center',
+            wordWrap: { width: isMobile ? 320 : 400 }
         }).setOrigin(0.5);
 
         const elements = [titleText];
@@ -84,8 +93,8 @@ export class Modal {
         // Optional image between title and message
         if (imageKey) {
             const dialogImage = this.scene.add.image(centerX, imageY, imageKey);
-            const maxImageWidth = 200;
-            const maxImageHeight = 140;
+            const maxImageWidth = isMobile ? 160 : 200;
+            const maxImageHeight = isMobile ? 110 : 140;
             const imageScale = Math.min(maxImageWidth / dialogImage.width, maxImageHeight / dialogImage.height);
             dialogImage.setScale(imageScale);
             elements.push(dialogImage);
@@ -93,24 +102,25 @@ export class Modal {
 
         // Message
         const messageText = this.scene.add.text(centerX, messageY, message, {
-            fontSize: '18px',
+            fontSize: messageFontSize,
             fontFamily: 'Arial',
             color: '#333333',
             align: 'center',
-            wordWrap: { width: 350 },
+            wordWrap: { width: isMobile ? 320 : 350 },
             lineSpacing: 8
         }).setOrigin(0.5);
 
-        // Buttons
-        const cancelBtn = this.createIconButton(centerX - 100, buttonY, cancelText, 0xe0e0e0, 'icon-cancel', () => {
+        // Buttons - adjust spacing for mobile
+        const buttonSpacing = isMobile ? 80 : 100;
+        const cancelBtn = this.createIconButton(centerX - buttonSpacing, buttonY, cancelText, 0xe0e0e0, 'icon-cancel', () => {
             this.close();
             if (onCancel) onCancel();
-        });
+        }, isMobile);
 
-        const confirmBtn = this.createIconButton(centerX + 100, buttonY, confirmText, 0xFFB6C1, 'icon-tick', () => {
+        const confirmBtn = this.createIconButton(centerX + buttonSpacing, buttonY, confirmText, 0xFFB6C1, 'icon-tick', () => {
             this.close();
             if (onConfirm) onConfirm();
-        });
+        }, isMobile);
 
         elements.push(messageText, cancelBtn, confirmBtn);
         this.container.add(elements);
@@ -122,25 +132,36 @@ export class Modal {
     showInputDialog(title, placeholder, defaultValue, onConfirm) {
         this.createModalBase();
 
-        const centerX = GAME_WIDTH / 2;
+        const isMobile = isMobilePortrait();
+        const gameWidth = isMobile ? MOBILE_PORTRAIT_WIDTH : GAME_WIDTH;
+        const centerX = gameWidth / 2;
         const centerY = GAME_HEIGHT / 2;
 
-        // Title
-        const titleText = this.scene.add.text(centerX, centerY - 180, title, {
-            fontSize: '28px',
+        // Title - responsive with separate positioning
+        const titleFontSize = isMobile ? '24px' : '28px';
+        const titleY = isMobile ? centerY - 180 : centerY - 175;
+        const titleText = this.scene.add.text(centerX, titleY, title, {
+            fontSize: titleFontSize,
             fontFamily: 'Arial',
             color: '#333333',
-            fontStyle: 'bold'
+            fontStyle: 'bold',
+            align: 'center',
+            wordWrap: { width: isMobile ? 320 : 400 }
         }).setOrigin(0.5);
 
-        // Add girl-boy-name image under title
-        const childImage = this.scene.add.image(centerX, centerY - 75, 'girl-boy-name');
+        // Add girl-boy-name image under title - responsive with separate positioning
+        const imageY = isMobile ? centerY - 80 : centerY - 65;
+        const childImage = this.scene.add.image(centerX, imageY, 'girl-boy-name');
         childImage.setOrigin(0.5);
-        childImage.setDisplaySize(240, 150);
+        const imageWidth = isMobile ? 230 : 260;
+        const imageHeight = isMobile ? 145 : 165;
+        childImage.setDisplaySize(imageWidth, imageHeight);
 
-        // Add helper text about character limit
-        const helperText = this.scene.add.text(centerX, centerY + 70, 'Maximum 20 characters', {
-            fontSize: '12px',
+        // Add helper text about character limit - responsive with separate positioning
+        const helperFontSize = isMobile ? '11px' : '12px';
+        const helperY = isMobile ? centerY + 95 : centerY + 85;
+        const helperText = this.scene.add.text(centerX, helperY, 'Maximum 20 characters', {
+            fontSize: helperFontSize,
             fontFamily: 'Arial',
             color: '#666666'
         }).setOrigin(0.5);
@@ -160,17 +181,18 @@ export class Modal {
         const canvas = this.scene.game.canvas.getBoundingClientRect();
         
         // Calculate scale factors (canvas displayed size vs game logical size)
-        const scaleX = canvas.width / GAME_WIDTH;
+        const scaleX = canvas.width / gameWidth;
         const scaleY = canvas.height / GAME_HEIGHT;
         
-        // Input dimensions in logical coordinates
-        const inputWidth = 300;
-        const inputHeight = 45;
-        const fontSize = 20;
+        // Input dimensions in logical coordinates - responsive
+        const inputWidth = isMobile ? 280 : 300;
+        const inputHeight = isMobile ? 42 : 45;
+        const fontSize = isMobile ? 18 : 20;
         
-        // Logical position: centered horizontally, below the girl-boy image
-        const inputX = GAME_WIDTH / 2 - inputWidth / 2;
-        const inputY = GAME_HEIGHT / 2 + 30 - inputHeight / 2;
+        // Logical position: centered horizontally with separate positioning for mobile and desktop
+        const inputX = gameWidth / 2 - inputWidth / 2;
+        const inputYPosition = isMobile ? (GAME_HEIGHT / 2 - 45) : (GAME_HEIGHT / 2 + 45);
+        const inputY = inputYPosition - inputHeight / 2;
         
         // Add scroll offsets for absolute positioning
         const pageX = window.scrollX || window.pageXOffset || 0;
@@ -209,22 +231,23 @@ export class Modal {
             inputValue = e.target.value;
         });
 
-        // Buttons with icons
-        const buttonY = centerY + 120;
-        const cancelBtn = this.createIconButton(centerX - 100, buttonY, 'Cancel', 0xe0e0e0, 'icon-cancel', () => {
+        // Buttons with icons - responsive with separate positioning
+        const buttonY = isMobile ? centerY + 145 : centerY + 145;
+        const buttonSpacing = isMobile ? 80 : 100;
+        const cancelBtn = this.createIconButton(centerX - buttonSpacing, buttonY, 'Cancel', 0xe0e0e0, 'icon-cancel', () => {
             this.scene.isTextInputOpen = false;
             document.body.removeChild(inputElement);
             this.close();
-        });
+        }, isMobile);
 
-        const saveBtn = this.createIconButton(centerX + 100, buttonY, 'Save', 0xFFB6C1, 'icon-tick', () => {
+        const saveBtn = this.createIconButton(centerX + buttonSpacing, buttonY, 'Save', 0xFFB6C1, 'icon-tick', () => {
             this.scene.isTextInputOpen = false;
             document.body.removeChild(inputElement);
             this.close();
             if (onConfirm && inputValue.trim()) {
                 onConfirm(inputValue.trim());
             }
-        });
+        }, isMobile);
 
         // Allow Enter key to save
         inputElement.addEventListener('keypress', (e) => {
@@ -253,23 +276,25 @@ export class Modal {
         this.container = this.scene.add.container(0, 0);
         this.container.setDepth(3000);
 
-        const centerX = GAME_WIDTH / 2;
+        const isMobile = isMobilePortrait();
+        const gameWidth = isMobile ? MOBILE_PORTRAIT_WIDTH : GAME_WIDTH;
+        const centerX = gameWidth / 2;
         const centerY = GAME_HEIGHT / 2;
 
         // Semi-transparent overlay
         const overlay = this.scene.add.rectangle(
             centerX,
             centerY,
-            GAME_WIDTH,
+            gameWidth,
             GAME_HEIGHT,
             0x000000,
             0.7
         );
         overlay.setInteractive();
 
-        // Larger custom modal panel
-        const panelWidth = 620;
-        const panelHeight = 560;
+        // Responsive modal panel
+        const panelWidth = isMobile ? Math.floor(gameWidth * 0.90) : 620;
+        const panelHeight = isMobile ? 480 : 560;
         const panelX = centerX - panelWidth / 2;
         const panelY = centerY - panelHeight / 2;
         
@@ -291,24 +316,28 @@ export class Modal {
             20
         );
 
-        // Title
-        const titleText = this.scene.add.text(centerX, centerY - 220, title, {
-            fontSize: '36px',
+        // Title - responsive
+        const titleFontSize = isMobile ? '28px' : '36px';
+        const titleText = this.scene.add.text(centerX, centerY - (isMobile ? 190 : 220), title, {
+            fontSize: titleFontSize,
             fontFamily: 'Arial',
             color: '#333333',
-            fontStyle: 'bold'
+            fontStyle: 'bold',
+            align: 'center',
+            wordWrap: { width: panelWidth - 40 }
         }).setOrigin(0.5);
 
-        // Load world illustration
-        const loadImage = this.scene.add.image(centerX, centerY - 130, 'load-world-image');
-        const maxImageWidth = 420;
-        const maxImageHeight = 150;
+        // Load world illustration - responsive
+        const loadImage = this.scene.add.image(centerX, centerY - (isMobile ? 110 : 130), 'load-world-image');
+        const maxImageWidth = isMobile ? 300 : 420;
+        const maxImageHeight = isMobile ? 110 : 150;
         const imageScale = Math.min(maxImageWidth / loadImage.width, maxImageHeight / loadImage.height);
         loadImage.setScale(imageScale);
 
-        // Instruction text
-        const instructionText = this.scene.add.text(centerX, centerY - 35, 'Choose a saved world to load\ninto your current world.', {
-            fontSize: '18px',
+        // Instruction text - responsive
+        const instructionFontSize = isMobile ? '15px' : '18px';
+        const instructionText = this.scene.add.text(centerX, centerY - (isMobile ? 30 : 35), 'Choose a saved world to load\ninto your current world.', {
+            fontSize: instructionFontSize,
             fontFamily: 'Arial',
             color: '#333333',
             align: 'center',
@@ -319,35 +348,36 @@ export class Modal {
 
         if (items.length === 0) {
             // Empty state
+            const emptyFontSize = isMobile ? '16px' : '18px';
             const emptyText = this.scene.add.text(centerX, centerY + 35, emptyMessage, {
-                fontSize: '18px',
+                fontSize: emptyFontSize,
                 fontFamily: 'Arial',
                 color: '#333333',
                 align: 'center',
-                wordWrap: { width: 500 }
+                wordWrap: { width: isMobile ? panelWidth - 60 : 500 }
             }).setOrigin(0.5);
 
-            const closeBtn = this.createIconButton(centerX, centerY + 220, 'Cancel', 0xe0e0e0, 'icon-cancel', () => {
+            const closeBtn = this.createIconButton(centerX, centerY + (isMobile ? 180 : 220), 'Cancel', 0xe0e0e0, 'icon-cancel', () => {
                 this.close();
-            });
+            }, isMobile);
 
             this.container.add([emptyText, closeBtn]);
         } else {
             // Scrollable list items - define layout constants
             const listCenterX = centerX;
-            const listTopY = centerY + 10;
-            const itemHeight = 55;
+            const listTopY = centerY + (isMobile ? 5 : 10);
+            const itemHeight = isMobile ? 50 : 55;
             const visibleItems = 3;
             const contentTopPadding = 10;
             const contentBottomPadding = 10;
             // Visible height: show exactly 3 items with padding, prevent 4th item from peeking
             const listHeight = contentTopPadding + (visibleItems * itemHeight) - 5;
-            const listWidth = 440;
+            const listWidth = isMobile ? panelWidth - 60 : 440;
             const scrollbarGap = 12;
             const scrollbarWidth = 10;
             const scrollbarX = listCenterX + (listWidth / 2) + scrollbarGap + (scrollbarWidth / 2);
-            const itemRectHeight = 45;
-            const itemButtonWidth = 420;
+            const itemRectHeight = isMobile ? 40 : 45;
+            const itemButtonWidth = isMobile ? panelWidth - 80 : 420;
 
             console.log(`[Modal] Rendering ${items.length} saved worlds`);
 
@@ -361,7 +391,7 @@ export class Modal {
                 const itemBtn = this.createListItem(listCenterX, itemY, item, () => {
                     this.close();
                     if (onSelect) onSelect(item);
-                }, itemButtonWidth);
+                }, itemButtonWidth, isMobile);
                 scrollContainer.add(itemBtn);
             });
 
@@ -477,10 +507,10 @@ export class Modal {
                 scrollbarThumb.setVisible(false);
             }
 
-            // Cancel button with icon
-            const cancelBtn = this.createIconButton(centerX, centerY + 225, 'Cancel', 0xe0e0e0, 'icon-cancel', () => {
+            // Cancel button with icon - responsive positioning with more space on mobile
+            const cancelBtn = this.createIconButton(centerX, centerY + (isMobile ? 200 : 225), 'Cancel', 0xe0e0e0, 'icon-cancel', () => {
                 this.close();
-            });
+            }, isMobile);
 
             this.container.add([listBackground, scrollContainer, scrollbarTrack, scrollbarThumb, cancelBtn]);
         }
@@ -510,10 +540,12 @@ export class Modal {
         );
         overlay.setInteractive();
 
-        // Modal panel with rounded corners (taller for Load World dialog)
-        const panelWidth = 450;
-        const panelHeight = 430;
-        const panelX = GAME_WIDTH / 2 - panelWidth / 2;
+        // Responsive modal panel width and height
+        const isMobile = isMobilePortrait();
+        const gameWidth = isMobile ? MOBILE_PORTRAIT_WIDTH : GAME_WIDTH;
+        const panelWidth = isMobile ? Math.floor(gameWidth * 0.90) : 450; // 90% width on mobile, 450px on desktop
+        const panelHeight = isMobile ? 400 : 430; // Shorter on mobile for compact layout
+        const panelX = gameWidth / 2 - panelWidth / 2;
         const panelY = GAME_HEIGHT / 2 - panelHeight / 2;
         
         const graphics = this.scene.add.graphics();
@@ -578,10 +610,10 @@ export class Modal {
     /**
      * Create a list item button
      */
-    createListItem(x, y, item, onClick, buttonWidth = 330) {
+    createListItem(x, y, item, onClick, buttonWidth = 330, isMobile = false) {
         const button = this.scene.add.container(x, y);
         
-        const buttonHeight = 45;
+        const buttonHeight = isMobile ? 40 : 45;
         const cornerRadius = 12;
         
         // Create rounded button graphics
@@ -620,15 +652,20 @@ export class Modal {
         const hitArea = this.scene.add.rectangle(0, 0, buttonWidth, buttonHeight, 0xffffff, 0);
         hitArea.setInteractive({ useHandCursor: true });
 
-        const nameText = this.scene.add.text(-buttonWidth / 2 + 15, -2, item.name, {
-            fontSize: '20px',
+        // Responsive font sizes
+        const nameFontSize = isMobile ? '17px' : '20px';
+        const dateFontSize = isMobile ? '12px' : '14px';
+        const padding = isMobile ? 12 : 15;
+
+        const nameText = this.scene.add.text(-buttonWidth / 2 + padding, -2, item.name, {
+            fontSize: nameFontSize,
             fontFamily: 'Arial',
             color: '#2f2f2f',
             fontStyle: 'bold'
         }).setOrigin(0, 0.5);
 
-        const dateText = this.scene.add.text(buttonWidth / 2 - 15, -2, this.formatDate(item.savedAt), {
-            fontSize: '14px',
+        const dateText = this.scene.add.text(buttonWidth / 2 - padding, -2, this.formatDate(item.savedAt), {
+            fontSize: dateFontSize,
             fontFamily: 'Arial',
             color: '#4f4f4f'
         }).setOrigin(1, 0.5);
@@ -683,23 +720,25 @@ export class Modal {
         this.container = this.scene.add.container(0, 0);
         this.container.setDepth(3000);
 
-        const centerX = GAME_WIDTH / 2;
+        const isMobile = isMobilePortrait();
+        const gameWidth = isMobile ? MOBILE_PORTRAIT_WIDTH : GAME_WIDTH;
+        const centerX = gameWidth / 2;
         const centerY = GAME_HEIGHT / 2;
 
         // Semi-transparent overlay
         const overlay = this.scene.add.rectangle(
             centerX,
             centerY,
-            GAME_WIDTH,
+            gameWidth,
             GAME_HEIGHT,
             0x000000,
             0.7
         );
         overlay.setInteractive();
 
-        // Larger custom modal panel
-        const panelWidth = 620;
-        const panelHeight = 560;
+        // Responsive modal panel
+        const panelWidth = isMobile ? Math.floor(gameWidth * 0.90) : 620;
+        const panelHeight = isMobile ? 480 : 560;
         const panelX = centerX - panelWidth / 2;
         const panelY = centerY - panelHeight / 2;
         
@@ -721,43 +760,48 @@ export class Modal {
             20
         );
 
-        // Title
-        const titleText = this.scene.add.text(centerX, centerY - 220, 'Clear World', {
-            fontSize: '36px',
+        // Title - responsive font size
+        const titleFontSize = isMobile ? '28px' : '36px';
+        const titleText = this.scene.add.text(centerX, centerY - (isMobile ? 190 : 220), 'Clear World', {
+            fontSize: titleFontSize,
             fontFamily: 'Arial',
             color: '#333333',
-            fontStyle: 'bold'
+            fontStyle: 'bold',
+            align: 'center',
+            wordWrap: { width: panelWidth - 40 }
         }).setOrigin(0.5);
 
-        // Clear game illustration
-        const clearImage = this.scene.add.image(centerX, centerY - 105, 'clear-game-image');
-        const maxImageWidth = 420;
-        const maxImageHeight = 180;
+        // Clear game illustration - responsive size
+        const clearImage = this.scene.add.image(centerX, centerY - (isMobile ? 90 : 105), 'clear-game-image');
+        const maxImageWidth = isMobile ? 300 : 420;
+        const maxImageHeight = isMobile ? 130 : 180;
         const imageScale = Math.min(maxImageWidth / clearImage.width, maxImageHeight / clearImage.height);
         clearImage.setScale(imageScale);
 
-        // Message text
-        const messageText = this.scene.add.text(centerX, centerY + 95, 'This will erase everything\nin the current world.\n\nAre you sure?', {
-            fontSize: '20px',
+        // Message text - responsive size and positioning
+        const messageFontSize = isMobile ? '18px' : '20px';
+        const messageText = this.scene.add.text(centerX, centerY + (isMobile ? 70 : 95), 'This will erase everything\nin the current world.\n\nAre you sure?', {
+            fontSize: messageFontSize,
             fontFamily: 'Arial',
             color: '#333333',
             align: 'center',
             lineSpacing: 6
         }).setOrigin(0.5);
 
-        // Button Y position
-        const buttonY = centerY + 205;
+        // Button Y position - responsive
+        const buttonY = centerY + (isMobile ? 170 : 205);
+        const buttonSpacing = isMobile ? 80 : 100;
         
         // Cancel button with icon
-        const cancelBtn = this.createIconButton(centerX - 100, buttonY, 'Cancel', 0xe0e0e0, 'icon-cancel', () => {
+        const cancelBtn = this.createIconButton(centerX - buttonSpacing, buttonY, 'Cancel', 0xe0e0e0, 'icon-cancel', () => {
             this.close();
-        });
+        }, isMobile);
 
         // Clear button with icon
-        const clearBtn = this.createIconButton(centerX + 100, buttonY, 'Clear', 0xFFB6C1, 'icon-bin', () => {
+        const clearBtn = this.createIconButton(centerX + buttonSpacing, buttonY, 'Clear', 0xFFB6C1, 'icon-bin', () => {
             this.close();
             if (onConfirm) onConfirm();
-        });
+        }, isMobile);
 
         this.container.add([overlay, graphics, titleText, clearImage, messageText, cancelBtn, clearBtn]);
     }
@@ -765,25 +809,26 @@ export class Modal {
     /**
      * Create a button with an icon
      */
-    createIconButton(x, y, label, color, iconKey, onClick) {
+    createIconButton(x, y, label, color, iconKey, onClick, isMobile = false) {
         const button = this.scene.add.container(x, y);
         
-        const buttonWidth = 170;
-        const buttonHeight = 54;
+        const buttonWidth = isMobile ? 140 : 170;
+        const buttonHeight = isMobile ? 48 : 54;
         const bg = this.scene.add.rectangle(0, 0, buttonWidth, buttonHeight, color);
         bg.setStrokeStyle(3, 0x000000);
         bg.setInteractive({ useHandCursor: true });
 
-        // Icon on the left
-        const icon = this.scene.add.image(-45, 0, iconKey);
-        const maxIconWidth = 46;
-        const maxIconHeight = 46;
+        // Icon on the left - responsive size
+        const icon = this.scene.add.image(isMobile ? -38 : -45, 0, iconKey);
+        const maxIconWidth = isMobile ? 38 : 46;
+        const maxIconHeight = isMobile ? 38 : 46;
         const iconScale = Math.min(maxIconWidth / icon.width, maxIconHeight / icon.height);
         icon.setScale(iconScale);
 
-        // Text on the right
-        const text = this.scene.add.text(22, 0, label, {
-            fontSize: '18px',
+        // Text on the right - responsive size
+        const textFontSize = isMobile ? '16px' : '18px';
+        const text = this.scene.add.text(isMobile ? 18 : 22, 0, label, {
+            fontSize: textFontSize,
             fontFamily: 'Arial',
             color: '#000000',
             fontStyle: 'bold'
