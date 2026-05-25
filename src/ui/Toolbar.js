@@ -486,29 +486,29 @@ export class Toolbar {
         button.setScale(1.55); // Reduced scale for better tablet fit
         button.setDepth(1500); // Increased depth for mobile visibility
         
-        // Create tooltip with light pink background and black text
-        const tooltipStyle = {
-            fontSize: '12px',
-            fontFamily: 'Arial',
-            color: '#000000',
-            backgroundColor: '#FFB6C1',
-            padding: { x: 6, y: 4 }
-        };
-        
+        // Create tooltip OUTSIDE scaled container to match View tooltip clarity
+        // Position at world coordinates to avoid scaling blur
         let tooltipText = '';
         if (iconKey === 'icon-erase') {
             tooltipText = 'Erase';
         } else if (iconKey === 'icon-clear') {
-            tooltipText = 'Clear All';
+            tooltipText = 'Clear';
         }
         
         let tooltip = null;
         if (tooltipText) {
-            tooltip = this.scene.add.text(0, -35, tooltipText, tooltipStyle);
+            // Calculate world position: scaled container offset for tooltip above button
+            const tooltipY = Math.round(y - 54); // -35 * 1.55 scale, rounded to whole pixel
+            tooltip = this.scene.add.text(x, tooltipY, tooltipText, {
+                fontSize: '12px',
+                fontFamily: 'Arial',
+                color: '#000000',
+                backgroundColor: '#FFB6C1',
+                padding: { x: 6, y: 4 }
+            });
             tooltip.setOrigin(0.5, 1); // Position above the icon
             tooltip.setVisible(false);
             tooltip.setDepth(2000);
-            button.add([tooltip]);
         }
         
         // Subtle hover effect
