@@ -69,7 +69,7 @@ function calculateOptimalTileSize(gridCols, gridRows, gameWidth) {
  * Calculate the origin point for the isometric world
  * Centers the map properly within available screen space with safe margins
  */
-function calculateIsoWorldOrigin(tileWidth, tileHeight, gridCols, gridRows, gameWidth, gameHeight) {
+function calculateIsoWorldOrigin(tileWidth, tileHeight, gridCols, gridRows, gameWidth, gameHeight, isMobile) {
     const TOP_RESERVED = 85;
     const BOTTOM_RESERVED = 70;
     const VERTICAL_PADDING = 10;
@@ -92,8 +92,11 @@ function calculateIsoWorldOrigin(tileWidth, tileHeight, gridCols, gridRows, game
     // Center horizontally within safe area
     const originX = HORIZONTAL_MARGIN + (availableWidth - mapWidth) / 2 - minIsoX;
     
-    // Center vertically in available space
-    const originY = TOP_RESERVED + VERTICAL_PADDING + (availableHeight - mapHeight) / 2 - minIsoY;
+    // Center vertically in available space with responsive adjustment
+    // Desktop: Move island down to create more sky space above (add 30px)
+    // Mobile: Keep centered as-is for better use of limited screen space
+    const verticalAdjustment = isMobile ? 0 : 75;
+    const originY = TOP_RESERVED + VERTICAL_PADDING + (availableHeight - mapHeight) / 2 - minIsoY + verticalAdjustment;
     
     return { 
         originX, 
@@ -174,6 +177,16 @@ export class IsometricPlayScene extends Phaser.Scene {
         // World assets already loaded by GameScene
         // Load edit icon for return-to-edit button
         this.load.image('icon-edit', 'assets/icons/arrow_left.png');
+        
+        // Load cloud assets
+        this.load.image('cloud', 'assets/icons/cloud.png');
+        this.load.image('cloud-small', 'assets/icons/cloud_small.png');
+        this.load.image('cloud-smile', 'assets/icons/cloud_smile.png');
+        this.load.image('bunny-cloud', 'assets/icons/bunny_cloud.png');
+        this.load.image('bunny-face-cloud', 'assets/icons/bunny_face_cloud.png');
+        
+        // Load pink dolphin sprite
+        this.load.image('pink-dolphin', 'assets/icons/pink_dolphin.png');
     }
 
     create() {
@@ -198,13 +211,15 @@ export class IsometricPlayScene extends Phaser.Scene {
         });
 
         // Calculate world origin for proper centering with safe margins
+        const isMobile = isMobilePortrait();
         this.isoOrigin = calculateIsoWorldOrigin(
             this.isoTileWidth, 
             this.isoTileHeight, 
             gridCols, 
             gridRows, 
             gameWidth, 
-            gameHeight
+            gameHeight,
+            isMobile
         );
         console.log('[IsometricPlayScene] World origin:', {
             x: this.isoOrigin.originX.toFixed(2),
@@ -212,15 +227,8 @@ export class IsometricPlayScene extends Phaser.Scene {
             mapWidth: this.isoOrigin.mapWidth.toFixed(2)
         });
 
-        // Add water background
-        const bg = this.add.rectangle(
-            gameWidth / 2,
-            gameHeight / 2,
-            gameWidth,
-            gameHeight,
-            0x6EC6E8
-        );
-        bg.setDepth(-100);
+        // Create sky and water background with clouds and effects
+        this.createBackground();
 
         // Add sand island border behind grass grid
         this.createSandIsland();
@@ -359,6 +367,432 @@ export class IsometricPlayScene extends Phaser.Scene {
         
         // Stop this View scene
         this.scene.stop();
+    }
+
+    /**
+     * Create sky and water background with clouds and water effects
+     */
+    createBackground() {
+        const gameWidth = this.getGameWidth();
+        const gameHeight = this.getGameHeight();
+        const isMobile = isMobilePortrait();
+        
+        // Calculate horizon based on island position (top of the grid)
+        // The island top is at this.isoOrigin.originY
+        // Set horizon slightly above the island with responsive offset
+        // Mobile: smaller offset so water starts just above island tip
+        // Desktop: larger offset for more visible sky above island
+        const horizonOffset = isMobile ? 85 : 85;
+        const horizonY = this.isoOrigin.originY - horizonOffset;
+        
+        // Sky section (light blue) - from top of screen to horizon
+        const skyHeight = horizonY;
+        const sky = this.add.rectangle(
+            gameWidth / 2,
+            skyHeight / 2,
+            gameWidth,
+            skyHeight,
+            0x87CEEB // Light sky blue
+        );
+        sky.setDepth(-100);
+        
+        // Water section (darker blue) - from horizon to bottom of screen
+        const waterStartY = horizonY;
+        const waterHeight = gameHeight - horizonY;
+        const water = this.add.rectangle(
+            gameWidth / 2,
+            waterStartY + waterHeight / 2,
+            gameWidth,
+            waterHeight,
+            0x1E90FF // Darker water blue
+        );
+        water.setDepth(-100);
+        
+        // Store water bounds on scene for dolphin testing
+        this.waterStartY = waterStartY;
+        this.waterHeight = waterHeight;
+        
+        // Add water variations (subtle waves and patches)
+        this.createWaterDetails(waterStartY, waterHeight);
+        
+        // Add fluffy clouds to sky
+        this.createClouds(skyHeight);
+        
+        // Add occasional dolphin animation
+        this.createDolphin(waterStartY, waterHeight);
+    }
+
+    /**
+     * Create water surface details (waves and patches)
+     */
+    createWaterDetails(waterStartY, waterHeight) {
+        const gameWidth = this.getGameWidth();
+        const graphics = this.add.graphics();
+        graphics.setDepth(-95); // Just above water base
+        
+        // Add subtle horizontal wave shapes
+        const waveCount = 5;
+        for (let i = 0; i < waveCount; i++) {
+            const y = waterStartY + (waterHeight * (i + 1) / (waveCount + 1));
+            const waveWidth = gameWidth;
+            const waveHeight = 20;
+            
+            // Alternate between slightly lighter and darker blues
+            const color = i % 2 === 0 ? 0x4169E1 : 0x1C86EE;
+            graphics.fillStyle(color, 0.3);
+            
+            // Draw curved wave shape
+            graphics.beginPath();
+            graphics.moveTo(0, y);
+            for (let x = 0; x <= waveWidth; x += 20) {
+                const offset = Math.sin((x / waveWidth) * Math.PI * 3) * 8;
+                graphics.lineTo(x, y + offset);
+            }
+            graphics.lineTo(waveWidth, y + waveHeight);
+            graphics.lineTo(0, y + waveHeight);
+            graphics.closePath();
+            graphics.fill();
+        }
+        
+        // Add some random soft patches for texture
+        for (let i = 0; i < 8; i++) {
+            const x = Math.random() * gameWidth;
+            const y = waterStartY + Math.random() * waterHeight;
+            const radius = 20 + Math.random() * 30;
+            const color = Math.random() > 0.5 ? 0x1C86EE : 0x4169E1;
+            graphics.fillStyle(color, 0.2);
+            graphics.fillEllipse(x, y, radius, radius * 0.6);
+        }
+    }
+
+    /**
+     * Create moving clouds in the sky using image assets
+     */
+    createClouds(skyHeight) {
+        const gameWidth = this.getGameWidth();
+        
+        // Cloud asset types
+        const normalCloudTypes = ['cloud', 'cloud-small', 'cloud-smile'];
+        const bunnyCloudTypes = ['bunny-cloud', 'bunny-face-cloud'];
+        
+        // Create 3-5 clouds total
+        const cloudCount = 3 + Math.floor(Math.random() * 3); // 3, 4, or 5 clouds
+        const bunnyCount = 1; // At least one bunny cloud
+        const normalCount = cloudCount - bunnyCount;
+        
+        this.cloudSprites = [];
+        
+        // Create normal clouds
+        for (let i = 0; i < normalCount; i++) {
+            const cloudType = normalCloudTypes[Math.floor(Math.random() * normalCloudTypes.length)];
+            this.createMovingCloud(cloudType, skyHeight, gameWidth, false);
+        }
+        
+        // Create bunny clouds (faster)
+        for (let i = 0; i < bunnyCount; i++) {
+            const cloudType = bunnyCloudTypes[Math.floor(Math.random() * bunnyCloudTypes.length)];
+            this.createMovingCloud(cloudType, skyHeight, gameWidth, true);
+        }
+    }
+
+    /**
+     * Create a single moving cloud sprite
+     */
+    createMovingCloud(cloudType, skyHeight, gameWidth, isBunnyCloud) {
+        // Random starting position across visible screen for immediate visibility
+        const startX = Math.random() * gameWidth;
+        
+        // Calculate safe Y range in sky area with padding
+        const cloudTopPadding = 55;
+        const cloudBottomPadding = 80;
+        const minCloudY = cloudTopPadding;
+        const maxCloudY = Math.max(minCloudY + 20, skyHeight - cloudBottomPadding);
+        const y = Phaser.Math.Between(minCloudY, maxCloudY);
+        
+        // Create cloud sprite
+        const cloud = this.add.image(startX, y, cloudType);
+        cloud.setDepth(-98); // Below title, above background
+        
+        // Random scale - smaller for bunny clouds, even smaller for normal clouds
+        const scale = isBunnyCloud
+            ? 0.35 + Math.random() * 0.20  // 0.35-0.55
+            : 0.30 + Math.random() * 0.18; // 0.30-0.48
+        cloud.setScale(scale);
+        cloud.setAlpha(0.85); // Slight transparency
+        
+        // Speed: gentle and slow movement
+        // Normal clouds: 45-70 seconds, Bunny clouds: 30-45 seconds
+        const duration = isBunnyCloud 
+            ? 30000 + Math.random() * 15000  // 30-45 seconds
+            : 45000 + Math.random() * 25000; // 45-70 seconds
+        
+        this.cloudSprites.push(cloud);
+        
+        // Start animation
+        this.animateCloud(cloud, gameWidth, skyHeight, cloudType, isBunnyCloud, duration, y);
+    }
+
+    /**
+     * Animate cloud movement right-to-left with looping
+     */
+    animateCloud(cloud, gameWidth, skyHeight, cloudType, isBunnyCloud, duration, currentY) {
+        // Move from right to left
+        this.tweens.add({
+            targets: cloud,
+            x: -100, // Move off-screen left
+            duration: duration,
+            ease: 'Linear',
+            onComplete: () => {
+                // Reset cloud off-screen right and randomize properties
+                cloud.x = gameWidth + 100;
+                
+                // Keep cloud in sky area with padding
+                const cloudTopPadding = 55;
+                const cloudBottomPadding = 80;
+                const minCloudY = cloudTopPadding;
+                const maxCloudY = Math.max(minCloudY + 20, skyHeight - cloudBottomPadding);
+                cloud.y = Phaser.Math.Between(minCloudY, maxCloudY);
+                
+                // Random scale - smaller for bunny clouds, even smaller for normal clouds
+                const scale = isBunnyCloud
+                    ? 0.35 + Math.random() * 0.20  // 0.35-0.55
+                    : 0.30 + Math.random() * 0.18; // 0.30-0.48
+                cloud.setScale(scale);
+                
+                // Optionally change cloud type on loop
+                const shouldChangeType = Math.random() > 0.7;
+                if (shouldChangeType) {
+                    const normalCloudTypes = ['cloud', 'cloud-small', 'cloud-smile'];
+                    const bunnyCloudTypes = ['bunny-cloud', 'bunny-face-cloud'];
+                    const newType = isBunnyCloud 
+                        ? bunnyCloudTypes[Math.floor(Math.random() * bunnyCloudTypes.length)]
+                        : normalCloudTypes[Math.floor(Math.random() * normalCloudTypes.length)];
+                    cloud.setTexture(newType);
+                }
+                
+                // Randomize duration slightly for next loop
+                const newDuration = isBunnyCloud 
+                    ? 30000 + Math.random() * 15000  // 30-45 seconds
+                    : 45000 + Math.random() * 25000; // 45-70 seconds
+                
+                // Continue animation loop
+                this.animateCloud(cloud, gameWidth, skyHeight, cloudType, isBunnyCloud, newDuration, cloud.y);
+            }
+        });
+    }
+
+    /**
+     * Create dolphin animation that occasionally appears in water
+     */
+    createDolphin(waterStartY, waterHeight) {
+        const gameWidth = this.getGameWidth();
+        const gameHeight = this.getGameHeight();
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
+        
+        // Calculate island corner positions for bounds and click detection
+        const topCorner = this.gridToIso(0, 0);
+        const rightCorner = this.gridToIso(gridCols - 1, 0);
+        const bottomCorner = this.gridToIso(gridCols - 1, gridRows - 1);
+        const leftCorner = this.gridToIso(0, gridRows - 1);
+        const islandBottomY = bottomCorner.y;
+        
+        // Store island corners for click detection
+        this.islandCorners = { topCorner, rightCorner, bottomCorner, leftCorner };
+        
+        // Define safe dolphin Y range (only in visible open water below island)
+        const safeDolphinYMin = islandBottomY + 50; // Padding below island
+        const safeDolphinYMax = gameHeight - 60; // Padding from bottom edge
+        const safeYRange = safeDolphinYMax - safeDolphinYMin;
+        
+        // Store bounds on scene for click/tap testing
+        this.islandBottomY = islandBottomY;
+        this.safeDolphinYMin = safeDolphinYMin;
+        this.safeDolphinYMax = safeDolphinYMax;
+        this.safeYRange = safeYRange;
+        
+        // TESTING: Upper water band for visible dolphin testing
+        // This makes the dolphin appear in the upper visible water area for easy testing
+        const testDolphinYMin = waterStartY + 30;
+        const testDolphinYMax = waterStartY + 120;
+        
+        // Create pink dolphin sprite
+        const dolphin = this.add.sprite(0, 0, 'pink-dolphin');
+        dolphin.setDepth(-90); // Above water details, below island
+        dolphin.setVisible(false); // Start hidden
+        dolphin.setAlpha(0); // Start transparent
+        
+        // Scale dolphin based on target width (responsive) - smaller and cuter
+        const dolphinTargetWidth = isMobilePortrait() ? 32 : 48;
+        const dolphinScale = dolphinTargetWidth / dolphin.width;
+        dolphin.setScale(dolphinScale);
+        
+        this.dolphinSprite = dolphin; // Store reference for testing
+        
+        // Dolphin animation function: natural peek/dive with subtle arc
+        const animateDolphin = (targetY = null, targetX = null) => {
+            // Stop any existing dolphin animation
+            this.tweens.killTweensOf(dolphin);
+            
+            // Use upper visible water band for better visibility
+            // Use provided Y (clamped to test band) or random Y in test band
+            const waterY = targetY !== null 
+                ? Phaser.Math.Clamp(targetY, testDolphinYMin, testDolphinYMax)
+                : testDolphinYMin + Math.random() * (testDolphinYMax - testDolphinYMin);
+            
+            // Use provided X or random X position in safe area
+            const centerX = targetX !== null 
+                ? Math.max(60, Math.min(targetX, gameWidth - 60))  // Keep away from edges
+                : 60 + Math.random() * (gameWidth - 120); // Random position with margins
+            
+            // Arc animation parameters for natural peek
+            const startX = centerX + 25; // Start slightly right
+            const peakX = centerX; // Peak at center
+            const endX = centerX - 25; // End slightly left
+            const baseY = waterY + 8; // Just below water surface
+            const peakY = waterY - 18; // Low peek above water
+            
+            // Set initial position and show dolphin
+            dolphin.setPosition(startX, baseY);
+            dolphin.setRotation(0);
+            dolphin.setVisible(true);
+            dolphin.setAlpha(0);
+            
+            // Optional: Create subtle splash circle at entry point
+            const splash = this.add.circle(centerX, waterY, 8, 0xFFFFFF, 0.4);
+            splash.setDepth(-91); // Just below dolphin
+            this.tweens.add({
+                targets: splash,
+                radius: 20,
+                alpha: 0,
+                duration: 400,
+                ease: 'Sine.easeOut',
+                onComplete: () => splash.destroy()
+            });
+            
+            // Single smooth continuous arc animation (no pause)
+            const duration = 900 + Math.random() * 300; // 900-1200ms
+            const peakHeight = 18; // Low arc only
+            
+            this.tweens.add({
+                targets: dolphin,
+                x: endX,
+                duration: duration,
+                ease: 'Linear',
+                onUpdate: (tween) => {
+                    const progress = tween.progress;
+                    
+                    // Y: smooth arc using sine curve
+                    const arcProgress = Math.sin(progress * Math.PI);
+                    const currentY = baseY - (peakHeight * arcProgress);
+                    dolphin.setY(currentY);
+                    
+                    // Alpha: fade in quickly, stay visible, fade out at end
+                    let alpha;
+                    if (progress < 0.15) {
+                        alpha = progress / 0.15; // Fade in first 15%
+                    } else if (progress > 0.80) {
+                        alpha = (1 - progress) / 0.20; // Fade out last 20%
+                    } else {
+                        alpha = 1; // Solid in middle
+                    }
+                    dolphin.setAlpha(alpha);
+                },
+                onComplete: () => {
+                    // Optional: Create exit splash
+                    const exitSplash = this.add.circle(endX, waterY, 6, 0xFFFFFF, 0.3);
+                    exitSplash.setDepth(-91);
+                    this.tweens.add({
+                        targets: exitSplash,
+                        radius: 16,
+                        alpha: 0,
+                        duration: 350,
+                        ease: 'Sine.easeOut',
+                        onComplete: () => exitSplash.destroy()
+                    });
+                    
+                    // Clean up: hide sprite and reset
+                    dolphin.setVisible(false);
+                    dolphin.setAlpha(0);
+                    dolphin.setRotation(0);
+                    
+                    // Schedule next appearance (~30 seconds with variation)
+                    // Only schedule if this was an automatic animation
+                    if (targetY === null && targetX === null) {
+                        this.time.delayedCall(25000 + Math.random() * 10000, () => animateDolphin());
+                    }
+                }
+            });
+        };
+        
+        // Store animation function for manual testing
+        this.triggerDolphin = animateDolphin;
+        
+        // Start automatic dolphin quickly for testing (3 seconds)
+        // Then continues every ~30 seconds
+        if (safeYRange >= 80) {
+            // Start first dolphin after a short delay for testing
+            this.time.delayedCall(3000, () => animateDolphin());
+        } else {
+            console.log('[IsometricPlayScene] Limited safe water - automatic dolphin disabled, but manual testing available');
+        }
+        
+        // TESTING FEATURE: Click/tap water to show dolphin immediately
+        // This is for testing purposes and can be removed later
+        this.input.on('pointerdown', (pointer) => {
+            const clickX = pointer.x;
+            const clickY = pointer.y;
+            
+            // Check if click is in water area (below horizon and not on island)
+            if (clickY >= waterStartY && !this.isPointOnIsland(clickX, clickY)) {
+                // TESTING: Use upper water test band for easy visibility
+                // Clamp clicked Y to upper visible water area
+                const dolphinY = Phaser.Math.Clamp(clickY, testDolphinYMin, testDolphinYMax);
+                console.log('[IsometricPlayScene] Test click: Triggering dolphin at X=' + clickX.toFixed(0) + ', Y=' + dolphinY.toFixed(0));
+                animateDolphin(dolphinY, clickX);
+            }
+        });
+    }
+
+    /**
+     * Check if a point is inside the island diamond area
+     */
+    isPointOnIsland(x, y) {
+        if (!this.islandCorners) return false;
+        
+        const { topCorner, rightCorner, bottomCorner, leftCorner } = this.islandCorners;
+        
+        // Add padding to make the island hit area slightly larger
+        const padding = this.isoTileWidth * 0.6;
+        
+        // Check if point is inside the diamond using cross product method
+        // Island is a diamond/rhombus shape with 4 corners
+        const isInside = this.pointInDiamond(
+            x, y,
+            topCorner.x, topCorner.y - padding,
+            rightCorner.x + padding, rightCorner.y,
+            bottomCorner.x, bottomCorner.y + padding,
+            leftCorner.x - padding, leftCorner.y
+        );
+        
+        return isInside;
+    }
+
+    /**
+     * Check if point is inside a diamond/rhombus
+     */
+    pointInDiamond(px, py, tx, ty, rx, ry, bx, by, lx, ly) {
+        // Use cross product to check if point is on the correct side of each edge
+        const d1 = (px - tx) * (ry - ty) - (py - ty) * (rx - tx);
+        const d2 = (px - rx) * (by - ry) - (py - ry) * (bx - rx);
+        const d3 = (px - bx) * (ly - by) - (py - by) * (lx - bx);
+        const d4 = (px - lx) * (ty - ly) - (py - ly) * (tx - lx);
+        
+        // Point is inside if all cross products have the same sign
+        const hasNeg = (d1 < 0) || (d2 < 0) || (d3 < 0) || (d4 < 0);
+        const hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0) || (d4 > 0);
+        
+        return !(hasNeg && hasPos);
     }
 
     /**
