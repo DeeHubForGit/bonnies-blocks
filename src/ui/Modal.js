@@ -15,6 +15,12 @@ export class Modal {
      * Show a toast notification (small temporary message)
      */
     showToast(message, duration = 2000) {
+        // Temporarily hide world name input to prevent DOM element from covering Phaser toast
+        const shouldHideWorldNameInput = this.scene.worldNameInput && this.scene.worldNameInput.style.display !== 'none';
+        if (shouldHideWorldNameInput) {
+            this.scene.worldNameInput.style.display = 'none';
+        }
+        
         const isMobile = isMobilePortrait();
         const gameWidth = isMobile ? MOBILE_PORTRAIT_WIDTH : GAME_WIDTH;
         const toast = this.scene.add.container(gameWidth / 2, 95);
@@ -36,7 +42,7 @@ export class Modal {
         }).setOrigin(0.5);
 
         toast.add([bg, text]);
-        toast.setDepth(3000);
+        toast.setDepth(40000);
 
         // Fade in
         toast.setAlpha(0);
@@ -54,7 +60,19 @@ export class Modal {
                 alpha: 0,
                 duration: 300,
                 ease: 'Power2',
-                onComplete: () => toast.destroy()
+                onComplete: () => {
+                    toast.destroy();
+                    
+                    // Restore world name input after toast is gone
+                    if (shouldHideWorldNameInput && this.scene.worldNameInput && this.scene.gameMode === 'build') {
+                        this.scene.worldNameInput.style.display = 'block';
+                        
+                        // Reposition input if positioning function exists
+                        if (this.scene.positionWorldNameField) {
+                            this.scene.positionWorldNameField();
+                        }
+                    }
+                }
             });
         });
     }
