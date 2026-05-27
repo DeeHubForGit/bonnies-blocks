@@ -48,10 +48,89 @@
             }
         }
 
+        /* Rotate screen overlay - mobile landscape only */
+        #rotate-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(135deg, #7CB342 0%, #8BC34A 50%, #9CCC65 100%);
+            z-index: 10000;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        #rotate-overlay .rotate-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: rotate-pulse 2s ease-in-out infinite;
+        }
+
+        #rotate-overlay .rotate-title {
+            font-family: 'Fredoka', 'Comic Sans MS', cursive, sans-serif;
+            font-weight: 700;
+            font-size: 32px;
+            color: #FFFFFF;
+            text-align: center;
+            margin: 0 0 15px 0;
+            text-shadow: 3px 3px 0 #5A9216,
+                         -1px -1px 0 #5A9216,
+                         1px -1px 0 #5A9216,
+                         -1px 1px 0 #5A9216,
+                         1px 1px 0 #5A9216;
+            line-height: 1.3;
+        }
+
+        #rotate-overlay .rotate-message {
+            font-family: 'Fredoka', 'Comic Sans MS', cursive, sans-serif;
+            font-weight: 600;
+            font-size: 20px;
+            color: #FFFFFF;
+            text-align: center;
+            margin: 0;
+            text-shadow: 2px 2px 0 #5A9216,
+                         -1px -1px 0 #5A9216,
+                         1px -1px 0 #5A9216,
+                         -1px 1px 0 #5A9216,
+                         1px 1px 0 #5A9216;
+            line-height: 1.4;
+        }
+
+        @keyframes rotate-pulse {
+            0%, 100% {
+                transform: rotate(0deg) scale(1);
+            }
+            25% {
+                transform: rotate(-20deg) scale(1.1);
+            }
+            75% {
+                transform: rotate(20deg) scale(1.1);
+            }
+        }
+
+        /* Show overlay only on mobile devices in landscape orientation */
+        @media (max-width: 600px) and (orientation: landscape) {
+            #rotate-overlay {
+                display: flex;
+            }
+        }
+
     </style>
 </head>
 <body>
     <div id="game-container"></div>
+    
+    <!-- Mobile landscape rotation prompt -->
+    <div id="rotate-overlay">
+        <div class="rotate-icon">📱</div>
+        <h1 class="rotate-title">Please rotate your phone</h1>
+        <p class="rotate-message">Bunnies World works best in portrait mode</p>
+    </div>
     
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.js"></script>
     <script type="module" src="src/main.js"></script>
