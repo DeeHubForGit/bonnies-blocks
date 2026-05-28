@@ -926,6 +926,166 @@ export class IsometricPlayScene extends Phaser.Scene {
     }
 
     /**
+     * Add sparkle effect for glitter pink tiles
+     * Matches Edit Mode sparkle appearance with multi-color twinkle
+     */
+    addSparkleEffect(container, scale = 1.0) {
+        // Always animate in Isometric Play Mode
+        const animate = true;
+
+        // Sparkle color scheme - vibrant pinks with white highlights for star-field effect
+        // Easy to customize for different magical blocks in the future
+        const sparkleColors = {
+            tiny: 0xD88AB2,      // Medium dusty pink - base star layer
+            medium: 0xC2185B,    // Deep rich pink - main twinkling stars
+            bright: 0xFFB3D9,    // Pale pink - eye-catching highlights
+            glow: 0xFFFFFF       // Pure white - magical glow sparkles
+        };
+
+        // Define sparkle particle configurations - star-field density
+        // Positions spread across the tile for even distribution
+        const sparkleConfig = [
+            // Tiny sparkle dots - base star field (12 particles)
+            { x: -14, y: -12, size: 0.7, type: 'tiny' },
+            { x: -12, y: 3, size: 0.6, type: 'tiny' },
+            { x: -8, y: -15, size: 0.6, type: 'tiny' },
+            { x: -4, y: 7, size: 0.7, type: 'tiny' },
+            { x: -2, y: -7, size: 0.6, type: 'tiny' },
+            { x: 2, y: 14, size: 0.7, type: 'tiny' },
+            { x: 5, y: -2, size: 0.6, type: 'tiny' },
+            { x: 7, y: 9, size: 0.7, type: 'tiny' },
+            { x: 10, y: -13, size: 0.6, type: 'tiny' },
+            { x: 13, y: 4, size: 0.7, type: 'tiny' },
+            { x: 15, y: 12, size: 0.6, type: 'tiny' },
+            { x: -16, y: 8, size: 0.7, type: 'tiny' },
+            
+            // Medium sparkles - main twinkling layer (6 particles)
+            { x: -10, y: -5, size: 1.2, type: 'medium' },
+            { x: -6, y: 11, size: 1.3, type: 'medium' },
+            { x: 0, y: -11, size: 1.1, type: 'medium' },
+            { x: 8, y: 2, size: 1.4, type: 'medium' },
+            { x: 12, y: -8, size: 1.2, type: 'medium' },
+            { x: 14, y: 14, size: 1.3, type: 'medium' },
+            
+            // Bright highlights - prominent sparkles (3 particles)
+            { x: -13, y: 13, size: 1.6, type: 'bright' },
+            { x: 4, y: -14, size: 1.8, type: 'bright' },
+            { x: 11, y: 7, size: 1.7, type: 'bright' },
+            
+            // Glow sparkles - magical white glints (2 particles with glow effect)
+            { x: -3, y: -3, size: 2.0, type: 'glow', hasGlow: true },
+            { x: 9, y: 11, size: 2.2, type: 'glow', hasGlow: true }
+        ];
+
+        // Create each sparkle particle
+        sparkleConfig.forEach((config, index) => {
+            // Use color based on sparkle type
+            const sparkleColor = sparkleColors[config.type];
+            
+            // Add glow effect behind brightest sparkles
+            if (config.hasGlow) {
+                const glow = this.add.circle(
+                    config.x * scale,
+                    config.y * scale,
+                    config.size * scale * 2.5, // Larger glow halo
+                    sparkleColor
+                );
+                glow.setDepth(5);
+                glow.setAlpha(0.15); // Very subtle glow
+                container.add(glow);
+                
+                // Animate glow for living effect
+                if (animate) {
+                    this.tweens.add({
+                        targets: glow,
+                        alpha: { from: 0.15, to: 0.02 },
+                        scale: { from: 1.0, to: 1.15 },
+                        duration: 900 + index * 60,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: 'Sine.easeInOut',
+                        delay: index * 280
+                    });
+                }
+            }
+            
+            const sparkle = this.add.circle(
+                config.x * scale, 
+                config.y * scale, 
+                config.size * scale, 
+                sparkleColor
+            );
+            sparkle.setDepth(6);
+            container.add(sparkle);
+
+            if (animate) {
+                // Different animation styles for star-field twinkling effect
+                if (config.type === 'tiny') {
+                    // Quick, subtle twinkle - small stars blinking
+                    sparkle.setAlpha(0.5);
+                    this.tweens.add({
+                        targets: sparkle,
+                        alpha: { from: 0.5, to: 0.05 },
+                        duration: 800 + index * 70,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: 'Quad.easeInOut', // Quicker ease for pop
+                        delay: index * 120
+                    });
+                } else if (config.type === 'medium') {
+                    // Noticeable twinkle with scale - main star layer
+                    sparkle.setAlpha(0.75);
+                    this.tweens.add({
+                        targets: sparkle,
+                        alpha: { from: 0.75, to: 0.1 },
+                        scale: { from: 1.0, to: 0.7 },
+                        duration: 700 + index * 60,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: 'Cubic.easeInOut', // More dramatic easing
+                        delay: index * 140
+                    });
+                } else if (config.type === 'bright') {
+                    // Strong pop effect - brighten quickly then dim
+                    sparkle.setAlpha(0.85);
+                    this.tweens.add({
+                        targets: sparkle,
+                        alpha: { from: 0.85, to: 0.2 },
+                        scale: { from: 1.0, to: 1.2 },
+                        duration: 650 + index * 50,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: 'Cubic.easeInOut', // Smooth pop effect
+                        delay: index * 200
+                    });
+                } else if (config.type === 'glow') {
+                    // Magical glow - slow prominent pulse
+                    sparkle.setAlpha(0.95);
+                    this.tweens.add({
+                        targets: sparkle,
+                        alpha: { from: 0.95, to: 0.3 },
+                        scale: { from: 1.0, to: 1.35 },
+                        duration: 900 + index * 80,
+                        yoyo: true,
+                        repeat: -1,
+                        ease: 'Sine.easeInOut',
+                        delay: index * 250
+                    });
+                }
+            } else {
+                // Reduced motion: static sparkles with layered opacity for depth
+                const staticAlpha = {
+                    'tiny': 0.35,
+                    'medium': 0.55,
+                    'bright': 0.7,
+                    'glow': 0.8
+                };
+                sparkle.setAlpha(staticAlpha[config.type]);
+            }
+        });
+    }
+
+    /**
      * Render flat colored/pattern terrain tile (painted ground)
      */
     renderFlatTerrainTile(col, row, blockType) {
@@ -969,6 +1129,30 @@ export class IsometricPlayScene extends Phaser.Scene {
             patternText.setOrigin(0.5);
             patternText.setDepth(depth + 2);
             this.worldSprites.push(patternText);
+        } else if (blockType === BLOCK_TYPES.GLITTER_PINK) {
+            // Glitter pink tile - add sparkle effects matching Edit Mode
+            const sparkleContainer = this.add.container(pos.x, pos.y);
+            sparkleContainer.setDepth(depth + 2);
+
+            // Use smaller scale to fit sparkles inside the isometric diamond tile
+            const sparkleScale = this.scaleFactor * 0.6;
+            this.addSparkleEffect(sparkleContainer, sparkleScale);
+
+            // Create diamond mask to clip sparkles inside tile bounds
+            const maskGraphics = this.make.graphics({ x: 0, y: 0, add: false });
+            maskGraphics.fillStyle(0xffffff);
+            maskGraphics.beginPath();
+            maskGraphics.moveTo(pos.x, pos.y - halfHeight); // Top
+            maskGraphics.lineTo(pos.x + halfWidth, pos.y); // Right
+            maskGraphics.lineTo(pos.x, pos.y + halfHeight); // Bottom
+            maskGraphics.lineTo(pos.x - halfWidth, pos.y); // Left
+            maskGraphics.closePath();
+            maskGraphics.fillPath();
+            
+            const mask = maskGraphics.createGeometryMask();
+            sparkleContainer.setMask(mask);
+
+            this.worldSprites.push(sparkleContainer);
         } else if (blockType === BLOCK_TYPES.WATER) {
             // Water tile - add animated wave lines for isometric view
             // Use container for proper positioning and animation
