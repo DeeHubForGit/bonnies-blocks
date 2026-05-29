@@ -500,9 +500,9 @@ export class GameScene extends Phaser.Scene {
             const isMobile = window.innerWidth <= 600;
             
             if (isPortrait) {
-                // Portrait: smaller input, positioned after Save button on line 2
-                const inputWidth = 80;
-                const gapAfterSave = 4;
+                // Portrait: wider input, positioned after Save button on line 2
+                const inputWidth = 105;
+                const gapAfterSave = 8;
                 const gapBeforePlay = 24; // Increased gap for clearer separation
                 const inputX = this.saveButtonX + 21 + gapAfterSave; // 21 = half of 42px button
                 const playX = inputX + inputWidth + gapBeforePlay + (iconSize / 2);
@@ -540,9 +540,9 @@ export class GameScene extends Phaser.Scene {
             let inputWidth, gapAfterSave, inputX, inputY, inputHeight, fontSize;
             
             if (isPortrait) {
-                // Portrait: smaller input on line 2, after Save button
-                inputWidth = 80;
-                gapAfterSave = 4;
+                // Portrait: wider input on line 2, after Save button
+                inputWidth = 105;
+                gapAfterSave = 8;
                 inputX = this.saveButtonX + 21 + gapAfterSave; // 21 = half of 42px button
                 inputY = 58; // Align with buttons on line 2 (72 - 14 = 58)
                 inputHeight = 28;
@@ -606,8 +606,8 @@ export class GameScene extends Phaser.Scene {
         if (this.settingsButton) {
             this.settingsButton.x = buttonX;
             this.settingsButton.y = buttonY;
-            // Scale settings button consistently
-            const targetHeight = iconSize;
+            // Scale settings button consistently with mobile scaling
+            const targetHeight = iconSize * (isMobile ? 1.18 : 1);
             this.settingsButton.setDisplaySize(targetHeight * this.settingsButtonAspectRatio, targetHeight);
         }
         
@@ -617,7 +617,7 @@ export class GameScene extends Phaser.Scene {
         const newButton = this.add.container(buttonX, buttonY);
         const newIcon = this.add.image(0, 0, 'icon-new');
         newIcon.setOrigin(0.5);
-        const newScale = (iconSize + 4) / Math.max(newIcon.width, newIcon.height);
+        const newScale = ((iconSize + 4) * (isMobile ? 1.18 : 1)) / Math.max(newIcon.width, newIcon.height);
         newIcon.setScale(newScale);
         newIcon.setInteractive({ useHandCursor: true });
         newIcon.on('pointerdown', () => this.createNewWorld());
@@ -639,7 +639,7 @@ export class GameScene extends Phaser.Scene {
         const loadButton = this.add.container(buttonX, buttonY);
         const loadIcon = this.add.image(0, 0, 'icon-load');
         loadIcon.setOrigin(0.5);
-        const loadScale = iconSize / Math.max(loadIcon.width, loadIcon.height);
+        const loadScale = (iconSize * (isMobile ? 1.18 : 1)) / Math.max(loadIcon.width, loadIcon.height);
         loadIcon.setScale(loadScale);
         loadIcon.setInteractive({ useHandCursor: true });
         loadIcon.on('pointerdown', () => this.loadWorld());
@@ -661,7 +661,7 @@ export class GameScene extends Phaser.Scene {
         const saveButton = this.add.container(buttonX, buttonY);
         const saveIcon = this.add.image(0, 0, 'icon-save');
         saveIcon.setOrigin(0.5);
-        const saveScale = iconSize / Math.max(saveIcon.width, saveIcon.height);
+        const saveScale = (iconSize * (isMobile ? 1.18 : 1)) / Math.max(saveIcon.width, saveIcon.height);
         saveIcon.setScale(saveScale);
         saveIcon.setInteractive({ useHandCursor: true });
         saveIcon.on('pointerdown', () => this.saveWorld());
@@ -715,7 +715,7 @@ export class GameScene extends Phaser.Scene {
         this.worldNameTooltip = this.add.text(0, 0, 'Game Name', tooltipStyle);
         this.worldNameTooltip.setOrigin(0.5, 0);
         this.worldNameTooltip.setVisible(false);
-        this.worldNameTooltip.setDepth(2000);
+        this.worldNameTooltip.setDepth(30000);
         
         // Add event listeners for tooltip
         inputElement.addEventListener('mouseenter', () => {
