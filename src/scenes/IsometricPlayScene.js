@@ -187,6 +187,10 @@ export class IsometricPlayScene extends Phaser.Scene {
         
         // Load pink dolphin sprite
         this.load.image('pink-dolphin', 'assets/icons/pink_dolphin.png');
+        
+        // Load fire sprites for dragon animation
+        this.load.image('fire1', 'assets/icons/fire1.png');
+        this.load.image('fire2', 'assets/icons/fire2.png');
     }
 
     create() {
@@ -1295,7 +1299,166 @@ export class IsometricPlayScene extends Phaser.Scene {
         // Objects further down the screen (higher x+y) render above those further up
         sprite.setDepth(pos.x + pos.y);
         
+        // Make interactive animals
+        if (blockType === BLOCK_TYPES.DRAGON) {
+            sprite.setInteractive({ useHandCursor: true });
+            sprite.on('pointerdown', () => {
+                this.playDragonFire(sprite);
+            });
+        } else if (blockType === BLOCK_TYPES.BUNNY) {
+            sprite.setInteractive({ useHandCursor: true });
+            sprite.on('pointerdown', () => {
+                this.playBunnyBounce(sprite);
+            });
+        } else if (blockType === BLOCK_TYPES.UNICORN) {
+            sprite.setInteractive({ useHandCursor: true });
+            sprite.on('pointerdown', () => {
+                this.playUnicornRainbow(sprite);
+            });
+        }
+        
         this.worldSprites.push(sprite);
+    }
+
+    /**
+     * Play bunny bounce animation
+     * Bounces the bunny sprite up and down
+     */
+    playBunnyBounce(bunny) {
+        // Prevent multiple simultaneous bounces
+        if (bunny.isBouncing) return;
+        
+        bunny.isBouncing = true;
+        const originalY = bunny.y;
+        const bounceHeight = 15; // pixels to move up
+        
+        // Bounce up
+        this.tweens.add({
+            targets: bunny,
+            y: originalY - bounceHeight,
+            duration: 180,
+            ease: 'Sine.easeOut',
+            onComplete: () => {
+                // Bounce down
+                this.tweens.add({
+                    targets: bunny,
+                    y: originalY,
+                    duration: 220,
+                    ease: 'Bounce.easeOut',
+                    onComplete: () => {
+                        bunny.isBouncing = false;
+                    }
+                });
+            }
+        });
+    }
+
+    /**
+     * Play unicorn rainbow effect
+     * Shows a rainbow arc near/behind the unicorn
+     */
+    playUnicornRainbow(unicorn) {
+        // Prevent multiple simultaneous effects
+        if (unicorn.isShowingRainbow) return;
+        
+        unicorn.isShowingRainbow = true;
+        
+        // Create rainbow graphic
+        const rainbow = this.add.graphics();
+        rainbow.setAlpha(0);
+        
+        // Position rainbow behind and above unicorn
+        const rainbowX = unicorn.x;
+        const rainbowY = unicorn.y - unicorn.displayHeight * 0.6;
+        const rainbowWidth = unicorn.displayWidth * 1.2;
+        const stripeThickness = Math.max(2, rainbowWidth * 0.06);
+        
+        // Rainbow colors (pastel: pink, peach, yellow, mint, aqua, lavender)
+        const colors = [0xFFB6D9, 0xFFD1A6, 0xFFF4A3, 0xB9F6C8, 0xBDEFFF, 0xD7C6FF];
+        
+        // Draw rainbow arcs
+        colors.forEach((color, index) => {
+            const radius = rainbowWidth * 0.5 - (index * stripeThickness);
+            rainbow.lineStyle(stripeThickness, color, 1);
+            rainbow.beginPath();
+            rainbow.arc(rainbowX, rainbowY, radius, Math.PI, 0, false);
+            rainbow.strokePath();
+        });
+        
+        // Render behind unicorn
+        rainbow.setDepth(unicorn.depth - 1);
+        
+        // Fade in, hold, fade out
+        this.tweens.add({
+            targets: rainbow,
+            alpha: 1,
+            duration: 150,
+            ease: 'Power2',
+            onComplete: () => {
+                // Hold for a moment
+                this.time.delayedCall(300, () => {
+                    // Fade out
+                    this.tweens.add({
+                        targets: rainbow,
+                        alpha: 0,
+                        duration: 200,
+                        ease: 'Power2',
+                        onComplete: () => {
+                            rainbow.destroy();
+                            unicorn.isShowingRainbow = false;
+                        }
+                    });
+                });
+            }
+        });
+    }
+
+    /**
+     * Play dragon fire breathing animation
+     * Shows fire sprites near the dragon's mouth without changing the dragon texture
+     */
+    playDragonFire(dragon) {
+        // Prevent multiple simultaneous animations
+        if (dragon.isBreathingFire) return;
+        
+        dragon.isBreathingFire = true;
+        
+        // Position fire near dragon's mouth (dragon faces left)
+        const fireX = dragon.x - dragon.displayWidth * 0.6;
+        const fireY = dragon.y - dragon.displayHeight * 0.22;
+        
+        // Create fire sprite starting with fire1
+        const fire = this.add.image(fireX, fireY, 'fire1');
+        fire.setOrigin(0.5, 0.5);
+        
+        // Size fire1 (smaller)
+        fire.displayWidth = dragon.displayWidth * 0.35;
+        fire.scaleY = fire.scaleX; // Preserve aspect ratio
+        
+        // Render fire in front of dragon
+        fire.setDepth(dragon.depth + 1);
+        
+        // Show fire1 for 150ms
+        this.time.delayedCall(150, () => {
+            // Switch to fire2 (larger)
+            fire.setTexture('fire2');
+            fire.displayWidth = dragon.displayWidth * 0.55;
+            fire.scaleY = fire.scaleX; // Preserve aspect ratio
+        });
+        
+        // After 450ms total (150 + 300), fade out fire2
+        this.time.delayedCall(450, () => {
+            this.tweens.add({
+                targets: fire,
+                alpha: 0,
+                duration: 150,
+                ease: 'Power2',
+                onComplete: () => {
+                    fire.destroy();
+                    dragon.isBreathingFire = false;
+                }
+            });
+        });
     }
 
     /**
