@@ -56,6 +56,7 @@ export class GameScene extends Phaser.Scene {
         this.gameMode = GAME_MODES.BUILD; // Start in Build mode
         this.currentWorldName = null; // Track which saved world is currently open
         this.worldNameInput = null; // HTML input element for world name
+        this.viewportResizeTimeout = null; // Timeout for handling viewport resize on mobile
     }
 
     /**
@@ -733,6 +734,23 @@ export class GameScene extends Phaser.Scene {
         
         inputElement.addEventListener('blur', () => {
             this.isTextInputOpen = false;
+            
+            // Fix mobile layout after keyboard closes
+            // Use delay because iOS needs time to close the keyboard
+            setTimeout(() => {
+                // Reset scroll position to prevent game being cut off
+                window.scrollTo(0, 0);
+                
+                // Reposition the game name input
+                if (this.positionWorldNameField) {
+                    this.positionWorldNameField();
+                }
+                
+                // Refresh Phaser scale to ensure game is properly positioned
+                if (this.scale && this.scale.refresh) {
+                    this.scale.refresh();
+                }
+            }, 300);
         });
         
         // Stop keyboard event propagation to prevent game interference
@@ -747,6 +765,21 @@ export class GameScene extends Phaser.Scene {
         inputElement.addEventListener('keypress', (e) => {
             e.stopPropagation();
         });
+        
+        // Listen for visualViewport resize (iOS keyboard open/close)
+        if (window.visualViewport) {
+            window.visualViewport.addEventListener('resize', () => {
+                // Debounce viewport resize events
+                clearTimeout(this.viewportResizeTimeout);
+                this.viewportResizeTimeout = setTimeout(() => {
+                    // Reset scroll and reposition after viewport changes
+                    window.scrollTo(0, 0);
+                    if (this.positionWorldNameField) {
+                        this.positionWorldNameField();
+                    }
+                }, 300);
+            });
+        }
     }
     
     createFooterText() {
