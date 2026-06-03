@@ -178,7 +178,7 @@ export class Modal {
         // Add helper text about character limit - responsive with separate positioning
         const helperFontSize = isMobile ? '11px' : '12px';
         const helperY = isMobile ? centerY + 95 : centerY + 85;
-        const helperText = this.scene.add.text(centerX, helperY, 'Maximum 20 characters', {
+        const helperText = this.scene.add.text(centerX, helperY, 'Maximum 14 characters', {
             fontSize: helperFontSize,
             fontFamily: 'Arial',
             color: '#666666'
@@ -192,7 +192,7 @@ export class Modal {
         inputElement.type = 'text';
         inputElement.value = inputValue;
         inputElement.placeholder = placeholder;
-        inputElement.maxLength = 20; // Limit to 20 characters
+        inputElement.maxLength = 14; // Limit to 14 characters
         inputElement.style.position = 'absolute';
         
         // Position relative to canvas with proper scale handling

@@ -12,12 +12,12 @@ export function getChildName() {
 
 /**
  * Save the child name to localStorage
- * Enforces 20-character limit
+ * Enforces 14-character limit
  */
 export function saveChildName(name) {
     const trimmed = name ? name.trim() : '';
-    // Enforce 20-character limit
-    const limited = trimmed.substring(0, 20);
+    // Enforce 14-character limit
+    const limited = trimmed.substring(0, 14);
     const finalName = limited || 'Bunnies';
     localStorage.setItem(CHILD_NAME_KEY, finalName);
     return finalName;
