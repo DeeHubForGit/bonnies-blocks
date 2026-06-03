@@ -55,7 +55,17 @@ export class GameScene extends Phaser.Scene {
         this.prefersReducedMotion = this.checkReducedMotion(); // Check for reduced motion preference
         this.gameMode = GAME_MODES.BUILD; // Start in Build mode
         this.currentWorldName = null; // Track which saved world is currently open
-        this.worldNameInput = null; // HTML input element for world name
+        
+        // Phaser fake input for game name (to avoid iPhone Safari zoom)
+        this.nameInputContainer = null;
+        this.nameInputBackground = null;
+        this.nameInputText = null;
+        this.nameInputCursor = null;
+        this.nameInputValue = '';
+        this.nameInputPreviousValue = ''; // Store previous valid value for revert on blank
+        this.nameInputActive = false;
+        this.nameInputMaxLength = 14;
+        
         this.viewportResizeTimeout = null; // Timeout for handling viewport resize on mobile
     }
 
@@ -502,7 +512,7 @@ export class GameScene extends Phaser.Scene {
             
             if (isPortrait) {
                 // Portrait: wider input, positioned after Save button on line 2
-                const inputWidth = 105;
+                const inputWidth = 115;
                 const gapAfterSave = 8;
                 const gapBeforePlay = 24; // Increased gap for clearer separation
                 const inputX = this.saveButtonX + 21 + gapAfterSave; // 21 = half of 42px button
@@ -511,7 +521,7 @@ export class GameScene extends Phaser.Scene {
                 button.y = 72; // Match updated button row position
             } else {
                 // Non-portrait original logic
-                const inputWidth = isMobile ? 120 : 130;
+                const inputWidth = isMobile ? 150 : 160;
                 const gapAfterSave = isMobile ? 8 : 12;
                 const gapBeforePlay = isMobile ? 32 : 2;
                 const inputX = this.saveButtonX + 48 + gapAfterSave;
@@ -526,50 +536,24 @@ export class GameScene extends Phaser.Scene {
     }
     
     positionWorldNameField() {
-        if (this.worldNameInput) {
+        // Phaser-based input repositions itself via container
+        if (this.nameInputContainer) {
             const isPortrait = isMobilePortrait();
-            this.worldNameInput.style.display = 'block'; // Always show input
             
-            const canvas = this.game.canvas.getBoundingClientRect();
-            
-            // Calculate scale factors (canvas displayed size vs game logical size)
-            const gameWidth = this.getGameWidth();
-            const gameHeight = this.getGameHeight();
-            const scaleX = canvas.width / gameWidth;
-            const scaleY = canvas.height / gameHeight;
-
-            let inputWidth, gapAfterSave, inputX, inputY, inputHeight, fontSize;
+            let inputX, inputY;
             
             if (isPortrait) {
-                // Portrait: wider input on line 2, after Save button
-                inputWidth = 105;
-                gapAfterSave = 8;
-                inputX = this.saveButtonX + 21 + gapAfterSave; // 21 = half of 42px button
-                inputY = 58; // Align with buttons on line 2 (72 - 14 = 58)
-                inputHeight = 28;
-                fontSize = 12; // Slightly smaller font
+                const gapAfterSave = 8;
+                inputX = this.saveButtonX + 21 + gapAfterSave;
+                inputY = 58;
             } else {
-                // Non-portrait original positioning
                 const isMobile = window.innerWidth <= 600;
-                inputWidth = isMobile ? 120 : 130;
-                gapAfterSave = isMobile ? 8 : 12;
+                const gapAfterSave = isMobile ? 8 : 12;
                 inputX = this.saveButtonX + 24 + gapAfterSave;
                 inputY = 18;
-                inputHeight = 28;
-                fontSize = 14;
             }
-
-            // Add scroll offsets for absolute positioning relative to document body
-            const pageX = window.scrollX || window.pageXOffset || 0;
-            const pageY = window.scrollY || window.pageYOffset || 0;
-
-            // Apply scale to position and size
-            this.worldNameInput.style.left = (canvas.left + pageX + inputX * scaleX) + 'px';
-            this.worldNameInput.style.top = (canvas.top + pageY + inputY * scaleY) + 'px';
-            this.worldNameInput.style.right = 'auto';
-            this.worldNameInput.style.width = (inputWidth * scaleX) + 'px';
-            this.worldNameInput.style.height = (inputHeight * scaleY) + 'px';
-            this.worldNameInput.style.fontSize = (fontSize * scaleY) + 'px';
+            
+            this.nameInputContainer.setPosition(inputX, inputY);
         }
     }
 
@@ -683,103 +667,116 @@ export class GameScene extends Phaser.Scene {
     }
 
     createWorldNameField() {
-        // Create HTML input element for world name
-        const inputElement = document.createElement('input');
-        inputElement.type = 'text';
-        inputElement.placeholder = '';
-        inputElement.maxLength = 20; // Limit to 20 characters
-        inputElement.style.position = 'absolute';
-        inputElement.style.right = '15px';
-        inputElement.style.top = '18px';
-        inputElement.style.width = '150px';
-        inputElement.style.height = '28px';
-        inputElement.style.padding = '4px 8px';
-        inputElement.style.fontSize = '14px';
-        inputElement.style.fontFamily = 'Arial';
-        inputElement.style.border = '2px solid #333333';
-        inputElement.style.borderRadius = '4px';
-        inputElement.style.backgroundColor = '#FFFFFF';
-        inputElement.style.outline = 'none';
-        inputElement.style.zIndex = '500'; // Lower z-index to prevent overlap with canvas elements
+        // Create Phaser-based fake input (avoid iPhone Safari zoom)
+        const isPortrait = isMobilePortrait();
         
-        document.body.appendChild(inputElement);
-        this.worldNameInput = inputElement;
+        let inputWidth, inputX, inputY, inputHeight, fontSize;
         
-        // Create Phaser tooltip for the world name field
-        const tooltipStyle = {
-            fontSize: '12px',
-            fontFamily: 'Arial',
-            color: '#000000',
-            backgroundColor: '#FFB6C1',
-            padding: { x: 6, y: 4 }
-        };
-        this.worldNameTooltip = this.add.text(0, 0, 'Game Name', tooltipStyle);
-        this.worldNameTooltip.setOrigin(0.5, 0);
-        this.worldNameTooltip.setVisible(false);
-        this.worldNameTooltip.setDepth(30000);
-        
-        // Add event listeners for tooltip
-        inputElement.addEventListener('mouseenter', () => {
-            this.updateWorldNameTooltipPosition();
-            this.worldNameTooltip.setVisible(true);
-        });
-        inputElement.addEventListener('mouseleave', () => {
-            this.worldNameTooltip.setVisible(false);
-        });
-        
-        // Prevent Phaser keyboard handling from interfering with typing
-        inputElement.addEventListener('focus', () => {
-            this.isTextInputOpen = true;
-        });
-        
-        inputElement.addEventListener('blur', () => {
-            this.isTextInputOpen = false;
-            
-            // Fix mobile layout after keyboard closes
-            // Use delay because iOS needs time to close the keyboard
-            setTimeout(() => {
-                // Reset scroll position to prevent game being cut off
-                window.scrollTo(0, 0);
-                
-                // Reposition the game name input
-                if (this.positionWorldNameField) {
-                    this.positionWorldNameField();
-                }
-                
-                // Refresh Phaser scale to ensure game is properly positioned
-                if (this.scale && this.scale.refresh) {
-                    this.scale.refresh();
-                }
-            }, 300);
-        });
-        
-        // Stop keyboard event propagation to prevent game interference
-        inputElement.addEventListener('keydown', (e) => {
-            e.stopPropagation();
-        });
-        
-        inputElement.addEventListener('keyup', (e) => {
-            e.stopPropagation();
-        });
-        
-        inputElement.addEventListener('keypress', (e) => {
-            e.stopPropagation();
-        });
-        
-        // Listen for visualViewport resize (iOS keyboard open/close)
-        if (window.visualViewport) {
-            window.visualViewport.addEventListener('resize', () => {
-                // Debounce viewport resize events
-                clearTimeout(this.viewportResizeTimeout);
-                this.viewportResizeTimeout = setTimeout(() => {
-                    // Reset scroll and reposition after viewport changes
-                    window.scrollTo(0, 0);
-                    if (this.positionWorldNameField) {
-                        this.positionWorldNameField();
-                    }
-                }, 300);
-            });
+        if (isPortrait) {
+            inputWidth = 115;
+            const gapAfterSave = 8;
+            inputX = this.saveButtonX + 21 + gapAfterSave;
+            inputY = 58;
+            inputHeight = 28;
+            fontSize = 12;
+        } else {
+            const isMobile = window.innerWidth <= 600;
+            inputWidth = isMobile ? 150 : 160;
+            const gapAfterSave = isMobile ? 8 : 12;
+            inputX = this.saveButtonX + 24 + gapAfterSave;
+            inputY = 18;
+            inputHeight = 28;
+            fontSize = 14;
         }
+        
+        // Create container
+        this.nameInputContainer = this.add.container(inputX, inputY);
+        this.nameInputContainer.setDepth(1000);
+        
+        // Background rectangle
+        this.nameInputBackground = this.add.rectangle(0, 0, inputWidth, inputHeight, 0xFFFFFF);
+        this.nameInputBackground.setOrigin(0, 0);
+        this.nameInputBackground.setStrokeStyle(2, 0x333333);
+        this.nameInputBackground.setInteractive({ useHandCursor: true });
+        
+        // Text display
+        this.nameInputText = this.add.text(8, inputHeight / 2, '', {
+            fontSize: fontSize + 'px',
+            fontFamily: 'Arial',
+            color: '#000000'
+        });
+        this.nameInputText.setOrigin(0, 0.5);
+        
+        // Cursor (blinking line)
+        this.nameInputCursor = this.add.rectangle(8, inputHeight / 2 - fontSize / 2, 1, fontSize, 0x000000);
+        this.nameInputCursor.setOrigin(0, 0);
+        this.nameInputCursor.setVisible(false);
+        
+        // Add to container
+        this.nameInputContainer.add([this.nameInputBackground, this.nameInputText, this.nameInputCursor]);
+        
+        // Click to activate
+        this.nameInputBackground.on('pointerdown', () => {
+            this.activateNameInput();
+        });
+        
+        // Cursor blink animation
+        this.time.addEvent({
+            delay: 500,
+            callback: () => {
+                if (this.nameInputActive && this.nameInputCursor) {
+                    this.nameInputCursor.setVisible(!this.nameInputCursor.visible);
+                }
+            },
+            loop: true
+        });
+        
+        // Keyboard input
+        this.input.keyboard.on('keydown', (event) => {
+            if (!this.nameInputActive) return;
+            
+            const key = event.key;
+            
+            // Prevent default for keys we handle
+            if (key === 'Backspace' || key === 'Enter' || key === 'Escape' || key === ' ' || (key.length === 1 && /[a-zA-Z0-9]/.test(key))) {
+                event.preventDefault();
+                event.stopPropagation();
+            }
+            
+            if (key === 'Backspace') {
+                if (this.nameInputValue.length > 0) {
+                    this.nameInputValue = this.nameInputValue.slice(0, -1);
+                    this.updateNameInputDisplay();
+                }
+            } else if (key === 'Enter' || key === 'Escape') {
+                this.deactivateNameInput();
+            } else if (key.length === 1 && /[a-zA-Z0-9]/.test(key)) {
+                if (this.nameInputValue.length < this.nameInputMaxLength) {
+                    this.nameInputValue += key;
+                    this.updateNameInputDisplay();
+                }
+            } else if (key === ' ') {
+                const canAddSpace =
+                    this.nameInputValue.trim() !== '' &&
+                    !this.nameInputValue.endsWith(' ') &&
+                    this.nameInputValue.length < this.nameInputMaxLength;
+
+                if (canAddSpace) {
+                    this.nameInputValue += ' ';
+                    this.updateNameInputDisplay();
+                }
+            }
+        });
+        
+        // Click away to deactivate
+        this.input.on('pointerdown', (pointer) => {
+            if (this.nameInputActive) {
+                const bounds = this.nameInputBackground.getBounds();
+                if (!bounds.contains(pointer.x, pointer.y)) {
+                    this.deactivateNameInput();
+                }
+            }
+        });
     }
     
     createFooterText() {
@@ -801,28 +798,49 @@ export class GameScene extends Phaser.Scene {
         this.footerLabel.setDepth(100); // Low depth so it stays behind most UI
     }
     
-    updateWorldNameTooltipPosition() {
-        if (this.worldNameInput && this.worldNameTooltip) {
-            const rect = this.worldNameInput.getBoundingClientRect();
-            const canvas = this.game.canvas.getBoundingClientRect();
-            // Position tooltip relative to canvas coordinates
-            const x = rect.left + rect.width / 2 - canvas.left;
-            const y = rect.bottom - canvas.top + 5; // Position below input
-            this.worldNameTooltip.setPosition(x, y);
+    activateNameInput() {
+        this.nameInputActive = true;
+        this.isTextInputOpen = true; // Prevent game controls from interfering
+        this.nameInputPreviousValue = this.nameInputValue; // Store previous value for revert
+        this.nameInputCursor.setVisible(true);
+        this.nameInputBackground.setStrokeStyle(2, 0x4CAF50); // Green border when active
+        this.updateNameInputDisplay();
+    }
+    
+    deactivateNameInput() {
+        this.nameInputActive = false;
+        this.isTextInputOpen = false; // Re-enable game controls
+        this.nameInputCursor.setVisible(false);
+        this.nameInputBackground.setStrokeStyle(2, 0x333333); // Gray border when inactive
+        
+        // Trim spaces and revert to previous value if blank
+        const trimmed = this.nameInputValue.trim();
+        if (trimmed === '') {
+            this.nameInputValue = this.nameInputPreviousValue;
+        } else {
+            this.nameInputValue = trimmed;
         }
+        this.updateNameInputDisplay();
+    }
+    
+    updateNameInputDisplay() {
+        if (!this.nameInputText) return;
+        
+        const displayText = this.nameInputValue || '';
+        this.nameInputText.setText(displayText);
+        
+        // Position cursor after text
+        const textWidth = this.nameInputText.width;
+        this.nameInputCursor.setX(8 + textWidth);
     }
 
     getWorldNameInputValue() {
-        if (!this.worldNameInput) {
-            return '';
-        }
-        return (this.worldNameInput.value || '').trim();
+        return (this.nameInputValue || '').trim();
     }
 
     setWorldNameInputValue(name) {
-        if (this.worldNameInput) {
-            this.worldNameInput.value = name || '';
-        }
+        this.nameInputValue = name || '';
+        this.updateNameInputDisplay();
     }
 
     getSaveName() {
@@ -905,12 +923,12 @@ export class GameScene extends Phaser.Scene {
         if (this.titleText) this.titleText.setVisible(visible);
         if (this.settingsButton) this.settingsButton.setVisible(visible);
         
-        // Hide/show world name input field
-        if (this.worldNameInput) {
-            this.worldNameInput.style.display = visible ? 'block' : 'none';
-        }
-        if (this.worldNameTooltip) {
-            this.worldNameTooltip.setVisible(false); // Always hide tooltip when changing modes
+        // Hide/show world name input field (Phaser-based)
+        if (this.nameInputContainer) {
+            this.nameInputContainer.setVisible(visible);
+            if (!visible && this.nameInputActive) {
+                this.deactivateNameInput(); // Deactivate if switching away
+            }
         }
         
         // Hide/show grid and hover indicator
@@ -1974,10 +1992,6 @@ export class GameScene extends Phaser.Scene {
             this.beforeUnloadHandler = null;
         }
         
-        // Clean up HTML input element when scene shuts down
-        if (this.worldNameInput && this.worldNameInput.parentNode) {
-            this.worldNameInput.parentNode.removeChild(this.worldNameInput);
-            this.worldNameInput = null;
-        }
+        // Phaser-based input is automatically destroyed with scene
     }
 }
