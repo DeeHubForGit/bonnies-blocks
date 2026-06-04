@@ -65,6 +65,7 @@ export class GameScene extends Phaser.Scene {
         this.nameInputPreviousValue = ''; // Store previous valid value for revert on blank
         this.nameInputActive = false;
         this.nameInputMaxLength = 14;
+        this.hiddenNameInput = null; // Hidden HTML input for mobile keyboard
         
         this.viewportResizeTimeout = null; // Timeout for handling viewport resize on mobile
     }
@@ -715,7 +716,23 @@ export class GameScene extends Phaser.Scene {
         // Add to container
         this.nameInputContainer.add([this.nameInputBackground, this.nameInputText, this.nameInputCursor]);
         
-        // Click to activate
+        // Create hidden HTML input for mobile keyboard
+        this.hiddenNameInput = document.createElement('input');
+        this.hiddenNameInput.type = 'text';
+        this.hiddenNameInput.maxLength = this.nameInputMaxLength;
+        this.hiddenNameInput.value = this.nameInputValue;
+        this.hiddenNameInput.style.position = 'fixed';
+        this.hiddenNameInput.style.left = '0';
+        this.hiddenNameInput.style.top = '0';
+        this.hiddenNameInput.style.width = '1px';
+        this.hiddenNameInput.style.height = '1px';
+        this.hiddenNameInput.style.opacity = '0.01';
+        this.hiddenNameInput.style.pointerEvents = 'none';
+        this.hiddenNameInput.style.zIndex = '-1';
+        this.hiddenNameInput.style.fontSize = '16px'; // Prevent iOS zoom
+        document.body.appendChild(this.hiddenNameInput);
+        
+        // Click to activate (or refocus if already active)
         this.nameInputBackground.on('pointerdown', () => {
             this.activateNameInput();
         });
@@ -731,41 +748,55 @@ export class GameScene extends Phaser.Scene {
             loop: true
         });
         
-        // Keyboard input
-        this.input.keyboard.on('keydown', (event) => {
+        // Stop keyboard event propagation to prevent Phaser from intercepting
+        this.hiddenNameInput.addEventListener('keydown', (event) => {
             if (!this.nameInputActive) return;
             
-            const key = event.key;
+            // Stop event from reaching Phaser/game controls
+            event.stopPropagation();
+            event.stopImmediatePropagation();
             
-            // Prevent default for keys we handle
-            if (key === 'Backspace' || key === 'Enter' || key === 'Escape' || key === ' ' || (key.length === 1 && /[a-zA-Z0-9]/.test(key))) {
+            // Only preventDefault for Enter/Escape (let normal typing through)
+            if (event.key === 'Enter' || event.key === 'Escape') {
                 event.preventDefault();
-                event.stopPropagation();
+                this.deactivateNameInput();
+            }
+        });
+        
+        this.hiddenNameInput.addEventListener('keypress', (event) => {
+            if (!this.nameInputActive) return;
+            
+            // Stop event from reaching Phaser/game controls
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+        });
+        
+        this.hiddenNameInput.addEventListener('keyup', (event) => {
+            if (!this.nameInputActive) return;
+            
+            // Stop event from reaching Phaser/game controls
+            event.stopPropagation();
+            event.stopImmediatePropagation();
+        });
+        
+        // Listen to hidden input for all text entry (mobile and desktop)
+        this.hiddenNameInput.addEventListener('input', (event) => {
+            if (!this.nameInputActive) return;
+            
+            let newValue = event.target.value;
+            
+            // Apply space rules: no leading spaces, no consecutive spaces
+            newValue = newValue.replace(/^\s+/, ''); // Remove leading spaces
+            newValue = newValue.replace(/\s{2,}/g, ' '); // Replace multiple spaces with single space
+            
+            // Limit length
+            if (newValue.length > this.nameInputMaxLength) {
+                newValue = newValue.substring(0, this.nameInputMaxLength);
             }
             
-            if (key === 'Backspace') {
-                if (this.nameInputValue.length > 0) {
-                    this.nameInputValue = this.nameInputValue.slice(0, -1);
-                    this.updateNameInputDisplay();
-                }
-            } else if (key === 'Enter' || key === 'Escape') {
-                this.deactivateNameInput();
-            } else if (key.length === 1 && /[a-zA-Z0-9]/.test(key)) {
-                if (this.nameInputValue.length < this.nameInputMaxLength) {
-                    this.nameInputValue += key;
-                    this.updateNameInputDisplay();
-                }
-            } else if (key === ' ') {
-                const canAddSpace =
-                    this.nameInputValue.trim() !== '' &&
-                    !this.nameInputValue.endsWith(' ') &&
-                    this.nameInputValue.length < this.nameInputMaxLength;
-
-                if (canAddSpace) {
-                    this.nameInputValue += ' ';
-                    this.updateNameInputDisplay();
-                }
-            }
+            this.nameInputValue = newValue;
+            this.hiddenNameInput.value = newValue; // Sync back if we modified it
+            this.updateNameInputDisplay();
         });
         
         // Click away to deactivate
@@ -805,6 +836,17 @@ export class GameScene extends Phaser.Scene {
         this.nameInputCursor.setVisible(true);
         this.nameInputBackground.setStrokeStyle(2, 0x4CAF50); // Green border when active
         this.updateNameInputDisplay();
+        
+        // Focus hidden input for keyboard capture (both mobile and desktop)
+        if (this.hiddenNameInput) {
+            this.hiddenNameInput.value = this.nameInputValue;
+            // Use setTimeout to ensure focus happens after current event completes
+            setTimeout(() => {
+                if (this.hiddenNameInput && this.nameInputActive) {
+                    this.hiddenNameInput.focus();
+                }
+            }, 0);
+        }
     }
     
     deactivateNameInput() {
@@ -812,6 +854,11 @@ export class GameScene extends Phaser.Scene {
         this.isTextInputOpen = false; // Re-enable game controls
         this.nameInputCursor.setVisible(false);
         this.nameInputBackground.setStrokeStyle(2, 0x333333); // Gray border when inactive
+        
+        // Blur hidden input
+        if (this.hiddenNameInput) {
+            this.hiddenNameInput.blur();
+        }
         
         // Trim spaces and revert to previous value if blank
         const trimmed = this.nameInputValue.trim();
@@ -1990,6 +2037,12 @@ export class GameScene extends Phaser.Scene {
         if (this.beforeUnloadHandler) {
             window.removeEventListener('beforeunload', this.beforeUnloadHandler);
             this.beforeUnloadHandler = null;
+        }
+        
+        // Clean up hidden HTML input
+        if (this.hiddenNameInput && this.hiddenNameInput.parentNode) {
+            this.hiddenNameInput.parentNode.removeChild(this.hiddenNameInput);
+            this.hiddenNameInput = null;
         }
         
         // Phaser-based input is automatically destroyed with scene
