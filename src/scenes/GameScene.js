@@ -840,12 +840,7 @@ export class GameScene extends Phaser.Scene {
         // Focus hidden input for keyboard capture (both mobile and desktop)
         if (this.hiddenNameInput) {
             this.hiddenNameInput.value = this.nameInputValue;
-            // Use setTimeout to ensure focus happens after current event completes
-            setTimeout(() => {
-                if (this.hiddenNameInput && this.nameInputActive) {
-                    this.hiddenNameInput.focus();
-                }
-            }, 0);
+            this.hiddenNameInput.focus();
         }
     }
     
