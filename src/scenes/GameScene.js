@@ -65,7 +65,9 @@ export class GameScene extends Phaser.Scene {
         this.nameInputPreviousValue = ''; // Store previous valid value for revert on blank
         this.nameInputActive = false;
         this.nameInputMaxLength = 14;
-        this.hiddenNameInput = null; // Hidden HTML input for mobile keyboard
+        this.hiddenNameInput = null; // Hidden HTML input for desktop keyboard
+        this.customKeyboard = null; // Custom keyboard for mobile
+        this.customKeyboardVisible = false;
         
         this.viewportResizeTimeout = null; // Timeout for handling viewport resize on mobile
     }
@@ -785,6 +787,9 @@ export class GameScene extends Phaser.Scene {
             
             let newValue = event.target.value;
             
+            // Convert to lowercase for consistent storage
+            newValue = newValue.toLowerCase();
+            
             // Apply space rules: no leading spaces, no consecutive spaces
             newValue = newValue.replace(/^\s+/, ''); // Remove leading spaces
             newValue = newValue.replace(/\s{2,}/g, ' '); // Replace multiple spaces with single space
@@ -801,12 +806,19 @@ export class GameScene extends Phaser.Scene {
         
         // Click away to deactivate
         this.input.on('pointerdown', (pointer) => {
-            if (this.nameInputActive) {
-                const bounds = this.nameInputBackground.getBounds();
-                if (!bounds.contains(pointer.x, pointer.y)) {
-                    this.deactivateNameInput();
-                }
+            if (!this.nameInputActive) return;
+
+            const bounds = this.nameInputBackground.getBounds();
+
+            if (bounds.contains(pointer.x, pointer.y)) {
+                return;
             }
+
+            if (this.customKeyboardVisible) {
+                return;
+            }
+
+            this.deactivateNameInput();
         });
     }
     
@@ -837,8 +849,11 @@ export class GameScene extends Phaser.Scene {
         this.nameInputBackground.setStrokeStyle(2, 0x4CAF50); // Green border when active
         this.updateNameInputDisplay();
         
-        // Focus hidden input for keyboard capture (both mobile and desktop)
-        if (this.hiddenNameInput) {
+        // Show custom keyboard on mobile, use hidden input on desktop
+        const isMobile = isMobilePortrait();
+        if (isMobile) {
+            this.showCustomKeyboard();
+        } else if (this.hiddenNameInput) {
             this.hiddenNameInput.value = this.nameInputValue;
             this.hiddenNameInput.focus();
         }
@@ -849,6 +864,11 @@ export class GameScene extends Phaser.Scene {
         this.isTextInputOpen = false; // Re-enable game controls
         this.nameInputCursor.setVisible(false);
         this.nameInputBackground.setStrokeStyle(2, 0x333333); // Gray border when inactive
+        
+        // Hide custom keyboard if visible
+        if (this.customKeyboardVisible) {
+            this.hideCustomKeyboard();
+        }
         
         // Blur hidden input
         if (this.hiddenNameInput) {
@@ -868,21 +888,226 @@ export class GameScene extends Phaser.Scene {
     updateNameInputDisplay() {
         if (!this.nameInputText) return;
         
-        const displayText = this.nameInputValue || '';
+        const displayText = this.formatWorldNameInput(this.nameInputValue || '');
         this.nameInputText.setText(displayText);
         
         // Position cursor after text
         const textWidth = this.nameInputText.width;
         this.nameInputCursor.setX(8 + textWidth);
     }
+    
+    formatWorldNameInput(name) {
+        // Remove leading spaces, collapse multiple spaces, capitalize first letter of each word
+        return (name || '')
+            .trimStart()
+            .replace(/\s{2,}/g, ' ')
+            .replace(/\b\w/g, char => char.toUpperCase());
+    }
 
     getWorldNameInputValue() {
-        return (this.nameInputValue || '').trim();
+        return this.formatWorldNameInput((this.nameInputValue || '').trim());
     }
 
     setWorldNameInputValue(name) {
-        this.nameInputValue = name || '';
+        // Store as lowercase internally
+        this.nameInputValue = (name || '').toLowerCase();
         this.updateNameInputDisplay();
+    }
+    
+    showCustomKeyboard() {
+        if (this.customKeyboardVisible) return;
+        
+        const gameWidth = this.getGameWidth();
+        const gameHeight = this.getGameHeight();
+        const isMobile = isMobilePortrait();
+        
+        // Create keyboard container
+        this.customKeyboard = this.add.container(0, 0);
+        this.customKeyboard.setDepth(50000); // Above everything
+        
+        // Semi-transparent background overlay
+        const overlay = this.add.rectangle(0, 0, gameWidth, gameHeight, 0x000000, 0.3);
+        overlay.setOrigin(0, 0);
+        overlay.setInteractive();
+        this.customKeyboard.add(overlay);
+        
+        // Keyboard panel background
+        const keyboardHeight = isMobile ? 200 : 180;
+        const keyboardY = gameHeight - keyboardHeight;
+        const panelBg = this.add.rectangle(0, keyboardY, gameWidth, keyboardHeight, 0xFFFFFF);
+        panelBg.setOrigin(0, 0);
+        panelBg.setStrokeStyle(2, 0x333333);
+        this.customKeyboard.add(panelBg);
+        
+        // Button styling
+        const btnWidth = isMobile ? 36 : 40;
+        const btnHeight = isMobile ? 36 : 40;
+        const btnGap = isMobile ? 4 : 5;
+        const fontSize = isMobile ? '16px' : '18px';
+        
+        // Keyboard layout (lowercase)
+        const rows = [
+            ['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
+            ['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
+            ['z', 'x', 'c', 'v', 'b', 'n', 'm']
+        ];
+        
+        let startY = keyboardY + 10;
+        
+        // Create letter buttons
+        rows.forEach((row, rowIndex) => {
+            const rowWidth = (row.length * btnWidth) + ((row.length - 1) * btnGap);
+            let startX = (gameWidth - rowWidth) / 2;
+            
+            row.forEach((letter) => {
+                this.createKeyButton(startX, startY, btnWidth, btnHeight, letter, fontSize);
+                startX += btnWidth + btnGap;
+            });
+            
+            startY += btnHeight + btnGap;
+        });
+        
+        // Bottom row with special keys
+        startY += 5;
+        const bottomRowY = startY;
+        const specialBtnWidth = isMobile ? 80 : 90;
+        const totalBottomWidth = specialBtnWidth * 4 + btnGap * 3;
+        let bottomX = (gameWidth - totalBottomWidth) / 2;
+        
+        // Space button
+        this.createSpecialKeyButton(bottomX, bottomRowY, specialBtnWidth, btnHeight, 'Space', fontSize, 0xE0E0E0, () => this.handleKeyboardInput(' '));
+        bottomX += specialBtnWidth + btnGap;
+        
+        // Backspace button
+        this.createSpecialKeyButton(bottomX, bottomRowY, specialBtnWidth, btnHeight, '⌫', fontSize, 0xE0E0E0, () => this.handleKeyboardBackspace());
+        bottomX += specialBtnWidth + btnGap;
+        
+        // Clear button
+        this.createSpecialKeyButton(bottomX, bottomRowY, specialBtnWidth, btnHeight, 'Clear', fontSize, 0xE0E0E0, () => this.handleKeyboardClear());
+        bottomX += specialBtnWidth + btnGap;
+        
+        // Done button
+        this.createSpecialKeyButton(bottomX, bottomRowY, specialBtnWidth, btnHeight, 'Done', fontSize, 0x4CAF50, () => this.deactivateNameInput());
+        
+        this.customKeyboardVisible = true;
+    }
+    
+    createKeyButton(x, y, width, height, letter, fontSize) {
+        const btn = this.add.container(x + width / 2, y + height / 2);
+        
+        const bg = this.add.rectangle(0, 0, width, height, 0xE0E0E0);
+        bg.setStrokeStyle(2, 0x999999);
+        bg.setInteractive({ useHandCursor: true });
+        
+        const text = this.add.text(0, 0, letter, {
+            fontSize: fontSize,
+            fontFamily: 'Arial',
+            color: '#000000',
+            fontStyle: 'bold'
+        });
+        text.setOrigin(0.5);
+        
+        btn.add([bg, text]);
+        this.customKeyboard.add(btn);
+        
+        bg.on('pointerdown', () => {
+            bg.setFillStyle(0xCCCCCC);
+            this.handleKeyboardInput(letter);
+        });
+        
+        bg.on('pointerup', () => {
+            bg.setFillStyle(0xE0E0E0);
+        });
+        
+        bg.on('pointerout', () => {
+            bg.setFillStyle(0xE0E0E0);
+        });
+        
+        return btn;
+    }
+    
+    createSpecialKeyButton(x, y, width, height, label, fontSize, color = 0xE0E0E0, onPress = null) {
+        const btn = this.add.container(x + width / 2, y + height / 2);
+        
+        const bg = this.add.rectangle(0, 0, width, height, color);
+        bg.setStrokeStyle(2, 0x999999);
+        bg.setInteractive({ useHandCursor: true });
+        
+        const text = this.add.text(0, 0, label, {
+            fontSize: fontSize,
+            fontFamily: 'Arial',
+            color: '#000000',
+            fontStyle: 'bold'
+        });
+        text.setOrigin(0.5);
+        
+        btn.add([bg, text]);
+        this.customKeyboard.add(btn);
+        
+        const originalColor = color;
+        const pressColor = color === 0x4CAF50 ? 0x45a049 : 0xCCCCCC;
+        
+        bg.on('pointerup', () => {
+            bg.setFillStyle(originalColor);
+        });
+        
+        bg.on('pointerout', () => {
+            bg.setFillStyle(originalColor);
+        });
+        
+        bg.on('pointerdown', () => {
+            bg.setFillStyle(pressColor);
+            if (onPress) {
+                onPress();
+            }
+        });
+        
+        return btn;
+    }
+    
+    handleKeyboardInput(char) {
+        if (!this.nameInputActive) return;
+        
+        if (char === ' ') {
+            // Space: only if not empty and doesn't already end with space
+            const canAddSpace = this.nameInputValue.trim() !== '' && 
+                               !this.nameInputValue.endsWith(' ') &&
+                               this.nameInputValue.length < this.nameInputMaxLength;
+            if (canAddSpace) {
+                this.nameInputValue += ' ';
+                this.updateNameInputDisplay();
+            }
+        } else {
+            // Letter: add if under max length
+            if (this.nameInputValue.length < this.nameInputMaxLength) {
+                this.nameInputValue += char;
+                this.updateNameInputDisplay();
+            }
+        }
+    }
+    
+    handleKeyboardBackspace() {
+        if (!this.nameInputActive) return;
+        
+        if (this.nameInputValue.length > 0) {
+            this.nameInputValue = this.nameInputValue.slice(0, -1);
+            this.updateNameInputDisplay();
+        }
+    }
+    
+    handleKeyboardClear() {
+        if (!this.nameInputActive) return;
+        
+        this.nameInputValue = '';
+        this.updateNameInputDisplay();
+    }
+    
+    hideCustomKeyboard() {
+        if (this.customKeyboard) {
+            this.customKeyboard.destroy();
+            this.customKeyboard = null;
+        }
+        this.customKeyboardVisible = false;
     }
 
     getSaveName() {
@@ -1274,8 +1499,8 @@ export class GameScene extends Phaser.Scene {
     }
 
     handleGridClick(pointer) {
-        // Ignore clicks when modal is open
-        if (this.modal.container) {
+        // Ignore clicks when modal is open or text input is active (keyboard visible)
+        if (this.modal.container || this.isTextInputOpen) {
             return;
         }
 
@@ -2038,6 +2263,12 @@ export class GameScene extends Phaser.Scene {
         if (this.hiddenNameInput && this.hiddenNameInput.parentNode) {
             this.hiddenNameInput.parentNode.removeChild(this.hiddenNameInput);
             this.hiddenNameInput = null;
+        }
+        
+        // Clean up custom keyboard
+        if (this.customKeyboard) {
+            this.customKeyboard.destroy();
+            this.customKeyboard = null;
         }
         
         // Phaser-based input is automatically destroyed with scene
