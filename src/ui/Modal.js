@@ -262,6 +262,7 @@ export class Modal {
             this.scene.isTextInputOpen = false;
             document.body.removeChild(inputElement);
             this.close();
+            // Pass value with basic trim - formatting happens in saveChildName()
             if (onConfirm && inputValue.trim()) {
                 onConfirm(inputValue.trim());
             }
@@ -274,6 +275,7 @@ export class Modal {
                 this.scene.isTextInputOpen = false;
                 document.body.removeChild(inputElement);
                 this.close();
+                // Pass value with basic trim - formatting happens in saveChildName()
                 if (onConfirm) onConfirm(inputValue.trim());
             }
         });

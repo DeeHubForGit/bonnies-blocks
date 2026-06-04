@@ -11,13 +11,26 @@ export function getChildName() {
 }
 
 /**
+ * Format person name: trim, remove double spaces, capitalize first letter of each word
+ */
+function formatPersonName(name) {
+    if (!name) return '';
+    
+    return name
+        .trim()                                    // Remove leading/trailing spaces
+        .replace(/\s{2,}/g, ' ')                  // Remove double spaces
+        .replace(/\b\w/g, char => char.toUpperCase()); // Capitalize first letter of each word
+}
+
+/**
  * Save the child name to localStorage
- * Enforces 14-character limit
+ * Enforces 14-character limit and formatting
  */
 export function saveChildName(name) {
-    const trimmed = name ? name.trim() : '';
+    // Format: trim, remove double spaces, capitalize
+    const formatted = formatPersonName(name);
     // Enforce 14-character limit
-    const limited = trimmed.substring(0, 14);
+    const limited = formatted.substring(0, 14);
     const finalName = limited || 'Bunnies';
     localStorage.setItem(CHILD_NAME_KEY, finalName);
     return finalName;
