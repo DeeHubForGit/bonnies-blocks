@@ -128,6 +128,13 @@ export class IsometricPlayScene extends Phaser.Scene {
         this.isoTileWidth = 0;      // Actual tile width (may be scaled)
         this.isoTileHeight = 0;     // Actual tile height (may be scaled)
         this.scaleFactor = 1.0;     // Scale factor for fitting
+        
+        // Person movement state
+        this.selectedPerson = null;      // Currently selected person sprite
+        this.selectedPersonRow = -1;     // Grid row of selected person
+        this.selectedPersonCol = -1;     // Grid col of selected person
+        this.movementArrows = [];        // Array of arrow sprites/graphics
+        this.isMoving = false;           // Prevent movement during animation
     }
 
     /**
@@ -191,6 +198,12 @@ export class IsometricPlayScene extends Phaser.Scene {
         // Load fire sprites for dragon animation
         this.load.image('fire1', 'assets/icons/fire1.png');
         this.load.image('fire2', 'assets/icons/fire2.png');
+        
+        // Load isometric arrows for movement
+        this.load.image('isometric-left-arrow', 'assets/icons/isometric_left_arrow.png');
+        this.load.image('isometric-arrow-back', 'assets/icons/isometric_arrow_back.png');
+        this.load.image('isometric-arrow-right', 'assets/icons/isometric_arrow_right.png');
+        this.load.image('isometric-arrow-forward', 'assets/icons/isometric_arrow_forward.png');
     }
 
     create() {
@@ -1317,6 +1330,19 @@ export class IsometricPlayScene extends Phaser.Scene {
             });
         }
         
+        // Make persons selectable for movement
+        const personTypes = [BLOCK_TYPES.GIRL, BLOCK_TYPES.BOY, BLOCK_TYPES.PURPLE_GIRL, BLOCK_TYPES.YELLOW_BOY];
+        if (personTypes.includes(blockType)) {
+            sprite.setInteractive({ useHandCursor: true });
+            // Store grid position with sprite
+            sprite.gridRow = row;
+            sprite.gridCol = col;
+            sprite.blockType = blockType;
+            sprite.on('pointerdown', () => {
+                this.selectPerson(sprite, sprite.gridRow, sprite.gridCol);
+            });
+        }
+        
         this.worldSprites.push(sprite);
     }
 
@@ -1458,6 +1484,198 @@ export class IsometricPlayScene extends Phaser.Scene {
                     dragon.isBreathingFire = false;
                 }
             });
+        });
+    }
+
+    /**
+     * Select a person for movement
+     */
+    selectPerson(sprite, row, col) {
+        // Prevent selection during movement
+        if (this.isMoving) return;
+        
+        // Clear previous selection
+        this.clearMovementArrows();
+        
+        // Set new selection
+        this.selectedPerson = sprite;
+        this.selectedPersonRow = row;
+        this.selectedPersonCol = col;
+        
+        console.log('[IsometricPlayScene] Selected person at', row, col);
+        
+        // Show movement arrows
+        this.showMovementArrows();
+    }
+
+    /**
+     * Clear all movement arrows
+     */
+    clearMovementArrows() {
+        this.movementArrows.forEach(arrow => {
+            if (arrow && arrow.destroy) {
+                arrow.destroy();
+            }
+        });
+        this.movementArrows = [];
+    }
+
+    /**
+     * Show movement arrows around selected person
+     */
+    showMovementArrows() {
+        if (!this.selectedPerson) return;
+        
+        const gridRows = this.getGridRows();
+        const gridCols = this.getGridCols();
+        const row = this.selectedPersonRow;
+        const col = this.selectedPersonCol;
+        
+        const canMoveForward = row > 0;
+        const canMoveBack = row < gridRows - 1;
+        const canMoveLeft = col > 0;
+        const canMoveRight = col < gridCols - 1;
+        
+        const basePos = this.gridToIso(col, row);
+        
+        // Left arrow - upper-left visual position
+        if (canMoveLeft) {
+            const arrow = this.add.image(
+                basePos.x - this.isoTileWidth * 0.45,
+                basePos.y - this.isoTileHeight * 0.50,
+                'isometric-left-arrow'
+            );
+
+            arrow.setOrigin(0.5);
+            arrow.setDisplaySize(
+                this.isoTileWidth * 0.55,
+                this.isoTileHeight * 0.76
+            );
+            arrow.setDepth(this.selectedPerson.depth + 100);
+            arrow.setInteractive({ useHandCursor: true });
+
+            arrow.on('pointerdown', () => {
+                this.movePersonTo(row, col - 1);
+            });
+
+            this.movementArrows.push(arrow);
+        }
+        
+        // Back arrow - upper-right visual position
+        if (canMoveForward) {
+            const arrow = this.add.image(
+                basePos.x + this.isoTileWidth * 0.40,
+                basePos.y - this.isoTileHeight * 0.45,
+                'isometric-arrow-back'
+            );
+
+            arrow.setOrigin(0.5);
+            arrow.setDisplaySize(
+                this.isoTileWidth * 0.55,
+                this.isoTileHeight * 0.76
+            );
+            arrow.setDepth(this.selectedPerson.depth + 100);
+            arrow.setInteractive({ useHandCursor: true });
+
+            arrow.on('pointerdown', () => {
+                this.movePersonTo(row - 1, col);
+            });
+
+            this.movementArrows.push(arrow);
+        }
+        
+        // Right arrow - lower-right visual position
+        if (canMoveRight) {
+            const arrow = this.add.image(
+                basePos.x + this.isoTileWidth * 0.40,
+                basePos.y + this.isoTileHeight * 0.55,
+                'isometric-arrow-right'
+            );
+
+            arrow.setOrigin(0.5);
+            arrow.setDisplaySize(
+                this.isoTileWidth * 0.55,
+                this.isoTileHeight * 0.76
+            );
+            arrow.setDepth(this.selectedPerson.depth + 100);
+            arrow.setInteractive({ useHandCursor: true });
+
+            arrow.on('pointerdown', () => {
+                this.movePersonTo(row, col + 1);
+            });
+
+            this.movementArrows.push(arrow);
+        }
+        
+        // Forward arrow - lower-left visual position
+        if (canMoveBack) {
+            const arrow = this.add.image(
+                basePos.x - this.isoTileWidth * 0.45,
+                basePos.y + this.isoTileHeight * 0.55,
+                'isometric-arrow-forward'
+            );
+
+            arrow.setOrigin(0.5);
+            arrow.setDisplaySize(
+                this.isoTileWidth * 0.55,
+                this.isoTileHeight * 0.76
+            );
+            arrow.setDepth(this.selectedPerson.depth + 100);
+            arrow.setInteractive({ useHandCursor: true });
+
+            arrow.on('pointerdown', () => {
+                this.movePersonTo(row + 1, col);
+            });
+
+            this.movementArrows.push(arrow);
+        }
+    }
+    
+    /**
+     * Move selected person to target grid position
+     */
+    movePersonTo(targetRow, targetCol) {
+        if (!this.selectedPerson || this.isMoving) return;
+        
+        this.isMoving = true;
+        
+        // Clear arrows during movement
+        this.clearMovementArrows();
+        
+        // Calculate new isometric position
+        const newPos = this.gridToIso(targetCol, targetRow);
+        
+        // Check if destination has an object (person will stand on top)
+        const destBlock = this.worldGrid[targetRow][targetCol];
+        const hasObject = isWorldObject(destBlock) || isSolidBlock(destBlock);
+        
+        // Set depth based on whether standing on object
+        const baseDepth = newPos.x + newPos.y;
+        const newDepth = hasObject ? baseDepth + 200 : baseDepth + 20;
+        
+        // Animate movement
+        this.tweens.add({
+            targets: this.selectedPerson,
+            x: newPos.x,
+            y: newPos.y,
+            duration: 220,
+            ease: 'Sine.easeInOut',
+            onComplete: () => {
+                // Update sprite depth for proper layering
+                this.selectedPerson.setDepth(newDepth);
+                
+                // Update stored grid position
+                this.selectedPerson.gridRow = targetRow;
+                this.selectedPerson.gridCol = targetCol;
+                this.selectedPersonRow = targetRow;
+                this.selectedPersonCol = targetCol;
+                
+                console.log('[IsometricPlayScene] Person moved to', targetRow, targetCol);
+                
+                // Show arrows at new position
+                this.isMoving = false;
+                this.showMovementArrows();
+            }
         });
     }
 
