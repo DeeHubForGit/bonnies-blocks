@@ -203,6 +203,12 @@ export class IsometricPlayScene extends Phaser.Scene {
         // Load splash sound
         this.load.audio('splash', 'assets/sounds/splash.mp3');
         
+        // Load animal sounds
+        this.load.audio('rabbit-bounce', 'assets/sounds/rabbit_bounce.mp3');
+        this.load.audio('unicorn-rainbow', 'assets/sounds/unicorn_rainbow.mp3');
+        this.load.audio('dolphin-sound', 'assets/sounds/dolphin.mp3');
+        this.load.audio('dragon-fire-sound', 'assets/sounds/dragon_fire.mp3');
+        
         // Load fire sprites for dragon animation
         this.load.image('fire1', 'assets/icons/fire1.png');
         this.load.image('fire2', 'assets/icons/fire2.png');
@@ -272,6 +278,14 @@ export class IsometricPlayScene extends Phaser.Scene {
 
         // Setup input
         this.setupInput();
+        
+        // Warm up dragon sound to reduce playback delay
+        if (this.sound && this.cache.audio.exists('dragon-fire-sound')) {
+            const dragonSound = this.sound.add('dragon-fire-sound', { volume: 0 });
+            dragonSound.play();
+            dragonSound.stop();
+            dragonSound.destroy();
+        }
         
         // Fade in transition for polish
         this.cameras.main.fadeIn(200, 212, 241, 244);
@@ -718,6 +732,10 @@ export class IsometricPlayScene extends Phaser.Scene {
             dolphin.setRotation(0);
             dolphin.setVisible(true);
             dolphin.setAlpha(0);
+            
+            if (this.sound && this.cache.audio.exists('dolphin-sound')) {
+                this.sound.play('dolphin-sound', { volume: 0.1 });
+            }
             
             // Optional: Create subtle splash circle at entry point
             const splash = this.add.circle(centerX, waterY, 8, 0xFFFFFF, 0.4);
@@ -1636,6 +1654,10 @@ export class IsometricPlayScene extends Phaser.Scene {
         if (bunny.isBouncing) return;
         
         bunny.isBouncing = true;
+        
+        if (this.sound && this.cache.audio.exists('rabbit-bounce')) {
+            this.sound.play('rabbit-bounce', { volume: 0.45 });
+        }
         const originalY = bunny.y;
         const bounceHeight = 15; // pixels to move up
         
@@ -1669,6 +1691,10 @@ export class IsometricPlayScene extends Phaser.Scene {
         if (unicorn.isShowingRainbow) return;
         
         unicorn.isShowingRainbow = true;
+        
+        if (this.sound && this.cache.audio.exists('unicorn-rainbow')) {
+            this.sound.play('unicorn-rainbow', { volume: 0.45 });
+        }
         
         // Create rainbow graphic
         const rainbow = this.add.graphics();
@@ -1730,40 +1756,46 @@ export class IsometricPlayScene extends Phaser.Scene {
         
         dragon.isBreathingFire = true;
         
-        // Position fire near dragon's mouth (dragon faces left)
-        const fireX = dragon.x - dragon.displayWidth * 0.6;
-        const fireY = dragon.y - dragon.displayHeight * 0.22;
+        if (this.sound && this.cache.audio.exists('dragon-fire-sound')) {
+            this.sound.play('dragon-fire-sound', { volume: 0.45, seek: 0 });
+        }
         
-        // Create fire sprite starting with fire1
-        const fire = this.add.image(fireX, fireY, 'fire1');
-        fire.setOrigin(0.5, 0.5);
-        
-        // Size fire1 (smaller)
-        fire.displayWidth = dragon.displayWidth * 0.35;
-        fire.scaleY = fire.scaleX; // Preserve aspect ratio
-        
-        // Render fire in front of dragon
-        fire.setDepth(dragon.depth + 1);
-        
-        // Show fire1 for 150ms
-        this.time.delayedCall(150, () => {
-            // Switch to fire2 (larger)
-            fire.setTexture('fire2');
-            fire.displayWidth = dragon.displayWidth * 0.55;
+        this.time.delayedCall(1000, () => {
+            // Position fire near dragon's mouth (dragon faces left)
+            const fireX = dragon.x - dragon.displayWidth * 0.6;
+            const fireY = dragon.y - dragon.displayHeight * 0.22;
+            
+            // Create fire sprite starting with fire1
+            const fire = this.add.image(fireX, fireY, 'fire1');
+            fire.setOrigin(0.5, 0.5);
+            
+            // Size fire1 (smaller)
+            fire.displayWidth = dragon.displayWidth * 0.35;
             fire.scaleY = fire.scaleX; // Preserve aspect ratio
-        });
-        
-        // After 450ms total (150 + 300), fade out fire2
-        this.time.delayedCall(450, () => {
-            this.tweens.add({
-                targets: fire,
-                alpha: 0,
-                duration: 150,
-                ease: 'Power2',
-                onComplete: () => {
-                    fire.destroy();
-                    dragon.isBreathingFire = false;
-                }
+            
+            // Render fire in front of dragon
+            fire.setDepth(dragon.depth + 1);
+            
+            // Show fire1 for 150ms
+            this.time.delayedCall(150, () => {
+                // Switch to fire2 (larger)
+                fire.setTexture('fire2');
+                fire.displayWidth = dragon.displayWidth * 0.55;
+                fire.scaleY = fire.scaleX; // Preserve aspect ratio
+            });
+            
+            // After 450ms total (150 + 300), fade out fire2
+            this.time.delayedCall(450, () => {
+                this.tweens.add({
+                    targets: fire,
+                    alpha: 0,
+                    duration: 150,
+                    ease: 'Power2',
+                    onComplete: () => {
+                        fire.destroy();
+                        dragon.isBreathingFire = false;
+                    }
+                });
             });
         });
     }
