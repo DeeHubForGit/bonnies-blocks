@@ -33,6 +33,8 @@ const VERTICAL_PADDING = 10;    // Safety margin top/bottom
 const HORIZONTAL_MARGIN = 30;   // Safe left/right padding
 const MAX_PLAYABLE_WIDTH = GAME_WIDTH - (HORIZONTAL_MARGIN * 2);
 
+const SHOW_ANIMAL_ZONES = false;
+
 /**
  * Calculate optimal tile size to fit the world on screen
  * Returns adjusted tile dimensions if map is too wide
@@ -194,6 +196,12 @@ export class IsometricPlayScene extends Phaser.Scene {
         
         // Load pink dolphin sprite
         this.load.image('pink-dolphin', 'assets/icons/pink_dolphin.png');
+        
+        // Load rainbow turtle sprite
+        this.load.image('rainbow-turtle', 'assets/icons/turtle_rainbow.png');
+        
+        // Load splash sound
+        this.load.audio('splash', 'assets/sounds/splash.mp3');
         
         // Load fire sprites for dragon animation
         this.load.image('fire1', 'assets/icons/fire1.png');
@@ -437,6 +445,14 @@ export class IsometricPlayScene extends Phaser.Scene {
         
         // Add occasional dolphin animation
         this.createDolphin(waterStartY, waterHeight);
+        
+        // Add rainbow turtle animation in bottom water
+        this.createTurtle(waterStartY, waterHeight);
+        
+        // Debug: Draw zone outlines when adjusting dolphin/turtle areas
+        if (SHOW_ANIMAL_ZONES) {
+            this.drawDebugAnimalZones();
+        }
     }
 
     /**
@@ -617,21 +633,30 @@ export class IsometricPlayScene extends Phaser.Scene {
         // Store island corners for click detection
         this.islandCorners = { topCorner, rightCorner, bottomCorner, leftCorner };
         
-        // Define safe dolphin Y range (only in visible open water below island)
-        const safeDolphinYMin = islandBottomY + 50; // Padding below island
-        const safeDolphinYMax = gameHeight - 60; // Padding from bottom edge
-        const safeYRange = safeDolphinYMax - safeDolphinYMin;
+        // Define dolphin Y range (top water only - above island)
+        const dolphinYMin = waterStartY + 5;
+        const dolphinYMax = this.isoOrigin.originY - 50;
+        
+        // Check if there's enough space for dolphin
+        if (dolphinYMax <= dolphinYMin) {
+            console.log('[IsometricPlayScene] Not enough top water space for dolphin');
+            // Continue anyway - right-side zone might still work
+        }
+        
+        // Define right-side dolphin zone (desktop extra area)
+        const dolphinRightYMin = dolphinYMax + 8;
+        const dolphinRightYMax = this.isoOrigin.originY + this.isoTileHeight * 5.1;
+        const dolphinRightXMin = gameWidth * 0.40;
+        const dolphinRightXMax = gameWidth - 25;
         
         // Store bounds on scene for click/tap testing
         this.islandBottomY = islandBottomY;
-        this.safeDolphinYMin = safeDolphinYMin;
-        this.safeDolphinYMax = safeDolphinYMax;
-        this.safeYRange = safeYRange;
-        
-        // TESTING: Upper water band for visible dolphin testing
-        // This makes the dolphin appear in the upper visible water area for easy testing
-        const testDolphinYMin = waterStartY + 30;
-        const testDolphinYMax = waterStartY + 120;
+        this.dolphinYMin = dolphinYMin;
+        this.dolphinYMax = dolphinYMax;
+        this.dolphinRightYMin = dolphinRightYMin;
+        this.dolphinRightYMax = dolphinRightYMax;
+        this.dolphinRightXMin = dolphinRightXMin;
+        this.dolphinRightXMax = dolphinRightXMax;
         
         // Create pink dolphin sprite
         const dolphin = this.add.sprite(0, 0, 'pink-dolphin');
@@ -651,11 +676,30 @@ export class IsometricPlayScene extends Phaser.Scene {
             // Stop any existing dolphin animation
             this.tweens.killTweensOf(dolphin);
             
-            // Use upper visible water band for better visibility
-            // Use provided Y (clamped to test band) or random Y in test band
-            const waterY = targetY !== null 
-                ? Phaser.Math.Clamp(targetY, testDolphinYMin, testDolphinYMax)
-                : testDolphinYMin + Math.random() * (testDolphinYMax - testDolphinYMin);
+            // Check if this is a right-side tap, otherwise use top water band
+            let waterY;
+            
+            const dolphinTriangleBottomYAtTargetX =
+                targetX !== null
+                    ? dolphinRightYMin +
+                        ((targetX - dolphinRightXMin) / (dolphinRightXMax - dolphinRightXMin)) *
+                        (dolphinRightYMax - dolphinRightYMin)
+                    : dolphinRightYMin;
+            
+            if (
+                targetY !== null &&
+                targetX !== null &&
+                targetX >= dolphinRightXMin &&
+                targetX <= dolphinRightXMax &&
+                targetY >= dolphinRightYMin &&
+                targetY <= dolphinTriangleBottomYAtTargetX
+            ) {
+                waterY = Phaser.Math.Clamp(targetY, dolphinRightYMin, dolphinTriangleBottomYAtTargetX);
+            } else {
+                waterY = targetY !== null
+                    ? Phaser.Math.Clamp(targetY, dolphinYMin, dolphinYMax)
+                    : Phaser.Math.Between(dolphinYMin, dolphinYMax);
+            }
             
             // Use provided X or random X position in safe area
             const centerX = targetX !== null 
@@ -663,9 +707,9 @@ export class IsometricPlayScene extends Phaser.Scene {
                 : 60 + Math.random() * (gameWidth - 120); // Random position with margins
             
             // Arc animation parameters for natural peek
-            const startX = centerX + 25; // Start slightly right
+            const startX = centerX + 12; // Start slightly right
             const peakX = centerX; // Peak at center
-            const endX = centerX - 25; // End slightly left
+            const endX = centerX - 12; // End slightly left
             const baseY = waterY + 8; // Just below water surface
             const peakY = waterY - 18; // Low peek above water
             
@@ -747,12 +791,7 @@ export class IsometricPlayScene extends Phaser.Scene {
         
         // Start automatic dolphin quickly for testing (3 seconds)
         // Then continues every ~30 seconds
-        if (safeYRange >= 80) {
-            // Start first dolphin after a short delay for testing
-            this.time.delayedCall(3000, () => animateDolphin());
-        } else {
-            console.log('[IsometricPlayScene] Limited safe water - automatic dolphin disabled, but manual testing available');
-        }
+        this.time.delayedCall(3000, () => animateDolphin());
         
         // TESTING FEATURE: Click/tap water to show dolphin immediately
         // This is for testing purposes and can be removed later
@@ -760,13 +799,198 @@ export class IsometricPlayScene extends Phaser.Scene {
             const clickX = pointer.x;
             const clickY = pointer.y;
             
-            // Check if click is in water area (below horizon and not on island)
-            if (clickY >= waterStartY && !this.isPointOnIsland(clickX, clickY)) {
-                // TESTING: Use upper water test band for easy visibility
-                // Clamp clicked Y to upper visible water area
-                const dolphinY = Phaser.Math.Clamp(clickY, testDolphinYMin, testDolphinYMax);
-                console.log('[IsometricPlayScene] Test click: Triggering dolphin at X=' + clickX.toFixed(0) + ', Y=' + dolphinY.toFixed(0));
-                animateDolphin(dolphinY, clickX);
+            // Check both top water zone and right-side zone
+            const isInTopDolphinZone = clickY >= dolphinYMin && clickY <= dolphinYMax;
+            
+            const dolphinTriangleBottomYAtClickX =
+                dolphinRightYMin +
+                ((clickX - dolphinRightXMin) / (dolphinRightXMax - dolphinRightXMin)) *
+                (dolphinRightYMax - dolphinRightYMin);
+            
+            const isInRightDolphinZone =
+                clickX >= dolphinRightXMin &&
+                clickX <= dolphinRightXMax &&
+                clickY >= dolphinRightYMin &&
+                clickY <= dolphinTriangleBottomYAtClickX;
+            
+            if (isInTopDolphinZone || isInRightDolphinZone) {
+                console.log('[IsometricPlayScene] Test click: Triggering dolphin at X=' + clickX.toFixed(0) + ', Y=' + clickY.toFixed(0));
+                animateDolphin(clickY, clickX);
+            }
+        });
+    }
+
+    /**
+     * Create rainbow turtle animation in bottom water area
+     */
+    createTurtle(waterStartY, waterHeight) {
+        const gameWidth = this.getGameWidth();
+        const gameHeight = this.getGameHeight();
+        const isMobile = isMobilePortrait();
+        
+        // Calculate island corners for bottom water zone
+        const gridCols = this.getGridCols();
+        const gridRows = this.getGridRows();
+        const bottomCorner = this.gridToIso(gridCols - 1, gridRows - 1);
+        const bottomLeftCorner = this.gridToIso(0, gridRows - 1);
+        const bottomRightCorner = this.gridToIso(gridCols - 1, 0);
+        
+        // Define turtle Y range (bottom water only - below island)
+        const turtleYMin = Math.min(bottomCorner.y + 35, gameHeight - 120);
+        const turtleYMax = gameHeight - 55;
+        const turtleYRange = turtleYMax - turtleYMin;
+        
+        // Debug: Log turtle bounds
+        console.log('[IsometricPlayScene] Turtle bounds:', {
+            turtleYMin,
+            turtleYMax,
+            turtleYRange,
+            gameHeight,
+            bottomCornerY: bottomCorner.y
+        });
+        
+        // Check if there's enough space for turtle
+        if (turtleYRange < 40) {
+            console.log('[IsometricPlayScene] Not enough bottom water space for turtle');
+            return;
+        }
+        
+        // Store turtle bounds for tap testing
+        this.turtleYMin = turtleYMin;
+        this.turtleYMax = turtleYMax;
+        
+        // Create rainbow turtle sprite
+        const turtle = this.add.sprite(0, 0, 'rainbow-turtle');
+        turtle.setDepth(-89); // Above water details, near dolphin layer
+        turtle.setVisible(false);
+        turtle.setAlpha(0);
+        
+        // Scale turtle based on target width (responsive)
+        const turtleTargetWidth = isMobile ? 38 : 62;
+        const turtleScale = turtleTargetWidth / turtle.width;
+        turtle.setScale(turtleScale);
+        
+        this.turtleSprite = turtle; // Store reference
+        
+        // Turtle animation: slow pop-up, hold, sink down
+        const animateTurtle = (targetX = null, targetY = null) => {
+            // Stop any existing turtle animation
+            this.tweens.killTweensOf(turtle);
+            
+            // Fixed bottom-left turtle zone - triangle shape.
+            // This deliberately keeps the turtle away from the island.
+            // Do not calculate near island edges because that has caused repeated under-island placement.
+            const turtleZoneLeftX = 35;
+            const turtleZoneTopY = gameHeight - 170;
+            const turtleZoneRightX = 360;
+            const turtleZoneBottomY = gameHeight - 45;
+            
+            let centerX = targetX !== null
+                ? Phaser.Math.Clamp(targetX, turtleZoneLeftX, turtleZoneRightX)
+                : Phaser.Math.Between(turtleZoneLeftX, turtleZoneRightX);
+            
+            const triangleMinY = turtleZoneTopY + ((centerX - turtleZoneLeftX) * 0.45);
+            
+            let turtleY = targetY !== null
+                ? Phaser.Math.Clamp(targetY, triangleMinY, turtleZoneBottomY)
+                : Phaser.Math.Between(triangleMinY, turtleZoneBottomY);
+            
+            // Animation parameters - small gentle peek
+            const hiddenY = turtleY + 8; // Start slightly below visible position
+            const visibleY = turtleY; // Surface position
+            const popUpDuration = 220; // Quick rise
+            const holdDuration = 650; // Brief hold
+            const sinkDuration = 260; // Quick sink
+            
+            // Set initial position (hidden below)
+            turtle.setPosition(centerX, hiddenY);
+            turtle.setVisible(true);
+            turtle.setAlpha(1);
+            
+            // Optional: Create subtle splash/bubble effect
+            const createBubbles = (x, y) => {
+                const bubble1 = this.add.circle(x - 8, y, 4, 0xE0F7FF, 0.6);
+                const bubble2 = this.add.circle(x + 8, y, 3, 0xE0F7FF, 0.5);
+                const bubble3 = this.add.circle(x, y - 6, 3, 0xFFFFFF, 0.7);
+                [bubble1, bubble2, bubble3].forEach(bubble => {
+                    bubble.setDepth(-90);
+                    this.tweens.add({
+                        targets: bubble,
+                        y: bubble.y - 15,
+                        radius: bubble.radius * 1.5,
+                        alpha: 0,
+                        duration: 500,
+                        ease: 'Sine.easeOut',
+                        onComplete: () => bubble.destroy()
+                    });
+                });
+            };
+            
+            // Play splash sound
+            if (this.sound && this.cache.audio.exists('splash')) {
+                this.sound.play('splash', { volume: 0.35 });
+            }
+            
+            // Phase 1: Pop up quickly
+            this.tweens.add({
+                targets: turtle,
+                y: visibleY,
+                duration: popUpDuration,
+                ease: 'Quad.easeOut',
+                onComplete: () => {
+                    // Create bubbles when turtle surfaces
+                    createBubbles(centerX, visibleY);
+                    
+                    // Phase 2: Hold visible
+                    this.time.delayedCall(holdDuration, () => {
+                        // Phase 3: Sink down quickly
+                        this.tweens.add({
+                            targets: turtle,
+                            y: hiddenY,
+                            duration: sinkDuration,
+                            ease: 'Quad.easeIn',
+                            onComplete: () => {
+                                turtle.setVisible(false);
+                                turtle.setAlpha(0);
+                                
+                                // Schedule next appearance (20-40 seconds) if automatic
+                                if (targetX === null) {
+                                    this.time.delayedCall(20000 + Math.random() * 20000, () => animateTurtle());
+                                }
+                            }
+                        });
+                    });
+                }
+            });
+        };
+        
+        // Store animation function for manual testing
+        this.triggerTurtle = animateTurtle;
+        
+        // TESTING: Start turtle after 1 second
+        this.time.delayedCall(1000, () => animateTurtle());
+        
+        // TESTING: Add tap handler for bottom water
+        this.input.on('pointerdown', (pointer) => {
+            const clickX = pointer.x;
+            const clickY = pointer.y;
+            
+            // Only trigger turtle in the fixed bottom-left water zone (triangle)
+            const turtleZoneLeftX = 35;
+            const turtleZoneTopY = gameHeight - 170;
+            const turtleZoneRightX = 360;
+            const turtleZoneBottomY = gameHeight - 45;
+            
+            const isInTurtleZone =
+                clickX >= turtleZoneLeftX &&
+                clickX <= turtleZoneRightX &&
+                clickY >= turtleZoneTopY &&
+                clickY <= turtleZoneBottomY &&
+                clickY >= turtleZoneTopY + ((clickX - turtleZoneLeftX) * 0.45);
+            
+            if (isInTurtleZone) {
+                console.log('[IsometricPlayScene] Test click: Triggering turtle at X=' + clickX.toFixed(0) + ', Y=' + clickY.toFixed(0));
+                animateTurtle(clickX, clickY);
             }
         });
     }
@@ -810,6 +1034,63 @@ export class IsometricPlayScene extends Phaser.Scene {
         const hasPos = (d1 > 0) || (d2 > 0) || (d3 > 0) || (d4 > 0);
         
         return !(hasNeg && hasPos);
+    }
+
+    /**
+     * Draw debug zone outlines for animal zones
+     */
+    drawDebugAnimalZones() {
+        const gameHeight = this.getGameHeight();
+
+        const graphics = this.add.graphics();
+        graphics.setDepth(9999);
+
+        // Turtle zone - purple triangle
+        const turtleZoneLeftX = 35;
+        const turtleZoneTopY = gameHeight - 170;
+        const turtleZoneRightX = 360;
+        const turtleZoneBottomY = gameHeight - 45;
+
+        graphics.lineStyle(3, 0xcc66ff, 1);
+        graphics.beginPath();
+        graphics.moveTo(turtleZoneLeftX, turtleZoneTopY);
+        graphics.lineTo(turtleZoneLeftX, turtleZoneBottomY);
+        graphics.lineTo(turtleZoneRightX, turtleZoneBottomY);
+        graphics.closePath();
+        graphics.strokePath();
+
+        // Dolphin top zone - red rectangle
+        if (this.dolphinYMin !== undefined && this.dolphinYMax !== undefined) {
+            graphics.lineStyle(3, 0xff0000, 1);
+            graphics.strokeRect(0, this.dolphinYMin, this.getGameWidth(), this.dolphinYMax - this.dolphinYMin);
+        }
+
+        // Dolphin right zone - pink triangle
+        if (
+            this.dolphinRightXMin !== undefined &&
+            this.dolphinRightXMax !== undefined &&
+            this.dolphinRightYMin !== undefined &&
+            this.dolphinRightYMax !== undefined
+        ) {
+            const dolphinTopLeftX = this.dolphinRightXMin;
+            const dolphinTopLeftY = this.dolphinRightYMin;
+
+            const dolphinTopRightX = this.dolphinRightXMax;
+            const dolphinTopRightY = this.dolphinRightYMin;
+
+            const dolphinBottomRightX = this.dolphinRightXMax;
+            const dolphinBottomRightY = this.dolphinRightYMax;
+
+            graphics.lineStyle(3, 0xff99cc, 1);
+            graphics.beginPath();
+            graphics.moveTo(dolphinTopLeftX, dolphinTopLeftY);
+            graphics.lineTo(dolphinTopRightX, dolphinTopRightY);
+            graphics.lineTo(dolphinBottomRightX, dolphinBottomRightY);
+            graphics.closePath();
+            graphics.strokePath();
+        }
+
+        this.debugAnimalZoneGraphics = graphics;
     }
 
     /**
