@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="icon" type="image/png" href="./assets/icons/bunny_browser_tab.png">
     <title>Bunnies World - Builder Game</title>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@600;700&display=swap" rel="stylesheet">
@@ -113,13 +113,6 @@
             }
         }
 
-        /* Show overlay only on mobile devices in landscape orientation */
-        @media (max-width: 600px) and (orientation: landscape) {
-            #rotate-overlay {
-                display: flex;
-            }
-        }
-
     </style>
 </head>
 <body>
@@ -132,6 +125,24 @@
         <p class="rotate-message">Bunnies World works best in portrait mode</p>
     </div>
     
+    <script>
+        function updateRotateOverlay() {
+            const overlay = document.getElementById('rotate-overlay');
+            if (!overlay) return;
+
+            const isLandscape = window.innerWidth > window.innerHeight;
+            const isTouchDevice = navigator.maxTouchPoints > 0;
+
+            overlay.style.display = isTouchDevice && isLandscape ? 'flex' : 'none';
+        }
+
+        window.addEventListener('resize', updateRotateOverlay);
+        window.addEventListener('orientationchange', updateRotateOverlay);
+        window.addEventListener('DOMContentLoaded', updateRotateOverlay);
+
+        updateRotateOverlay();
+    </script>
+
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.js"></script>
     <script type="module" src="src/main.js"></script>
 </body>
