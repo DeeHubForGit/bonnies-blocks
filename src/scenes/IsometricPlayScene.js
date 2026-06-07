@@ -657,11 +657,11 @@ export class IsometricPlayScene extends Phaser.Scene {
             // Continue anyway - right-side zone might still work
         }
         
-        // Define right-side dolphin zone (desktop extra area)
-        const dolphinRightYMin = dolphinYMax + 8;
-        const dolphinRightYMax = this.isoOrigin.originY + this.isoTileHeight * 5.1;
-        const dolphinRightXMin = gameWidth * 0.40;
-        const dolphinRightXMax = gameWidth - 25;
+        // Define right-side dolphin zone (desktop only)
+        const dolphinRightYMin = isMobilePortrait() ? null : dolphinYMax + 8;
+        const dolphinRightYMax = isMobilePortrait() ? null : this.isoOrigin.originY + this.isoTileHeight * 5.1;
+        const dolphinRightXMin = isMobilePortrait() ? null : gameWidth * 0.40;
+        const dolphinRightXMax = isMobilePortrait() ? null : gameWidth - 25;
         
         // Store bounds on scene for click/tap testing
         this.islandBottomY = islandBottomY;
@@ -679,7 +679,7 @@ export class IsometricPlayScene extends Phaser.Scene {
         dolphin.setAlpha(0); // Start transparent
         
         // Scale dolphin based on target width (responsive) - smaller and cuter
-        const dolphinTargetWidth = isMobilePortrait() ? 32 : 48;
+        const dolphinTargetWidth = isMobilePortrait() ? 52 : 48;
         const dolphinScale = dolphinTargetWidth / dolphin.width;
         dolphin.setScale(dolphinScale);
         
@@ -692,22 +692,30 @@ export class IsometricPlayScene extends Phaser.Scene {
             
             // Check if this is a right-side tap, otherwise use top water band
             let waterY;
-            
-            const dolphinTriangleBottomYAtTargetX =
-                targetX !== null
-                    ? dolphinRightYMin +
-                        ((targetX - dolphinRightXMin) / (dolphinRightXMax - dolphinRightXMin)) *
-                        (dolphinRightYMax - dolphinRightYMin)
-                    : dolphinRightYMin;
+            let isRightSideDolphinTarget = false;
+            let dolphinTriangleBottomYAtTargetX = dolphinRightYMin;
             
             if (
-                targetY !== null &&
                 targetX !== null &&
-                targetX >= dolphinRightXMin &&
-                targetX <= dolphinRightXMax &&
-                targetY >= dolphinRightYMin &&
-                targetY <= dolphinTriangleBottomYAtTargetX
+                targetY !== null &&
+                dolphinRightXMin !== null &&
+                dolphinRightXMax !== null &&
+                dolphinRightYMin !== null &&
+                dolphinRightYMax !== null
             ) {
+                dolphinTriangleBottomYAtTargetX =
+                    dolphinRightYMin +
+                    ((targetX - dolphinRightXMin) / (dolphinRightXMax - dolphinRightXMin)) *
+                    (dolphinRightYMax - dolphinRightYMin);
+                
+                isRightSideDolphinTarget =
+                    targetX >= dolphinRightXMin &&
+                    targetX <= dolphinRightXMax &&
+                    targetY >= dolphinRightYMin &&
+                    targetY <= dolphinTriangleBottomYAtTargetX;
+            }
+            
+            if (isRightSideDolphinTarget) {
                 waterY = Phaser.Math.Clamp(targetY, dolphinRightYMin, dolphinTriangleBottomYAtTargetX);
             } else {
                 waterY = targetY !== null
@@ -820,16 +828,25 @@ export class IsometricPlayScene extends Phaser.Scene {
             // Check both top water zone and right-side zone
             const isInTopDolphinZone = clickY >= dolphinYMin && clickY <= dolphinYMax;
             
-            const dolphinTriangleBottomYAtClickX =
-                dolphinRightYMin +
-                ((clickX - dolphinRightXMin) / (dolphinRightXMax - dolphinRightXMin)) *
-                (dolphinRightYMax - dolphinRightYMin);
+            let isInRightDolphinZone = false;
             
-            const isInRightDolphinZone =
-                clickX >= dolphinRightXMin &&
-                clickX <= dolphinRightXMax &&
-                clickY >= dolphinRightYMin &&
-                clickY <= dolphinTriangleBottomYAtClickX;
+            if (
+                dolphinRightXMin !== null &&
+                dolphinRightXMax !== null &&
+                dolphinRightYMin !== null &&
+                dolphinRightYMax !== null
+            ) {
+                const dolphinTriangleBottomYAtClickX =
+                    dolphinRightYMin +
+                    ((clickX - dolphinRightXMin) / (dolphinRightXMax - dolphinRightXMin)) *
+                    (dolphinRightYMax - dolphinRightYMin);
+                
+                isInRightDolphinZone =
+                    clickX >= dolphinRightXMin &&
+                    clickX <= dolphinRightXMax &&
+                    clickY >= dolphinRightYMin &&
+                    clickY <= dolphinTriangleBottomYAtClickX;
+            }
             
             if (isInTopDolphinZone || isInRightDolphinZone) {
                 console.log('[IsometricPlayScene] Test click: Triggering dolphin at X=' + clickX.toFixed(0) + ', Y=' + clickY.toFixed(0));
@@ -884,7 +901,7 @@ export class IsometricPlayScene extends Phaser.Scene {
         turtle.setAlpha(0);
         
         // Scale turtle based on target width (responsive)
-        const turtleTargetWidth = isMobile ? 38 : 62;
+        const turtleTargetWidth = isMobile ? 90 : 62;
         const turtleScale = turtleTargetWidth / turtle.width;
         turtle.setScale(turtleScale);
         
@@ -895,13 +912,18 @@ export class IsometricPlayScene extends Phaser.Scene {
             // Stop any existing turtle animation
             this.tweens.killTweensOf(turtle);
             
+            if (this.turtleHoldTimer) {
+                this.turtleHoldTimer.remove(false);
+                this.turtleHoldTimer = null;
+            }
+
             // Fixed bottom-left turtle zone - triangle shape.
             // This deliberately keeps the turtle away from the island.
             // Do not calculate near island edges because that has caused repeated under-island placement.
-            const turtleZoneLeftX = 35;
-            const turtleZoneTopY = gameHeight - 170;
-            const turtleZoneRightX = 360;
-            const turtleZoneBottomY = gameHeight - 45;
+            const turtleZoneLeftX = isMobile ? 35 : 35;
+            const turtleZoneTopY = isMobile ? gameHeight - 260 : gameHeight - 170;
+            const turtleZoneRightX = isMobile ? 360 : 360;
+            const turtleZoneBottomY = isMobile ? gameHeight - 45 : gameHeight - 45;
             
             let centerX = targetX !== null
                 ? Phaser.Math.Clamp(targetX, turtleZoneLeftX, turtleZoneRightX)
@@ -960,7 +982,9 @@ export class IsometricPlayScene extends Phaser.Scene {
                     createBubbles(centerX, visibleY);
                     
                     // Phase 2: Hold visible
-                    this.time.delayedCall(holdDuration, () => {
+                    this.turtleHoldTimer = this.time.delayedCall(holdDuration, () => {
+                        this.turtleHoldTimer = null;
+
                         // Phase 3: Sink down quickly
                         this.tweens.add({
                             targets: turtle,
@@ -994,10 +1018,10 @@ export class IsometricPlayScene extends Phaser.Scene {
             const clickY = pointer.y;
             
             // Only trigger turtle in the fixed bottom-left water zone (triangle)
-            const turtleZoneLeftX = 35;
-            const turtleZoneTopY = gameHeight - 170;
-            const turtleZoneRightX = 360;
-            const turtleZoneBottomY = gameHeight - 45;
+            const turtleZoneLeftX = isMobile ? 35 : 35;
+            const turtleZoneTopY = isMobile ? gameHeight - 260 : gameHeight - 170;
+            const turtleZoneRightX = isMobile ? 360 : 360;
+            const turtleZoneBottomY = isMobile ? gameHeight - 45 : gameHeight - 45;
             
             const isInTurtleZone =
                 clickX >= turtleZoneLeftX &&
@@ -1064,10 +1088,11 @@ export class IsometricPlayScene extends Phaser.Scene {
         graphics.setDepth(9999);
 
         // Turtle zone - purple triangle
-        const turtleZoneLeftX = 35;
-        const turtleZoneTopY = gameHeight - 170;
-        const turtleZoneRightX = 360;
-        const turtleZoneBottomY = gameHeight - 45;
+        const isMobile = isMobilePortrait();
+        const turtleZoneLeftX = isMobile ? 35 : 35;
+        const turtleZoneTopY = isMobile ? gameHeight - 260 : gameHeight - 170;
+        const turtleZoneRightX = isMobile ? 360 : 360;
+        const turtleZoneBottomY = isMobile ? gameHeight - 45 : gameHeight - 45;
 
         graphics.lineStyle(3, 0xcc66ff, 1);
         graphics.beginPath();
@@ -1083,12 +1108,12 @@ export class IsometricPlayScene extends Phaser.Scene {
             graphics.strokeRect(0, this.dolphinYMin, this.getGameWidth(), this.dolphinYMax - this.dolphinYMin);
         }
 
-        // Dolphin right zone - pink triangle
+        // Dolphin right zone - pink triangle (desktop only)
         if (
-            this.dolphinRightXMin !== undefined &&
-            this.dolphinRightXMax !== undefined &&
-            this.dolphinRightYMin !== undefined &&
-            this.dolphinRightYMax !== undefined
+            this.dolphinRightXMin !== null &&
+            this.dolphinRightXMax !== null &&
+            this.dolphinRightYMin !== null &&
+            this.dolphinRightYMax !== null
         ) {
             const dolphinTopLeftX = this.dolphinRightXMin;
             const dolphinTopLeftY = this.dolphinRightYMin;
