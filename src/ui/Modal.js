@@ -147,13 +147,16 @@ export class Modal {
     /**
      * Show an input dialog with a text field
      */
-    showInputDialog(title, placeholder, defaultValue, onConfirm) {
+    showInputDialog(title, placeholder, defaultValue, onConfirm, keepPeopleOnIslandDefault = true) {
         this.createModalBase();
 
         const isMobile = isMobilePortrait();
         const gameWidth = isMobile ? MOBILE_PORTRAIT_WIDTH : GAME_WIDTH;
         const centerX = gameWidth / 2;
         const centerY = GAME_HEIGHT / 2;
+        
+        // Track checkbox state
+        let keepPeopleOnIsland = keepPeopleOnIslandDefault;
 
         // Title - responsive with separate positioning
         const titleFontSize = isMobile ? '24px' : '28px';
@@ -177,7 +180,7 @@ export class Modal {
 
         // Add helper text about character limit - responsive with separate positioning
         const helperFontSize = isMobile ? '11px' : '12px';
-        const helperY = isMobile ? centerY + 95 : centerY + 85;
+        const helperY = isMobile ? centerY + 88 : centerY + 85;
         const helperText = this.scene.add.text(centerX, helperY, 'Maximum 14 characters', {
             fontSize: helperFontSize,
             fontFamily: 'Arial',
@@ -249,8 +252,63 @@ export class Modal {
             inputValue = e.target.value;
         });
 
-        // Buttons with icons - responsive with separate positioning
-        const buttonY = isMobile ? centerY + 145 : centerY + 145;
+        // Checkbox for "Keep people on island" - positioned above buttons
+        const checkboxY = isMobile ? centerY + 118 : centerY + 110;
+        const checkboxSize = isMobile ? 20 : 22;
+        const checkboxSpacing = 8;
+        
+        // Create checkbox background
+        const checkbox = this.scene.add.rectangle(
+            centerX - 65,
+            checkboxY,
+            checkboxSize,
+            checkboxSize,
+            0xFFFFFF
+        );
+        checkbox.setStrokeStyle(2, 0x333333);
+        checkbox.setInteractive({ useHandCursor: true });
+        
+        // Create checkmark (tick icon)
+        const checkmark = this.scene.add.text(
+            centerX - 65,
+            checkboxY,
+            '✓',
+            {
+                fontSize: isMobile ? '16px' : '18px',
+                fontFamily: 'Arial',
+                color: '#4CAF50',
+                fontStyle: 'bold'
+            }
+        ).setOrigin(0.5);
+        checkmark.setVisible(keepPeopleOnIsland);
+        
+        // Checkbox label
+        const checkboxLabelFontSize = isMobile ? '13px' : '14px';
+        const checkboxLabel = this.scene.add.text(
+            centerX - 65 + checkboxSize / 2 + checkboxSpacing,
+            checkboxY,
+            'Keep people on island',
+            {
+                fontSize: checkboxLabelFontSize,
+                fontFamily: 'Arial',
+                color: '#333333'
+            }
+        ).setOrigin(0, 0.5);
+        
+        // Make label clickable too
+        checkboxLabel.setInteractive({ useHandCursor: true });
+        
+        // Toggle checkbox on click
+        const toggleCheckbox = () => {
+            keepPeopleOnIsland = !keepPeopleOnIsland;
+            checkmark.setVisible(keepPeopleOnIsland);
+        };
+        
+        checkbox.on('pointerdown', toggleCheckbox);
+        checkboxLabel.on('pointerdown', toggleCheckbox);
+
+        // Buttons with icons - responsive with separate positioning (moved down)
+        const buttonY = isMobile ? centerY + 165 : centerY + 165;
         const buttonSpacing = isMobile ? 80 : 100;
         const cancelBtn = this.createIconButton(centerX - buttonSpacing, buttonY, 'Cancel', 0xe0e0e0, 'icon-cancel', () => {
             this.scene.isTextInputOpen = false;
@@ -262,9 +320,9 @@ export class Modal {
             this.scene.isTextInputOpen = false;
             document.body.removeChild(inputElement);
             this.close();
-            // Pass value with basic trim - formatting happens in saveChildName()
+            // Pass value with basic trim and checkbox state - formatting happens in saveChildName()
             if (onConfirm && inputValue.trim()) {
-                onConfirm(inputValue.trim());
+                onConfirm(inputValue.trim(), keepPeopleOnIsland);
             }
         }, isMobile);
 
@@ -275,12 +333,12 @@ export class Modal {
                 this.scene.isTextInputOpen = false;
                 document.body.removeChild(inputElement);
                 this.close();
-                // Pass value with basic trim - formatting happens in saveChildName()
-                if (onConfirm) onConfirm(inputValue.trim());
+                // Pass value with basic trim and checkbox state - formatting happens in saveChildName()
+                if (onConfirm) onConfirm(inputValue.trim(), keepPeopleOnIsland);
             }
         });
 
-        this.container.add([titleText, childImage, helperText, cancelBtn, saveBtn]);
+        this.container.add([titleText, childImage, helperText, checkbox, checkmark, checkboxLabel, cancelBtn, saveBtn]);
     }
 
     /**

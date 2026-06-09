@@ -37,6 +37,22 @@ export function saveChildName(name) {
 }
 
 /**
+ * Get the keep people on island setting
+ * Default is true (people stay on island)
+ */
+export function getKeepPeopleOnIsland() {
+    const value = localStorage.getItem('keepPeopleOnIsland');
+    return value === null ? true : value === 'true';
+}
+
+/**
+ * Save the keep people on island setting
+ */
+export function saveKeepPeopleOnIsland(value) {
+    localStorage.setItem('keepPeopleOnIsland', value ? 'true' : 'false');
+}
+
+/**
  * Migrate old single-save format to new multi-save format
  */
 function migrateOldSave() {

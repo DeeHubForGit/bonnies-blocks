@@ -33,7 +33,7 @@
 } from '../data/constants.js';
 import { Toolbar } from '../ui/Toolbar.js';
 import { Modal } from '../ui/Modal.js';
-import { saveWorld, loadWorld, getAllWorlds, generateDefaultWorldName, getChildName, saveChildName, deleteWorld, findWorldByName } from '../utils/storage.js';
+import { saveWorld, loadWorld, getAllWorlds, generateDefaultWorldName, getChildName, saveChildName, deleteWorld, findWorldByName, getKeepPeopleOnIsland, saveKeepPeopleOnIsland } from '../utils/storage.js';
 
 export class GameScene extends Phaser.Scene {
     constructor() {
@@ -1129,8 +1129,9 @@ export class GameScene extends Phaser.Scene {
             'Name',
             'Enter name',
             currentName,
-            (name) => {
+            (name, keepPeopleOnIsland) => {
                 const savedName = saveChildName(name);
+                saveKeepPeopleOnIsland(keepPeopleOnIsland);
                 
                 // Update title immediately
                 this.titleText.setText(this.buildTitleText(savedName));
@@ -1143,7 +1144,8 @@ export class GameScene extends Phaser.Scene {
                 
                 // Show confirmation toast
                 this.modal.showToast(`Name updated to ${savedName}!`);
-            }
+            },
+            getKeepPeopleOnIsland()
         );
     }
     
