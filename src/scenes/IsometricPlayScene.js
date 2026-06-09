@@ -206,8 +206,8 @@ export class IsometricPlayScene extends Phaser.Scene {
         // Load animal sounds
         this.load.audio('rabbit-bounce', 'assets/sounds/rabbit_bounce.mp3');
         this.load.audio('unicorn-rainbow', 'assets/sounds/unicorn_rainbow.mp3');
-        this.load.audio('dolphin-sound', 'assets/sounds/dolphin.mp3');
-        this.load.audio('dragon-fire-sound', 'assets/sounds/dragon_fire.mp3');
+        this.load.audio('dolphin-sound', 'assets/sounds/dolphin.mp3?v=2');
+        this.load.audio('dragon-fire-sound', 'assets/sounds/dragon_fire.mp3?v=2');
         
         // Load fire sprites for dragon animation
         this.load.image('fire1', 'assets/icons/fire1.png');
@@ -1782,45 +1782,43 @@ export class IsometricPlayScene extends Phaser.Scene {
         dragon.isBreathingFire = true;
         
         if (this.sound && this.cache.audio.exists('dragon-fire-sound')) {
-            this.sound.play('dragon-fire-sound', { volume: 0.45, seek: 0 });
+            this.sound.play('dragon-fire-sound', { volume: 0.45 });
         }
         
-        this.time.delayedCall(1000, () => {
-            // Position fire near dragon's mouth (dragon faces left)
-            const fireX = dragon.x - dragon.displayWidth * 0.6;
-            const fireY = dragon.y - dragon.displayHeight * 0.22;
-            
-            // Create fire sprite starting with fire1
-            const fire = this.add.image(fireX, fireY, 'fire1');
-            fire.setOrigin(0.5, 0.5);
-            
-            // Size fire1 (smaller)
-            fire.displayWidth = dragon.displayWidth * 0.35;
+        // Position fire near dragon's mouth (dragon faces left)
+        const fireX = dragon.x - dragon.displayWidth * 0.6;
+        const fireY = dragon.y - dragon.displayHeight * 0.22;
+        
+        // Create fire sprite starting with fire1
+        const fire = this.add.image(fireX, fireY, 'fire1');
+        fire.setOrigin(0.5, 0.5);
+        
+        // Size fire1 (smaller)
+        fire.displayWidth = dragon.displayWidth * 0.35;
+        fire.scaleY = fire.scaleX; // Preserve aspect ratio
+        
+        // Render fire in front of dragon
+        fire.setDepth(dragon.depth + 1);
+        
+        // Show fire1 for 150ms
+        this.time.delayedCall(150, () => {
+            // Switch to fire2 (larger)
+            fire.setTexture('fire2');
+            fire.displayWidth = dragon.displayWidth * 0.55;
             fire.scaleY = fire.scaleX; // Preserve aspect ratio
-            
-            // Render fire in front of dragon
-            fire.setDepth(dragon.depth + 1);
-            
-            // Show fire1 for 150ms
-            this.time.delayedCall(150, () => {
-                // Switch to fire2 (larger)
-                fire.setTexture('fire2');
-                fire.displayWidth = dragon.displayWidth * 0.55;
-                fire.scaleY = fire.scaleX; // Preserve aspect ratio
-            });
-            
-            // After 450ms total (150 + 300), fade out fire2
-            this.time.delayedCall(450, () => {
-                this.tweens.add({
-                    targets: fire,
-                    alpha: 0,
-                    duration: 150,
-                    ease: 'Power2',
-                    onComplete: () => {
-                        fire.destroy();
-                        dragon.isBreathingFire = false;
-                    }
-                });
+        });
+        
+        // After 450ms total (150 + 300), fade out fire2
+        this.time.delayedCall(450, () => {
+            this.tweens.add({
+                targets: fire,
+                alpha: 0,
+                duration: 150,
+                ease: 'Power2',
+                onComplete: () => {
+                    fire.destroy();
+                    dragon.isBreathingFire = false;
+                }
             });
         });
     }
