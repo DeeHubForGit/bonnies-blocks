@@ -20,7 +20,7 @@ import {
     getPattern,
     isMobilePortrait
 } from '../data/constants.js';
-import { getChildName } from '../utils/storage.js';
+import { getChildName, getKeepPeopleOnIsland } from '../utils/storage.js';
 
 // Isometric tile dimensions (base values, may be scaled down to fit)
 const BASE_ISO_TILE_WIDTH = 64;
@@ -137,6 +137,8 @@ export class IsometricPlayScene extends Phaser.Scene {
         this.selectedPersonCol = -1;     // Grid col of selected person
         this.movementArrows = [];        // Array of arrow sprites/graphics
         this.isMoving = false;           // Prevent movement during animation
+        this.keepPeopleOnIsland = true;  // Whether people can move into water
+        this.selectedPersonIsInWater = false; // Track if selected person is in water
     }
 
     /**
@@ -209,6 +211,9 @@ export class IsometricPlayScene extends Phaser.Scene {
         this.load.audio('dolphin-sound', 'assets/sounds/dolphin.mp3?v=2');
         this.load.audio('dragon-fire-sound', 'assets/sounds/dragon_fire.mp3?v=2');
         
+        // Load bloop sound for water entry
+        this.load.audio('bloop-sound', 'assets/sounds/bloop.mp3');
+        
         // Load fire sprites for dragon animation
         this.load.image('fire1', 'assets/icons/fire1.png');
         this.load.image('fire2', 'assets/icons/fire2.png');
@@ -228,6 +233,9 @@ export class IsometricPlayScene extends Phaser.Scene {
         const gridRows = this.getGridRows();
         const gameWidth = this.getGameWidth();
         const gameHeight = this.getGameHeight();
+        
+        // Load keep people on island setting
+        this.keepPeopleOnIsland = getKeepPeopleOnIsland();
 
         // Calculate optimal tile size to fit screen with margins
         const tileConfig = calculateOptimalTileSize(gridCols, gridRows, gameWidth);
@@ -1662,6 +1670,7 @@ export class IsometricPlayScene extends Phaser.Scene {
             sprite.gridRow = row;
             sprite.gridCol = col;
             sprite.blockType = blockType;
+            sprite.waterOverlay = null;
             sprite.on('pointerdown', () => {
                 this.selectPerson(sprite, sprite.gridRow, sprite.gridCol);
             });
@@ -1867,12 +1876,39 @@ export class IsometricPlayScene extends Phaser.Scene {
         const row = this.selectedPersonRow;
         const col = this.selectedPersonCol;
         
-        const canMoveForward = row > 0;
-        const canMoveBack = row < gridRows - 1;
-        const canMoveLeft = col > 0;
-        const canMoveRight = col < gridCols - 1;
+        let canMoveForward = row > 0;
+        let canMoveBack = row < gridRows - 1;
+        let canMoveLeft = col > 0;
+        let canMoveRight = col < gridCols - 1;
         
-        const basePos = this.gridToIso(col, row);
+        if (!this.keepPeopleOnIsland) {
+            canMoveForward = row >= 0;
+            canMoveBack = row <= gridRows - 1;
+            canMoveLeft = col >= 0;
+            canMoveRight = col <= gridCols - 1;
+        }
+        
+        // Do not allow people to enter water from corner blocks.
+        // Corner water positions can push sprites off-screen or into odd visual positions.
+        if (!this.keepPeopleOnIsland && this.isUnsafeWaterEntryPosition(row, col)) {
+            canMoveForward = row > 0;
+            canMoveBack = row < gridRows - 1;
+            canMoveLeft = col > 0;
+            canMoveRight = col < gridCols - 1;
+        }
+        
+        // If already in water, only show arrows that move back onto the island.
+        // Hide the arrow that would move further into water.
+        if (!this.keepPeopleOnIsland && this.isWaterPosition(row, col)) {
+            canMoveForward = !this.isWaterPosition(row - 1, col);
+            canMoveBack = !this.isWaterPosition(row + 1, col);
+            canMoveLeft = !this.isWaterPosition(row, col - 1);
+            canMoveRight = !this.isWaterPosition(row, col + 1);
+        }
+        
+        const basePos = this.isWaterPosition(row, col)
+            ? this.getWaterIsoPosition(col, row)
+            : this.gridToIso(col, row);
         
         // Left arrow - upper-left visual position
         if (canMoveLeft) {
@@ -1968,10 +2004,89 @@ export class IsometricPlayScene extends Phaser.Scene {
     }
     
     /**
+     * Check if a position is in water (outside island grid)
+     */
+    isWaterPosition(row, col) {
+        return (
+            row < 0 ||
+            col < 0 ||
+            row >= this.getGridRows() ||
+            col >= this.getGridCols()
+        );
+    }
+    
+    isCornerIslandPosition(row, col) {
+        const gridRows = this.getGridRows();
+        const gridCols = this.getGridCols();
+
+        return (
+            (row === 0 && col === 0) ||
+            (row === 0 && col === gridCols - 1) ||
+            (row === gridRows - 1 && col === 0) ||
+            (row === gridRows - 1 && col === gridCols - 1)
+        );
+    }
+    
+    isUnsafeWaterEntryPosition(row, col) {
+        return (
+            this.isCornerIslandPosition(row, col) ||
+            row === 0 ||
+            col === 0
+        );
+    }
+
+    /**
+     * Get isometric position for water (off-island) coordinates
+     */
+    getWaterIsoPosition(col, row) {
+        return this.gridToIso(col, row);
+    }
+    
+    addWaterOverlayToPerson(person) {
+        if (person.waterOverlay) {
+            person.waterOverlay.destroy();
+            person.waterOverlay = null;
+        }
+
+        const overlay = this.add.ellipse(
+            person.x - person.displayWidth * 0.12,
+            person.y - person.displayHeight * 0.08,
+            person.displayWidth * 0.9,
+            person.displayHeight * 0.45,
+            0x1E90FF,
+            0.85
+        );
+
+        overlay.setDepth(person.depth + 1);
+        person.waterOverlay = overlay;
+    }
+
+    removeWaterOverlayFromPerson(person) {
+        if (person.waterOverlay) {
+            person.waterOverlay.destroy();
+            person.waterOverlay = null;
+        }
+    }
+
+    /**
      * Move selected person to target grid position
      */
     movePersonTo(targetRow, targetCol) {
         if (!this.selectedPerson || this.isMoving) return;
+        
+        const isWaterTarget = this.isWaterPosition(targetRow, targetCol);
+
+        const isMovingFromCornerToWater =
+            isWaterTarget &&
+            this.isUnsafeWaterEntryPosition(this.selectedPersonRow, this.selectedPersonCol);
+
+        if (isMovingFromCornerToWater) {
+            return;
+        }
+
+        if (isWaterTarget && this.keepPeopleOnIsland) {
+            return;
+        }
         
         this.isMoving = true;
         
@@ -1979,27 +2094,56 @@ export class IsometricPlayScene extends Phaser.Scene {
         this.clearMovementArrows();
         
         // Calculate new isometric position
-        const newPos = this.gridToIso(targetCol, targetRow);
+        const newPos = isWaterTarget
+            ? this.getWaterIsoPosition(targetCol, targetRow)
+            : this.gridToIso(targetCol, targetRow);
         
         // Check if destination has an object (person will stand on top)
-        const destBlock = this.worldGrid[targetRow][targetCol];
-        const hasObject = isWorldObject(destBlock) || isSolidBlock(destBlock);
+        const destBlock = isWaterTarget ? BLOCK_TYPES.EMPTY : this.worldGrid[targetRow][targetCol];
+        const hasObject = !isWaterTarget && (isWorldObject(destBlock) || isSolidBlock(destBlock));
         
         // Set depth based on whether standing on object
         const baseDepth = newPos.x + newPos.y;
         const newDepth = hasObject ? baseDepth + 200 : baseDepth + 20;
         
+        // Adjust Y position for water (keep head above water)
+        const targetY = isWaterTarget
+            ? newPos.y + this.selectedPerson.displayHeight * 0.55
+            : newPos.y;
+        
+        // Play bloop sound when entering water
+        const wasInWater = this.isWaterPosition(this.selectedPersonRow, this.selectedPersonCol);
+
+        if (wasInWater && !isWaterTarget) {
+            this.removeWaterOverlayFromPerson(this.selectedPerson);
+        }
+        
+        if (isWaterTarget && !wasInWater && this.sound && this.cache.audio.exists('bloop-sound')) {
+            this.sound.play('bloop-sound', { volume: 0.45 });
+        }
+        
         // Animate movement
         this.tweens.add({
             targets: this.selectedPerson,
             x: newPos.x,
-            y: newPos.y,
+            y: targetY,
             duration: 220,
             ease: 'Sine.easeInOut',
+            onUpdate: () => {
+                if (this.selectedPerson.waterOverlay) {
+                    this.selectedPerson.waterOverlay.x = this.selectedPerson.x - this.selectedPerson.displayWidth * 0.12;
+                    this.selectedPerson.waterOverlay.y = this.selectedPerson.y - this.selectedPerson.displayHeight * 0.08;
+                    this.selectedPerson.waterOverlay.setDepth(this.selectedPerson.depth + 1);
+                }
+            },
             onComplete: () => {
                 // Update sprite depth for proper layering
                 this.selectedPerson.setDepth(newDepth);
                 
+                if (isWaterTarget) {
+                    this.addWaterOverlayToPerson(this.selectedPerson);
+                }
+
                 // Update stored grid position
                 this.selectedPerson.gridRow = targetRow;
                 this.selectedPerson.gridCol = targetCol;
