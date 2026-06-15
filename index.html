@@ -133,7 +133,10 @@
             const isLandscape = window.innerWidth > window.innerHeight;
             const isTouchDevice = navigator.maxTouchPoints > 0;
 
-            overlay.style.display = isTouchDevice && isLandscape ? 'flex' : 'none';
+            // Only show the rotate message on phones, not tablets.
+            const isPhone = Math.min(window.innerWidth, window.innerHeight) <= 600;
+
+            overlay.style.display = isTouchDevice && isPhone && isLandscape ? 'flex' : 'none';
         }
 
         window.addEventListener('resize', updateRotateOverlay);
@@ -142,7 +145,7 @@
 
         updateRotateOverlay();
     </script>
-
+    
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.js"></script>
     <script type="module" src="src/main.js"></script>
 </body>
