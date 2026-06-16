@@ -1,17 +1,25 @@
-# Bonnie's Blocks - Builder Game Prototype
+# Bonnie's Blocks
 
-A simple 2D top-down builder game made with Phaser 3.
+A fun world-building game made with Phaser 3. Create colourful worlds, place animals and people, explore in 2D or Isometric mode, and bring your world to life with animations and sounds.
 
 ## Features
 
 - **Move** your character with Arrow Keys or WASD
-- **Place blocks** by clicking on the grid
-- **5 colored blocks**: Grass, Pink, Blue, Yellow, Purple
-- **Bunny placement**: Add cute bunnies to your world
-- **Erase mode**: Remove blocks you don't want
+- **Build worlds** using multiple colours and terrain types
+- **Place animals and objects** including bunnies, unicorns, dragons, trees and more
+- **Erase mode**: Remove blocks and objects you don't want
 - **Multiple Saved Worlds**: Save and manage multiple named worlds
 - **Friendly Dialogs**: Child-friendly modal system for save/load/clear
-- **Clear**: Start fresh with a new world
+- **2D and Isometric Modes**
+- **Interactive Animals**:
+  - Bunnies bounce
+  - Unicorns create rainbow effects
+  - Dragons breathe fire
+  - Dolphins jump from the water
+  - Turtles appear in the ocean
+- **Animated Effects**: Clouds, fire, sparkles and other visual effects
+- **Sound Effects**
+- **Mobile Friendly**: Designed for phones, tablets and desktop devices
 
 ## How to Run
 
@@ -21,17 +29,21 @@ A simple 2D top-down builder game made with Phaser 3.
 ## Controls
 
 ### Movement
+
 - **Arrow Keys** or **WASD** - Move your character around
 
 ### Building
-- **Mouse Click** - Place the selected block/item on the grid
-- **Toolbar Buttons** - Select which block type to place
-- **Erase Button** - Switch to erase mode to remove blocks
+
+- **Mouse Click / Tap** - Place the selected block, animal or object
+- **Toolbar Buttons** - Select what to place
+- **Erase Button** - Switch to erase mode
 
 ### Actions
+
 - **Save** - Opens a dialog to name and save your world
-- **Load** - Shows a list of saved worlds to choose from
-- **Clear** - Clear the entire world (shows friendly confirmation dialog)
+- **Load** - Shows a list of saved worlds
+- **Clear** - Clear the entire world
+- **View Mode** - Switch between 2D and Isometric views
 
 ## Project Structure
 
@@ -56,33 +68,32 @@ Bonnies Blocks/
 
 ## Technical Details
 
-- **Framework**: Phaser 3.70.0 (loaded from CDN)
-- **Grid**: 20x15 cells, 40 pixels per cell
-- **Rendering**: Simple 2D top-down (not isometric)
+- **Framework**: Phaser 3.70.0
 - **Storage**: Browser localStorage
+- **Views**: 2D and Isometric
+- **Platforms**: Desktop, Tablet and Mobile
 - **No build tool required**: Pure ES6 modules
 
 ## Future Enhancements
 
-This is V1 - a proof of concept. Potential improvements:
+Potential improvements:
 
-- Isometric rendering
-- More animals and objects
-- Block collision
-- Simple animations
-- More block types
-- Multiple maps
-- Undo/redo functionality
+- More animals and creatures
+- Additional world objects
+- Weather effects
+- More sounds and animations
+- Additional character types
+- New world themes
 
 ## Notes
 
-- **Multiple Saves**: You can save multiple worlds with different names (e.g., "Bonnie 1", "My Castle", etc.)
-- **Auto-naming**: Default names are suggested when saving (Bonnie 1, Bonnie 2, etc.)
-- **Load List**: The Load dialog shows all your saved worlds with timestamps
-- **Child-Friendly UI**: All dialogs use soft colors and rounded corners instead of harsh browser popups
-- **Migration**: Old single-save format is automatically migrated to the new multi-save system
+- **Multiple Saves**: You can save multiple worlds with different names
+- **Auto-naming**: Default names are suggested when saving
+- **Load List**: The Load dialog shows saved worlds with timestamps
+- **Child-Friendly UI**: Soft colours and friendly dialogs throughout
+- **Mobile Friendly**: Touch-friendly controls and layouts
 - You cannot place blocks on your character's current position
 - Blocks merge together seamlessly when placed side-by-side
 - Icon-based toolbar is designed for non-readers
 
-Enjoy building! 🎮🐰✨
+Enjoy building! 🎮🐰🦄🐉✨
